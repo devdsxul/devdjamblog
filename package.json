@@ -1,0 +1,17 @@
+{
+  "name": "devdjamblog",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DEVDJAM — a self-hosted WordPress music corner",
+  "type": "module",
+  "scripts": {
+    "dev": "node dev/server.mjs",
+    "dev:qa": "node dev/server.mjs --qa",
+    "check": "node dev/check.mjs",
+    "package": "python dev/package.py"
+  },
+  "devDependencies": {
+    "@wp-playground/cli": "3.1.53",
+    "php-parser": "3.4.0"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "url": "https://wordpress.org/about/requirements/",
+  "provider": "tavily",
+  "content": "[Skip to content](#wp--skip-link--target)\n\n[Get WordPress](https://wordpress.org/download/)\n\n[About](https://wordpress.org/about/)\n\nRequirements\n\n# Requirements\n\nTo run WordPress, we recommend your host supports the following — a safe, modern baseline for performance and security.\n\n### PHP\n\nVersion 8.3 or greater.\n\nPowers WordPress on your server. [Learn more →](https://www.php.net/)\n\n### Database\n\nMariaDB 10.11+ or MySQL 8.0+.\n\nStores your content and settings. [MariaDB](https://mariadb.org/) · [MySQL](https://www.mysql.com/)\n\n### HTTPS\n\nRequired for every install.\n\nEncrypts your site’s connection. [Why HTTPS matters →](https://wordpress.org/news/2016/12/moving-toward-ssl/)\n\nThat’s really it. [Apache](https://httpd.apache.org/) or [Nginx](https://nginx.org/) is recommended as the most robust and featureful server for running WordPress, but any server that supports PHP and MySQL will do. For the smoothest experience setting up — and running — your site, [each host on the hosting page](https://wordpress.org/hosting/) supports the above and more with no problems.\n\nFor detailed PHP extension recommendations, see the [Hosting Handbook](https://make.wordpress.org/hosting/handbook/handbook/server-environment/).\n\n#### Running on legacy versions?\n\nWordPress will still run on PHP 7.4+ and MySQL 5.5.5+, but those versions have reached official End Of Life and **may expose your site to security vulnerabilities**. Upgrading is strongly recommended.\n\n## Ask your host to run WordPress\n\nIf you’re unsure whether your host can already run WordPress, here’s a request you can copy and send them:\n\n> I’m interested in running the open source WordPress  web software, and I was wondering if my account supported the following:\n>\n> * PHP 8.3 or greater\n> * MariaDB version 10.11 or greater OR MySQL version 8.0 or greater\n> * Nginx or Apache with mod\\_rewrite module\n> * HTTPS support\n>\n> Thanks!\n\n## Not required, but recommended for better security\n\nHosting is more secure when PHP applications, like WordPress, are run using your account’s username instead of the server’s default shared username. Ask your potential host what steps they take to ensure the security of your account.\n\n[Download WordPress](https://wordpress.org/download/)\n\n[Browse recommended hosts](https://wordpress.org/hosting/)\n\n ",
+  "provider_attempts": [
+    {
+      "capability": "web_fetch",
+      "provider": "tavily",
+      "status": "ok",
+      "error_type": "",
+      "error": "",
+      "elapsed_ms": 3748.9,
+      "result_count": 1
+    }
+  ],
+  "fallback_used": false,
+  "elapsed_ms": 3748.92
+}

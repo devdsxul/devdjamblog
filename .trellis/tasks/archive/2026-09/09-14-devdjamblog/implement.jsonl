@@ -1,0 +1,4 @@
+{"file":".trellis/tasks/09-14-devdjamblog/research/implementation-contract.md","reason":"项目边界、内容模型、播放器和安全约定"}
+{"file":".trellis/tasks/09-14-devdjamblog/research/architecture.md","reason":"官方能力与本地 WordPress 运行证据"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "UI组件与窗口交互规范"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "质量验证与Win98设计约束"}

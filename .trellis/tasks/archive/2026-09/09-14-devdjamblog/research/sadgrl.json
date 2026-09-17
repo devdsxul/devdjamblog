@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "url": "https://sadgrl.online/",
+  "provider": "tavily",
+  "content": "![sadgrl.online logo](/_astro/logo.C3AjZVvt_2gISNf.webp)\n\n# You have to be okay with\n\n![a purple rose](/_astro/rose.DfgJrSPT_11bJYz.webp)\n\nThe recent update I did led some people to believe I'm leaving for good. In\nfact, I was preparing to return! But I understand why it seemed otherwise.\nWords like \"death\" and \"endings\" convey a note of finality.\n\nI've always felt a strong connection to the metaphorical concept of death as\na necessary step before rebirth. In that sense, I have \"died\" more than\nonce. Some deaths are more painful than others. But transformation is one of\nthe most beautiful and exhilarating parts of being alive.\n\nOne thing you'll learn if you stick around here long enough, is that I tend\ntowards intensity. I think in some ways it was easier to be myself as a\nteenager. That's because it's much more socially acceptable for a teenager\nto be dramatic and intense and emotional. I don't think I have it in me to\nbe laid-back or casual, except as a poorly-fitting and hollow disguise.\n\nI came back here to transform my website and to embrace this intensity. I\nwrote a little about this [on my blog](/posts/its-personal). My goal is to continue to write, to evolve, and to connect with others\nover the shared pain of the human experience (as a treat).\n\nAs always, you can [sign my guestbook](https://sadgrl.atabook.org/) if you'd like!",
+  "provider_attempts": [
+    {
+      "capability": "web_fetch",
+      "provider": "tavily",
+      "status": "ok",
+      "error_type": "",
+      "error": "",
+      "elapsed_ms": 3971.59,
+      "result_count": 1
+    }
+  ],
+  "fallback_used": false,
+  "elapsed_ms": 3971.6
+}

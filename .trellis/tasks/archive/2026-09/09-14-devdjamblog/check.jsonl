@@ -1,0 +1,4 @@
+{"file":".trellis/tasks/09-14-devdjamblog/research/implementation-contract.md","reason":"核验权限、上传、空数据与播放器行为"}
+{"file":".trellis/tasks/09-14-devdjamblog/research/architecture.md","reason":"区分 Playground 本地和生产 MariaDB 验证边界"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "质量验证与Win98设计约束"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "UI组件与窗口交互规范"}

@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "url": "https://gifcities.org/",
+  "provider": "tavily",
+  "content": "GifCities\n\n\n[![](/static/gifsearch/ia-logo.svg)](https://archive.org)\n\n [Home](/)   [About](/about)   [Special Search](/special-search)   [Send a GifGram](/gram)   [Donate](https://archive.org/donate)\n\n# GifCities\n\n## The Geocities Animated Gif Search from Internet Archive\n\n[![](/static/gifsearch/spinning-ia-logo.gif)](https://archive.org)\n\nGifCities is a special project of [Internet Archive](https://archive.org), a non-profit digital library of millions of free books, movies, software, music, websites, and more. Please consider [donating](https://archive.org/donate) to help us in our efforts to provide “Universal Access to All Knowledge” including GIFs.\n\n [![](https://blob.gifcities.org/gifcities/K3QC5HKUYNGPBM2EIMEC6SLC6SHSWGFV.gif)![](https://blob.gifcities.org/gifcities/K3QC5HKUYNGPBM2EIMEC6SLC6SHSWGFV.gif)![](https://blob.gifcities.org/gifcities/K3QC5HKUYNGPBM2EIMEC6SLC6SHSWGFV.gif)](/search?q=skyline&offset=0&page_size=200) \n\nTry [snowglobe](/search?q=snowglobe&offset=0&page_size=200), [butterfly](/search?q=butterfly&offset=0&page_size=200), [balloons](/search?q=balloons&offset=0&page_size=200), [sparkles](/search?q=sparkles&offset=0&page_size=200), [drawing of cat](/special-search?q=drawing+of+cat&offset=0&page_size=200&flavor=semantic&width=0&height=0)\n\n ",
+  "provider_attempts": [
+    {
+      "capability": "web_fetch",
+      "provider": "tavily",
+      "status": "ok",
+      "error_type": "",
+      "error": "",
+      "elapsed_ms": 3758.61,
+      "result_count": 1
+    }
+  ],
+  "fallback_used": false,
+  "elapsed_ms": 3758.64
+}

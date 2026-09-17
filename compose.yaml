@@ -1,0 +1,67 @@
+name: devdjam
+services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: devdjam
+      MARIADB_USER: devdjam
+      MARIADB_PASSWORD: ${DJ_DB_PASSWORD:?Fill DJ_DB_PASSWORD in .env}
+      MARIADB_ROOT_PASSWORD: ${DJ_DB_ROOT_PASSWORD:?Fill DJ_DB_ROOT_PASSWORD in .env}
+    volumes:
+      - database:/var/lib/mysql
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  wordpress:
+    image: wordpress:7.1-php8.3-apache
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${DJ_PORT:-8086}:80"
+    environment: &wordpress-environment
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: devdjam
+      WORDPRESS_DB_USER: devdjam
+      WORDPRESS_DB_PASSWORD: ${DJ_DB_PASSWORD:?Fill DJ_DB_PASSWORD in .env}
+      DJ_SITE_URL: ${DJ_SITE_URL:?Fill DJ_SITE_URL in .env}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', getenv('DJ_SITE_URL'));
+        define('WP_SITEURL', getenv('DJ_SITE_URL'));
+        define('DISALLOW_FILE_EDIT', true);
+        if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO']) && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            $$_SERVER['HTTPS'] = 'on';
+        }
+    volumes:
+      - wordpress-data:/var/www/html
+      - ./wp-content/themes/devdjam:/var/www/html/wp-content/themes/devdjam:ro
+      - ./wp-content/plugins/devdjam-core:/var/www/html/wp-content/plugins/devdjam-core:ro
+      - ./deploy/uploads.ini:/usr/local/etc/php/conf.d/devdjam-uploads.ini:ro
+
+  setup:
+    image: wordpress:cli-php8.3
+    profiles: [tools]
+    user: "33:33"
+    depends_on:
+      wordpress:
+        condition: service_started
+    environment:
+      <<: *wordpress-environment
+      DJ_ADMIN_USER: ${DJ_ADMIN_USER:-}
+      DJ_ADMIN_PASSWORD: ${DJ_ADMIN_PASSWORD:-}
+      DJ_ADMIN_EMAIL: ${DJ_ADMIN_EMAIL:-}
+    volumes:
+      - wordpress-data:/var/www/html
+      - ./wp-content/themes/devdjam:/var/www/html/wp-content/themes/devdjam:ro
+      - ./wp-content/plugins/devdjam-core:/var/www/html/wp-content/plugins/devdjam-core:ro
+      - ./deploy/init.sh:/setup/init.sh:ro
+    entrypoint: [sh, /setup/init.sh]
+
+volumes:
+  database:
+  wordpress-data:

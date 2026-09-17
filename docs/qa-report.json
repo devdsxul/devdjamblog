@@ -1,0 +1,380 @@
+{
+  "timestamp": "2026-09-14T14:28:18.471150+00:00",
+  "target": "http://127.0.0.1:8788",
+  "preview": "http://127.0.0.1:8787",
+  "runtime": "WordPress 7.1 / PHP 8.3 / Playground SQLite / Microsoft Edge",
+  "checks": [
+    {
+      "name": "Preview starts with an empty playlist",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Preview starts with no public articles or music",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Empty player has honest status and disabled play",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "No horizontal overflow or clipped hero links at 320px",
+      "passed": true,
+      "detail": {
+        "width": 320,
+        "scroll": 320,
+        "links": [
+          {
+            "left": 8.578125,
+            "right": 47.59375
+          },
+          {
+            "left": 80.921875,
+            "right": 119.9375
+          },
+          {
+            "left": 153.265625,
+            "right": 215.6875
+          },
+          {
+            "left": 249.015625,
+            "right": 311.4375
+          }
+        ]
+      }
+    },
+    {
+      "name": "No horizontal overflow or clipped hero links at 390px",
+      "passed": true,
+      "detail": {
+        "width": 390,
+        "scroll": 390,
+        "links": [
+          {
+            "left": 35.453125,
+            "right": 77.59375
+          },
+          {
+            "left": 110.921875,
+            "right": 153.0625
+          },
+          {
+            "left": 186.390625,
+            "right": 253.796875
+          },
+          {
+            "left": 287.125,
+            "right": 354.53125
+          }
+        ]
+      }
+    },
+    {
+      "name": "No horizontal overflow or clipped hero links at 768px",
+      "passed": true,
+      "detail": {
+        "width": 768,
+        "scroll": 768,
+        "links": [
+          {
+            "left": 135.171875,
+            "right": 198.1875
+          },
+          {
+            "left": 254.84375,
+            "right": 317.859375
+          },
+          {
+            "left": 374.515625,
+            "right": 475.34375
+          },
+          {
+            "left": 532,
+            "right": 632.828125
+          }
+        ]
+      }
+    },
+    {
+      "name": "No horizontal overflow or clipped hero links at 1440px",
+      "passed": true,
+      "detail": {
+        "width": 1440,
+        "scroll": 1440,
+        "links": [
+          {
+            "left": 446.578125,
+            "right": 515.59375
+          },
+          {
+            "left": 578.25,
+            "right": 647.265625
+          },
+          {
+            "left": 709.921875,
+            "right": 820.34375
+          },
+          {
+            "left": 883,
+            "right": 993.421875
+          }
+        ]
+      }
+    },
+    {
+      "name": "System reduced motion disables decorative animation",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Navigation to music preserves the audio element",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Navigation to beats preserves the audio element",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Navigation to blog preserves the audio element",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Navigation to links preserves the audio element",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Navigation to about preserves the audio element",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Navigation to home preserves the audio element",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Browser back and forward restore the correct view",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Decorative assets load",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Missing content has a real 404 and a designed page",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Basic content navigation works without JavaScript",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Anonymous content creation is rejected",
+      "passed": true,
+      "detail": {
+        "status": 401,
+        "body": "{\"code\":\"rest_cannot_create\",\"message\":\"\\u62b1\\u6b49\\uff0c\\u60a8\\u4e0d\\u80fd\\u4e3a\\u6b64\\u7528\\u6237\\u521b\\u5efa\\u6587\\u7ae0\\u3002\",\"data\":{\"status\":401}}"
+      }
+    },
+    {
+      "name": "Anonymous media upload is rejected",
+      "passed": true,
+      "detail": {
+        "status": 401,
+        "body": "{\"code\":\"rest_cannot_create\",\"message\":\"\\u62b1\\u6b49\\uff0c\\u60a8\\u4e0d\\u80fd\\u4e3a\\u6b64\\u7528\\u6237\\u521b\\u5efa\\u6587\\u7ae0\\u3002\",\"data\":{\"status\":401}}"
+      }
+    },
+    {
+      "name": "WordPress administrator login works",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Draft articles are private in the REST API",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Article create, publish and edit reach the public page",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Music notes have their own public archive",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Publishing a beat without audio is rejected",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Native media uploader links and previews a real audio file",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Publishing a beat through the real editor updates the queue",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Editing beat metadata updates the public queue",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Playlist contains only published beats",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Draft beat detail is not public",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Published tracks do not autoplay on arrival",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "The player actually decodes and plays the uploaded audio",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Music continues through navigation without replacing audio",
+      "passed": true,
+      "detail": {
+        "same": true,
+        "paused": false,
+        "time": 3.177613
+      }
+    },
+    {
+      "name": "Dragging the progress control seeks the real audio",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Volume control changes the audio element",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Pause stops the real audio",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Next track switches and plays",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Previous track works",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "The expanded queue can select tracks",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "A failed playlist request has a usable error state",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Playlist retry recovers",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Missing audio displays a recoverable playback error",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Audio retry successfully resumes playback",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Rapid navigation resolves to the last destination",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Trashing a beat removes it from the playback queue",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "Trashing an article removes it from the public archive",
+      "passed": true,
+      "detail": null
+    },
+    {
+      "name": "No uncaught frontend JavaScript errors",
+      "passed": true,
+      "detail": []
+    },
+    {
+      "name": "Owner control room shows the three empty content collections",
+      "passed": true,
+      "detail": null
+    }
+  ],
+  "cleanup": [
+    {
+      "type": "posts",
+      "id": 10,
+      "status": 200
+    },
+    {
+      "type": "music",
+      "id": 13,
+      "status": 200
+    },
+    {
+      "type": "beats",
+      "id": 14,
+      "status": 200
+    },
+    {
+      "type": "beats",
+      "id": 18,
+      "status": 200
+    },
+    {
+      "type": "beats",
+      "id": 19,
+      "status": 200
+    },
+    {
+      "type": "media",
+      "id": 15,
+      "status": 200
+    },
+    {
+      "type": "media",
+      "id": 17,
+      "status": 200
+    }
+  ],
+  "passed": true
+}

@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Verify Neocities aesthetic adherence and click exclusivity"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Verify syntax and style via npm run check"}
