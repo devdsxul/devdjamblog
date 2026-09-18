@@ -2639,3 +2639,371 @@ html[data-effects="off"] .marquee span { animation: none; padding-left: 0; }
     .loose { display: none; }
     .window > .sticker { width: 44px; }
 }
+
+/* ---------- 手机端专属响应式与 Win98 底部任务栏 (<= 600px) ---------- */
+@media (max-width: 600px) {
+    body {
+        padding: 4px 4px calc(52px + env(safe-area-inset-bottom, 0px)) 4px;
+    }
+
+    /* 顶部横幅自适应缩放 */
+    .site-banner {
+        margin-bottom: 6px;
+    }
+    .banner-stage {
+        height: 76px;
+    }
+    .banner-letters {
+        font-size: clamp(22px, 8.5vw, 36px);
+        gap: 1px;
+    }
+    .banner-wing .sticker .gif {
+        max-height: 40px;
+        max-width: 54px;
+    }
+    .top-lang {
+        top: 4px;
+        right: 4px;
+        padding: 2px 5px;
+        font-size: 10px;
+    }
+
+    /* 桌面与内容区全宽展开，消除左侧挤压 */
+    .desk-layout {
+        flex-direction: column;
+        gap: 6px;
+        width: 100%;
+        overflow: visible;
+    }
+    .desk {
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    .col {
+        width: 100%;
+        max-width: 100%;
+    }
+    .col-main { order: 1; }
+    .col-left { order: 2; }
+    .col-right { order: 3; }
+
+    /* Win98 经典底部任务栏 (Fixed Bottom Taskbar) */
+    .dock {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        height: auto !important;
+        min-height: 34px !important;
+        max-height: 38px !important;
+        margin: 0 !important;
+        padding: 2px 2px calc(2px + env(safe-area-inset-bottom, 0px)) 2px !important;
+        background: var(--win, #c0c0c0) !important;
+        border-top: 2px solid #ffffff !important;
+        border-right: none !important;
+        border-bottom: none !important;
+        border-left: none !important;
+        box-shadow: 0 -2px 0 var(--line, #000000), inset 0 1px 0 #dfdfdf !important;
+        z-index: 9999 !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 2px !important;
+        overflow: hidden !important;
+    }
+
+    /* 任务栏：开始按钮 / DEVDJAM 徽标 */
+    .dock-logo {
+        display: inline-flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 3px !important;
+        padding: 2px 4px !important;
+        height: 28px !important;
+        flex: 0 0 auto !important;
+        margin: 0 !important;
+        border: 1px solid !important;
+        border-color: #ffffff #808080 #808080 #ffffff !important;
+        box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #0a0a0a !important;
+        background: var(--win) !important;
+        text-decoration: none !important;
+    }
+    .dock-logo b {
+        display: none !important;
+    }
+    .dock-logo .gif {
+        width: 16px !important;
+        height: 16px !important;
+    }
+    .dock-logo:active {
+        border-color: #808080 #ffffff #ffffff #808080 !important;
+        box-shadow: inset 1px 1px 0 #0a0a0a !important;
+    }
+
+    /* 任务栏：页面导航按钮 (运行程序栏) */
+    .dock-nav {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 2px !important;
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        overflow: visible !important;
+        padding: 0 !important;
+    }
+    .dock-nav a {
+        display: inline-flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 2px !important;
+        padding: 2px 3px !important;
+        min-width: 22px !important;
+        height: 28px !important;
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+        font-size: 11px !important;
+        font-weight: normal !important;
+        text-decoration: none !important;
+        border: 1px solid !important;
+        border-color: #ffffff #808080 #808080 #ffffff !important;
+        box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #0a0a0a !important;
+        background: var(--win) !important;
+        transform: none !important;
+    }
+    .dock-nav a span {
+        display: none !important;
+    }
+    .dock-nav a .gif {
+        width: 14px !important;
+        height: 14px !important;
+    }
+    .dock-nav a[aria-current="page"],
+    .dock-nav a[aria-current="page"]:visited {
+        border-color: #808080 #ffffff #ffffff #808080 !important;
+        box-shadow: inset 1px 1px 0 #0a0a0a, inset -1px -1px 0 #ffffff !important;
+        font-weight: 700 !important;
+        background: #dfdfdf !important;
+        transform: none !important;
+        z-index: 1 !important;
+    }
+
+    /* 任务栏：微型分隔线与社交图标 */
+    .dock-divider {
+        display: inline-block !important;
+        width: 1px !important;
+        height: 18px !important;
+        margin: 0 1px !important;
+        border-left: 1px solid #808080 !important;
+        border-right: 1px solid #ffffff !important;
+        flex: 0 0 auto !important;
+    }
+    .dock-social {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 1px !important;
+        flex: 0 0 auto !important;
+    }
+    .dock-social-link {
+        width: 22px !important;
+        height: 28px !important;
+        padding: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border: 1px solid !important;
+        border-color: #ffffff #808080 #808080 #ffffff !important;
+        box-shadow: inset 1px 1px 0 #dfdfdf, inset -1px -1px 0 #0a0a0a !important;
+        background: var(--win) !important;
+        flex: 0 0 auto !important;
+    }
+    .dock-social-link span {
+        display: none !important;
+    }
+    .dock-social-link .social-icon {
+        width: 12px !important;
+        height: 12px !important;
+    }
+
+    /* 任务栏：右侧系统托盘 (Notification Area) */
+    .dock-foot {
+        display: inline-flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 2px !important;
+        padding: 1px 3px !important;
+        height: 26px !important;
+        flex: 0 0 auto !important;
+        margin: 0 0 0 auto !important;
+        border: 1px solid !important;
+        border-color: #808080 #ffffff #ffffff #808080 !important;
+        box-shadow: inset 1px 1px 0 #0a0a0a !important;
+        background: var(--win) !important;
+    }
+    .dock-foot a {
+        display: inline-flex !important;
+        align-items: center !important;
+        padding: 0 !important;
+        border: none !important;
+    }
+    .dock-foot a span {
+        display: none !important;
+    }
+    .dock-foot a .gif {
+        width: 12px !important;
+        height: 12px !important;
+    }
+    .dock-now {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 2px !important;
+        padding: 0 !important;
+        max-width: none !important;
+    }
+    .dock-now span {
+        display: none !important;
+    }
+    .tray-led {
+        width: 8px !important;
+        height: 8px !important;
+    }
+    .dock-clock {
+        display: inline-block !important;
+        font-family: var(--mono, monospace) !important;
+        font-size: 10px !important;
+        font-weight: bold !important;
+        color: var(--ink) !important;
+        text-align: center !important;
+    }
+
+    /* 窗口全屏与遮罩尺寸 */
+    .window.is-max {
+        left: 4px !important;
+        right: 4px !important;
+        top: 4px !important;
+        width: auto !important;
+        max-height: calc(100vh - 54px - env(safe-area-inset-bottom, 0px)) !important;
+        transform: none !important;
+    }
+    .window.win-player.is-max {
+        left: 4px !important;
+        right: 4px !important;
+        top: 4px !important;
+        width: auto !important;
+        max-height: calc(100vh - 54px - env(safe-area-inset-bottom, 0px)) !important;
+        transform: none !important;
+    }
+    .desk-dim {
+        left: 0 !important;
+        top: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+    }
+
+    /* 触控热区优化 (Touch Targets) */
+    .title-bar-controls button {
+        min-width: 28px;
+        min-height: 26px;
+        position: relative;
+    }
+    .title-bar-controls button::after {
+        content: "";
+        position: absolute;
+        top: -6px;
+        bottom: -6px;
+        left: -6px;
+        right: -6px;
+    }
+    .track-button {
+        min-height: 38px;
+        padding: 5px 12px;
+        display: inline-flex;
+        align-items: center;
+    }
+    .play-button {
+        min-width: 44px;
+        min-height: 40px;
+    }
+    .deck-controls button {
+        min-height: 36px;
+    }
+    input[type="range"] {
+        touch-action: pan-y;
+    }
+    input[type="range"].seek-slider::-webkit-slider-thumb {
+        width: 18px;
+        height: 24px;
+    }
+
+    /* 防止 iOS Safari 获得焦点时自动缩放页面 */
+    input[type="text"],
+    input[type="search"],
+    input[type="email"],
+    input[type="url"],
+    textarea,
+    select {
+        font-size: 16px !important;
+    }
+
+    /* 宽内容横向溢出保护 */
+    .prose pre,
+    .prose table,
+    .calendar table {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        display: block;
+    }
+
+    /* 首页 Beats & Music 卡片比例微调 */
+    .home-split .home-beat-item {
+        min-height: 72px;
+        height: auto;
+        padding: 6px 0;
+    }
+    .home-split .entry-thumb {
+        width: 64px;
+        min-width: 64px;
+        max-width: 64px;
+        height: 64px;
+    }
+    .home-split .entry-meta-wrap {
+        padding: 4px 8px;
+    }
+    .home-split .entry-name {
+        font-size: 12px;
+    }
+    .home-split .entry-sub {
+        font-size: 10px;
+    }
+    .home-split .entry-action {
+        padding: 0 6px;
+    }
+
+    /* 开屏入站页适配 */
+    .enter-stage {
+        width: calc(100vw - 20px);
+        max-width: 360px;
+        padding: 14px 10px;
+    }
+    .enter-letters {
+        font-size: clamp(28px, 11vw, 48px);
+        gap: 1px;
+    }
+    .enter-glitter .gif {
+        max-width: 100%;
+        height: auto;
+    }
+}
