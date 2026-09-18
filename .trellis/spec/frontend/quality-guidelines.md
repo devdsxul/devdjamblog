@@ -27,6 +27,11 @@ npm run dev
 # 3. Packaging check
 npm run package
 # Bundles dist/ release archives (theme, plugin, server)
+
+# 4. Playwright acceptance & responsive viewport bounds check
+python dev/qa.py
+# Tests full user journeys and asserts no horizontal overflow (scrollWidth <= width)
+# and all nav links contained across viewports [320, 390, 768, 1440]
 ```
 
 ---
@@ -62,14 +67,23 @@ npm run package
 - **GIF Uniqueness (R19)**: Every animated GIF must only appear once in a distinct semantic role (navigation icon, title icon, or sticker) across the entire site.
 - **Cumulative Layout Shift (CLS)**: Always specify `width` and `height` on images and stickers (handled automatically by `dj_gif()`).
 
+### 3. Mobile Responsiveness & Touch Ergonomics
+- **Viewport Bounds Containment**: At viewports 320px, 390px, 768px, and 1440px, all navigation items in `.dock a` must satisfy `left >= -1 and right <= width + 1`, and `document.documentElement.scrollWidth <= width`. Nav links must not be horizontally scrolled off-screen or clipped.
+- **Win98 Fixed Bottom Taskbar (`<= 600px`)**: On mobile, `.dock` shifts to the bottom (`position: fixed; bottom: 0; left: 0; right: 0;`). On ultra-narrow screens (`<= 440px`), buttons collapse text labels to show only crisp 14px-16px pixel icons, fitting all 12 items (Start, 7 nav tabs, 3 social links, admin key, clock) in a single row without wrapping.
+- **Touch Hit Areas**: Interactive elements (`.title-bar-controls button`, `.play-button`, `.track-button`, `.deck-controls button`) must have touch target heights >= 36-44px. Range sliders must specify `touch-action: pan-y`.
+- **iOS Safari Font Zoom Prevention**: Form controls (`input`, `textarea`, `select`) must specify `font-size: 16px !important` on mobile viewports to prevent iOS Safari from automatically zooming the page upon focus.
+
 ---
 
 ## Review Checklist
 
 Before finishing any task, ensure:
 - [ ] `npm run check` passes with 0 errors.
+- [ ] Acceptance suite `python dev/qa.py` passes (or manual bounds verification across 320px, 390px, 768px, 1440px).
 - [ ] Changes do not break continuous audio playback during SPA navigation.
 - [ ] No external asset links were introduced.
 - [ ] Esc key properly dismisses any open modal or maximized window.
-- [ ] Layout remains responsive down to 375px viewport width.
+- [ ] Layout remains responsive down to 320px viewport width without horizontal scroll (`scrollWidth <= width`).
+- [ ] Mobile form inputs have `font-size: 16px` to prevent iOS Safari auto-zoom.
+- [ ] Touch hit areas on interactive buttons are at least 36px–40px.
 - [ ] Local storage and session storage reads are guarded by `try ... catch`.
