@@ -861,3 +861,27 @@ Completed mobile responsive layout for DEVDJAM blog: Win98 bottom taskbar with s
 ### Status
 
 [OK] **Completed**
+
+
+## Session 19: Mobile Layout Fix & Article Author Presentation with Sweet Trip Review Production Deployment
+<!-- trellis-session: v=2 fp=2cada310f6bd2111 -->
+
+**Date**: 2026-09-23
+**Task**: Mobile Layout Fix & Article Author Presentation with Sweet Trip Review Production Deployment
+**Branch**: `main`
+
+### Summary
+
+Fixed 7 mobile layout defects and XSS vulnerability, added author display and i18n support across single/archive/home templates, updated spec and README, and published Sweet Trip review to production site.
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `193fcf9` | fix(mobile): 修复 720px 内弹窗飞出、开屏遮挡、封面比例、曲库溢出，并解码曲目标题 |
+| `a97b276` | docs(spec): add mobile responsiveness and acceptance testing to quality guidelines |
+| `b80fba8` | feat(blog): 在文章详情、首页Hero及归档列表中展示作者信息，支持中英文切换 |
+
+### Status
+
+[OK] **Completed**
