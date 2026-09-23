@@ -21,7 +21,7 @@
 
   // ---------- 界面文案中英切换：英文原文作键 ----------
   const zh = {
-    home: '首页', lang: '语言', fx: '动效', music: '音乐', beats: '节拍', blog: '杂谈', links: '链接', about: '关于', guestbook: '留言簿',
+    home: '首页', lang: '语言', fx: '动效', music: '音乐', beats: '节拍', blog: '杂谈', links: '链接', about: '关于', guestbook: '留言簿', author: '作者',
     'control panel': '控制面板', calendar: '日历', search: '搜索', error: '错误',
     latest: '最新', 'open >>': '打开 >>', 'read >>': '阅读 >>', '<< back': '<< 返回', ok: '好', play: '播放', pause: '暂停', retry: '重试', go: '搜',
     'nothing here yet': '这里还什么都没有', 'no beats yet': '还没有节拍', 'no tape': '没有磁带', 'no entries yet': '还没有留言',

@@ -32,7 +32,12 @@ $featured = !empty($latest_posts) ? $latest_posts[0] : null;
                     <span><?php echo dj_text('nothing here yet'); ?></span>
                 <?php endif; ?>
             </h2>
-            <time class="home-hero-date" datetime="<?php echo $featured ? esc_attr(get_the_date('c', $featured)) : esc_attr(date('c')); ?>"><?php echo $featured ? esc_html(get_the_date('Y.m.d', $featured)) : esc_html(date('Y.m.d')); ?></time>
+            <div class="home-hero-meta">
+                <?php if ($featured) : ?>
+                    <span class="home-hero-author"><span class="entry-author-label"><?php echo dj_text('author'); ?>:</span> <?php echo esc_html(get_the_author_meta('display_name', $featured->post_author)); ?></span>
+                <?php endif; ?>
+                <time class="home-hero-date" datetime="<?php echo $featured ? esc_attr(get_the_date('c', $featured)) : esc_attr(date('c')); ?>"><?php echo $featured ? esc_html(get_the_date('Y.m.d', $featured)) : esc_html(date('Y.m.d')); ?></time>
+            </div>
             <hr class="home-hero-sep" aria-hidden="true">
             <div class="home-hero-preview">
                 <?php

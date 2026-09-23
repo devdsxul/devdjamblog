@@ -104,6 +104,11 @@ dj_window_close(array(
     - **Single-Row Compact Link Containment**: In order to satisfy strict QA containment assertions (`dev/qa.py`: `all(x['left'] >= -1 and x['right'] <= width + 1)` across 320px, 390px, 768px, 1440px), `.dock` buttons use compact icon-only presentation (`min-width: 22px; height: 28px;`) with text spans hidden on ultra-narrow viewports (`<= 440px`), allowing Start button, all 7 navigation tabs, 3 social links, admin key, and system tray clock to fit within 320px in a single horizontal row without wrapping or off-screen overflow.
     - **Desktop Full-Width Stack**: Windows stack in a single column (`.desk { grid-template-columns: 1fr; margin-left: 0; }`), `.col-main` ordered first, window max width 100%, and safe-area-inset-bottom padding added to `.desk` and `.dock`.
     - **Touch Ergonomics & iOS Safari Zoom Prevention**: Interactive controls (window title buttons, playback triggers, track buttons) provide minimum touch hit areas (>= 36-40px), slider thumbs enlarged for touch dragging, and all text inputs specify `font-size: 16px` to prevent automatic zooming on iOS Safari.
+19. **Article Author & Metadata Presentation**:
+    - **Consistent Byline & Metadata**: In single article views (`views/single.php`), homepage hero preview (`views/home.php`), and blog archive list cards (`views/archive.php`), post author and publication date are displayed together in `.entry-meta` (or `.home-hero-meta`).
+    - **Markup Pattern**: The author is wrapped in `<span class="entry-author"><span class="entry-author-label"><?php echo dj_text('author'); ?>:</span> <?php the_author(); ?></span>`.
+    - **Internationalization (i18n)**: The `author` key is registered in `site.js`'s `zh` dictionary (`author: '作者'`), enabling instant client-side localization toggle (`author` / `作者`) without full-page reloads.
+    - **Styling**: `.entry-author` carries `--ink` contrast with bold weight; `.entry-author-label` is styled with `--muted` color to maintain retro typographic balance.
 
 
 

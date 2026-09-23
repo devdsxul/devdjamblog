@@ -3,7 +3,7 @@
 <article class="single-entry">
     <header class="entry-header">
         <h2><?php the_title(); ?></h2>
-        <?php if (!$is_page) : ?><div class="entry-meta"><time datetime="<?php echo esc_attr(get_the_date('c')); ?>"><?php echo esc_html(get_the_date('Y.m.d')); ?></time><?php the_tags('', ' ', ''); ?></div><?php endif; ?>
+        <?php if (!$is_page) : ?><div class="entry-meta"><span class="entry-author"><span class="entry-author-label"><?php echo dj_text('author'); ?>:</span> <?php the_author(); ?></span><time datetime="<?php echo esc_attr(get_the_date('c')); ?>"><?php echo esc_html(get_the_date('Y.m.d')); ?></time><?php the_tags('', ' ', ''); ?></div><?php endif; ?>
     </header>
     <?php if (post_password_required()) : echo get_the_password_form();
     else : ?>

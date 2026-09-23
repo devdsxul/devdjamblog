@@ -51,7 +51,10 @@ $is_track_view = !is_search() && ($view === 'beats' || $view === 'music');
                     <a class="entry-cover" href="<?php the_permalink(); ?>"><?php the_post_thumbnail('medium_large', array('loading' => 'lazy')); ?></a>
                 <?php endif; ?>
                 <div class="entry-copy">
-                    <time datetime="<?php echo esc_attr(get_the_date('c')); ?>"><?php echo esc_html(get_the_date('Y.m.d')); ?></time>
+                    <div class="entry-meta">
+                        <span class="entry-author"><span class="entry-author-label"><?php echo dj_text('author'); ?>:</span> <?php the_author(); ?></span>
+                        <time datetime="<?php echo esc_attr(get_the_date('c')); ?>"><?php echo esc_html(get_the_date('Y.m.d')); ?></time>
+                    </div>
                     <h3><a href="<?php the_permalink(); ?>"><?php the_title(); ?></a></h3>
                     <?php if (has_excerpt() || get_the_content()) : ?>
                         <p><?php echo esc_html(wp_trim_words(wp_strip_all_tags(get_the_excerpt()), 36)); ?></p>
