@@ -59,6 +59,7 @@ Never output raw database values into template markup:
 - **HTML Attributes**: `esc_attr($id)`
 - **URLs**: `esc_url($link)`
 - **JSON for Scripts**: `wp_json_encode($data)`
+- **Plain Text for REST → `textContent`**: `get_the_title()` runs `wptexturize`, so titles carry entities such as `&#8211;`. Data that JavaScript writes with `textContent` (the `/devdjam/v1/tracks` `title` field) must be decoded first: `html_entity_decode(wp_strip_all_tags(get_the_title($post)), ENT_QUOTES | ENT_HTML5, 'UTF-8')`. Never feed that decoded value into `innerHTML`.
 
 ---
 

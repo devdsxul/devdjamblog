@@ -636,7 +636,7 @@
       const coverSrc = track.cover || (config.homeUrl ? config.homeUrl + '/wp-content/themes/devdjam/assets/logo.png' : '');
       tr.innerHTML = `
         <td><img class="pro-lib-cover" src="${coverSrc}" alt=""></td>
-        <td style="font-weight:700;">${track.title}</td>
+        <td style="font-weight:700;"></td>
         <td style="color:#ffcc00;">${track.bpm ? track.bpm + ' BPM' : '---'}</td>
         <td style="color:#8c93b3;">${time(track.duration)}</td>
         <td class="pro-lib-actions">
@@ -644,6 +644,8 @@
           <button type="button" class="pro-load-btn" data-load-deck="b" data-idx="${index}">LOAD B</button>
         </td>
       `;
+      // 标题在服务端已解码为纯文本，必须用 textContent 写入，不能拼进 innerHTML 被当 HTML 解析
+      tr.cells[1].textContent = track.title;
       list.appendChild(tr);
     });
     // 如果 Deck B 尚无曲目，默认载入曲库第 2 首（若无则第 1 首）

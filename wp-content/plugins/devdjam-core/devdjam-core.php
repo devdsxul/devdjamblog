@@ -299,7 +299,8 @@ function devdjam_track($post) {
     }
     return array(
         'id' => $post->ID,
-        'title' => wp_strip_all_tags(get_the_title($post)),
+        // 标题经 wptexturize 会带 &#8211; 等实体，JS 用 textContent 写入不会再解码，这里先还原成纯文本
+        'title' => html_entity_decode(wp_strip_all_tags(get_the_title($post)), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
         'url' => esc_url_raw(wp_get_attachment_url($audio_id)),
         'cover' => esc_url_raw($cover),
         'permalink' => get_permalink($post),

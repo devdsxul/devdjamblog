@@ -1302,6 +1302,7 @@ legend { padding: 0 4px; background: var(--win-2); color: var(--ink); font-weigh
     border: 1px solid var(--line);
     box-shadow: var(--hard-sm);
     max-height: 190px;
+    min-width: 0;
     display: flex;
     flex-direction: column;
 }
@@ -1313,7 +1314,9 @@ legend { padding: 0 4px; background: var(--win-2); color: var(--ink); font-weigh
     border: 1px solid var(--line);
 }
 .pro-library-table-wrap {
-    overflow-y: auto;
+    /* 曲库表格宽于窗口时在容器内横向滑动，不撑破打碟机弹窗 */
+    overflow: auto;
+    min-width: 0;
     max-height: 150px;
     border: 1px solid var(--line);
     background: var(--win);
@@ -2312,7 +2315,8 @@ html.has-max .sticker {
 .enter {
     position: fixed;
     inset: 0;
-    z-index: 999;
+    /* 必须高于移动端底部任务栏（9999）与拖拽中的贴纸（1000），开屏页盖住一切 */
+    z-index: 10000;
     display: none;
     flex-direction: column;
     align-items: center;
@@ -2555,89 +2559,78 @@ html[data-effects="off"] .marquee span { animation: none; padding-left: 0; }
     .construction-strip { flex: 1 1 100%; }
 }
 @media (max-width: 720px) {
-    body { padding: 6px; }
-    .site-banner { margin-bottom: 8px; }
-    .banner-wing { width: 100%; max-width: 100%; order: 2; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; justify-content: flex-start; gap: 8px; padding: 4px 4px; }
-    .banner-wing .sticker .gif { max-height: 48px; max-width: 66px; }
-    .banner-stage { height: 95px; }
+    /* 手机端整页自然流动：解除桌面端的视口锁高，窗口纵向堆叠并完整展示 */
+    html { height: auto; overflow-x: hidden; overflow-y: auto; }
+    body { padding: 6px; height: auto; max-height: none; min-height: 100dvh; overflow: visible; }
+    /* 语言切换器回到文档流；body 是 flex 容器，flex 子项带 z-index 仍会参与层叠，必须压到弹窗（150）与遮罩（120）之下 */
+    .top-lang { position: static; align-self: flex-end; margin: 0 0 4px; z-index: 1; }
+
+    /* 横幅：字标在上，两排贴纸在下，不再左右挤压滚动 */
+    .site-banner { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-bottom: 8px; padding: 0 4px; }
+    .site-banner-link { order: 0; grid-column: auto; }
+    .banner-wing { order: 1; width: 100%; max-width: 100%; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 0; overflow: visible; }
+    .banner-wing .sticker .gif { max-height: 36px; max-width: 50px; }
+    .banner-stage { height: 88px; }
     .banner-letters { font-size: clamp(30px, 10vw, 54px); gap: 2px; }
     .star-top { width: 18px; height: 30px; left: 14%; top: 4px; }
     .star-bottom { width: 16px; height: 26px; right: 12%; bottom: 4px; }
-    .desk-layout { gap: 6px; }
-    .dock { width: 56px; padding: 6px 2px; top: 6px; }
+
+    /* 窄侧边栏（600px~720px）：图标模式，随页面滚动时粘在视口内 */
+    .desk-layout { gap: 6px; min-height: 0; overflow: visible; align-items: flex-start; }
+    .dock { position: sticky; top: 6px; align-self: flex-start; width: 56px; height: calc(100dvh - 12px); max-height: calc(100dvh - 12px); padding: 6px 2px; }
     .dock-logo b, .dock-nav span, .dock-foot span:not(.dock-clock), .dock-foot a span, .dock-social-link span { display: none; }
     .dock-logo .gif, .dock-nav .gif, .dock-foot .gif { width: 24px; height: 24px; }
     .dock-social-link .social-icon { width: 20px; height: 20px; }
     .dock-logo, .dock-nav a, .dock-foot a, .dock-social-link { justify-content: center; padding: 6px 2px; }
-    .window.is-max { left: calc(60px + 2vw); right: 2vw; top: 2vh; max-height: 96vh; }
-    .window.win-player.is-max {
-        left: 62px;
-        right: 4px;
-        top: 2vh;
-        width: auto;
-        max-height: 96vh;
-        transform: none;
-    }
-    .pro-console {
-        grid-template-columns: 360px 180px 360px;
-        overflow-x: auto;
-    }
-    .desk-dim { left: 60px; }
-    .desk { margin-left: 0; grid-template-columns: 1fr; }
+
+    /* 三栏改单列：内容窗在前，打碟机与访客数其次，日历最后 */
+    .desk { height: auto; margin-left: 0; grid-template-columns: 1fr; }
+    .col { height: auto; overflow: visible; }
     .col-main { order: 1; }
     .col-left { order: 2; }
     .col-right { order: 3; }
-    #site-content { padding: 10px; min-height: 0; }
+    .win-content { height: auto; max-height: none; overflow: visible; }
+    .win-content .window-body { overflow: visible; }
+    #site-content, #site-content[data-view="home"] { height: auto; min-height: 0; overflow: visible; padding: 10px; }
     #site-content[data-view="home"],
     #site-content[data-view="beats"],
     #site-content[data-view="music"] { padding: 0; }
-    .home-hero {
-        flex-direction: column;
-        height: auto;
-        min-height: 0;
-    }
-    .home-hero-cover {
-        width: 100%;
-        min-width: 0;
-        height: auto;
-        aspect-ratio: 1 / 1;
-        border-right: 0;
-        border-bottom: 1px solid var(--line);
-    }
-    .home-split {
-        grid-template-columns: 1fr;
-        min-height: 0;
-    }
-    .home-pane-music {
-        border-right: 0;
-        border-bottom: 1px solid var(--line);
-        min-height: 120px;
-    }
-    .home-pane-beats {
-        min-height: 120px;
-    }
-    .home-split .home-beat-item {
-        min-height: 100px;
-        height: 100px;
-    }
-    .home-split .entry-thumb {
-        width: 100px;
-        min-width: 100px;
-        max-width: 100px;
-        height: 100px;
-    }
-    .home-split .entry-meta-wrap {
-        padding: 8px 12px;
-    }
-    .home-split .entry-action {
-        padding: 0 12px;
-    }
+    .home-seamless { height: auto; }
+    .home-bottom-pane, .home-split { min-height: 0; }
+    .home-pane { height: auto; }
+    .home-pane-music, .home-pane-beats { overflow: visible; }
+
+    /* 窗口角贴纸收进视口内，避免横向晃动 */
+    .window > .sticker { width: 44px; }
+    .window > .at-tr, .window > .at-br { right: -4px; }
+    .window > .at-tl, .window > .at-bl { left: -4px; }
+    .loose { display: none; }
+
+    /* 弹出窗口与双盘台：双盘改为上下堆叠，整台完整可见。
+       打碟机弹窗改用通用的 winMaxIn/Out 动画：winPlayerMaxIn 末帧带 translate(-50%,-50%)，
+       fill-mode: both 会让它盖过 transform: none，导致窗口飞出视口 */
+    .window.is-max { left: calc(60px + 2vw); right: 2vw; top: 2vh; max-height: 96dvh; }
+    .window.win-player.is-max { left: 62px; right: 4px; top: 2vh; width: auto; max-height: 96dvh; transform: none; animation-name: winMaxIn; }
+    .window.win-player.is-max.is-unmax { animation-name: winMaxOut; }
+    .pro-console { grid-template-columns: 1fr; overflow-x: hidden; }
+    .pro-deck, .pro-mixer { min-width: 0; }
+    .desk-dim { left: 60px; }
+
+    /* 首页与列表：头图保持"左侧小封面 + 右侧标题摘要"，封面不再变成全宽大方块；分栏高度随内容，不留固定空白 */
+    .home-hero { height: auto; min-height: 0; }
+    .home-hero-cover { width: 112px; min-width: 112px; min-height: 112px; height: auto; aspect-ratio: auto; }
+    .home-hero-info { padding: 8px 10px; }
+    .home-hero-title { font-size: 13px; }
+    .home-split { grid-template-columns: 1fr; }
+    .home-pane-music { border-right: 0; border-bottom: 1px solid var(--line); }
+    .home-split .home-beat-item { min-height: 100px; height: 100px; }
+    .home-split .entry-thumb { width: 100px; min-width: 100px; max-width: 100px; height: 100px; }
+    .home-split .entry-meta-wrap { padding: 8px 12px; }
+    .home-split .entry-action { padding: 0 12px; }
     .page-head { flex-direction: column; align-items: flex-start; }
     .beat-grid { grid-template-columns: 1fr; }
     .entry-card { gap: 10px; }
     .entry-cover { width: 34%; }
-    .loose { display: none; }
-    .window > .sticker { width: 44px; }
 }
 
 /* ---------- 手机端专属响应式与 Win98 底部任务栏 (<= 600px) ---------- */
@@ -2657,38 +2650,23 @@ html[data-effects="off"] .marquee span { animation: none; padding-left: 0; }
         font-size: clamp(22px, 8.5vw, 36px);
         gap: 1px;
     }
+    .banner-wing {
+        gap: 4px;
+    }
     .banner-wing .sticker .gif {
-        max-height: 40px;
-        max-width: 54px;
+        max-height: 32px;
+        max-width: 44px;
     }
     .top-lang {
-        top: 4px;
-        right: 4px;
         padding: 2px 5px;
         font-size: 10px;
     }
-
-    /* 桌面与内容区全宽展开，消除左侧挤压 */
     .desk-layout {
-        flex-direction: column;
-        gap: 6px;
-        width: 100%;
-        overflow: visible;
+        gap: 0;
     }
     .desk {
-        margin: 0 !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        grid-template-columns: 1fr;
         gap: 8px;
     }
-    .col {
-        width: 100%;
-        max-width: 100%;
-    }
-    .col-main { order: 1; }
-    .col-left { order: 2; }
-    .col-right { order: 3; }
 
     /* Win98 经典底部任务栏 (Fixed Bottom Taskbar) */
     .dock {
@@ -2749,7 +2727,7 @@ html[data-effects="off"] .marquee span { animation: none; padding-left: 0; }
         box-shadow: inset 1px 1px 0 #0a0a0a !important;
     }
 
-    /* 任务栏：页面导航按钮 (运行程序栏) */
+    /* 任务栏：页面导航按钮条，超窄屏时可横向滑动而不是被裁掉 */
     .dock-nav {
         display: flex !important;
         flex-direction: row !important;
@@ -2757,8 +2735,14 @@ html[data-effects="off"] .marquee span { animation: none; padding-left: 0; }
         gap: 2px !important;
         flex: 1 1 auto !important;
         min-width: 0 !important;
-        overflow: visible !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
         padding: 0 !important;
+    }
+    .dock-nav::-webkit-scrollbar {
+        display: none;
     }
     .dock-nav a {
         display: inline-flex !important;
@@ -2886,21 +2870,14 @@ html[data-effects="off"] .marquee span { animation: none; padding-left: 0; }
         text-align: center !important;
     }
 
-    /* 窗口全屏与遮罩尺寸 */
-    .window.is-max {
-        left: 4px !important;
-        right: 4px !important;
-        top: 4px !important;
-        width: auto !important;
-        max-height: calc(100vh - 54px - env(safe-area-inset-bottom, 0px)) !important;
-        transform: none !important;
-    }
+    /* 弹出窗口与遮罩：铺满任务栏以上的视口 */
+    .window.is-max,
     .window.win-player.is-max {
         left: 4px !important;
         right: 4px !important;
         top: 4px !important;
         width: auto !important;
-        max-height: calc(100vh - 54px - env(safe-area-inset-bottom, 0px)) !important;
+        max-height: calc(100dvh - 54px - env(safe-area-inset-bottom, 0px)) !important;
         transform: none !important;
     }
     .desk-dim {
@@ -2909,8 +2886,13 @@ html[data-effects="off"] .marquee span { animation: none; padding-left: 0; }
         right: 0 !important;
         bottom: 0 !important;
         width: 100vw !important;
-        height: 100vh !important;
+        height: 100dvh !important;
     }
+
+    /* 窗口角贴纸缩小，减少对标题栏的遮挡 */
+    .window > .sticker { width: 36px; }
+    .window > .at-tr, .window > .at-tl { top: -10px; }
+    .window > .at-br, .window > .at-bl { bottom: -10px; }
 
     /* 触控热区优化 (Touch Targets) */
     .title-bar-controls button {
@@ -2957,14 +2939,16 @@ html[data-effects="off"] .marquee span { animation: none; padding-left: 0; }
         font-size: 16px !important;
     }
 
-    /* 宽内容横向溢出保护 */
+    /* 宽内容横向溢出保护（日历表格保持 table 布局，铺满窗口） */
     .prose pre,
-    .prose table,
-    .calendar table {
+    .prose table {
         max-width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         display: block;
+    }
+    .calendar {
+        overflow-x: auto;
     }
 
     /* 首页 Beats & Music 卡片比例微调 */

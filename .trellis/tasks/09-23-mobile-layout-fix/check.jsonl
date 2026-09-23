@@ -1,0 +1,1 @@
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "检查项：npm run check、视口 320/390/768/1440 无溢出、桌面端不回归"}
