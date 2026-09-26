@@ -31,6 +31,7 @@ npm run dev
 - **页面**：编辑「链接」与「关于」的正文。
 - **留言簿**：访客留言走 WordPress 原生评论，在「评论」菜单审核或删除。
 - 前台右上角「控制面板」可切换中/英文界面、三套配色和动效开关；窗口的 _ □ 可最小化/最大化；左侧常驻侧边栏是主导航；进站先经过一个点击进入的 loading 页。
+- 打碟机窗口放大后是一台仿 Pioneer DDJ 的双盘控制台：有声搓碟、热点 / 循环 / 跳拍 / 采样打击垫、BEAT SYNC、三段隔离 EQ、滤波、BEAT FX 和 Crossfader。给 Beat 填 BPM 能让拍网格更准。
 
 详细操作见 [站主使用说明](docs/OWNER-GUIDE.md)。
 
@@ -48,6 +49,7 @@ npm run dev
 ```text
 wp-content/
   themes/devdjam/           专属主题、页面、CSS、播放器；assets/gif 与 assets/tiles 为本地打包的装饰素材
+                            assets/audio-engine.js + deck-worklet.js 为打碟机音频引擎，deck.css 为打碟机样式
   plugins/devdjam-core/     内容模型、后台音轨字段、只读曲库 API
 deploy/                    初始化脚本、PHP 上传限额、反向代理示例
 dev/                       本地启动、语法检查、隔离验收、打包
