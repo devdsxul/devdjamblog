@@ -885,3 +885,43 @@ Fixed 7 mobile layout defects and XSS vulnerability, added author display and i1
 ### Status
 
 [OK] **Completed**
+
+
+## Session 20: Pioneer DDJ 风格双盘控制台 + 全站细节风格统一（已上线）
+<!-- trellis-session: v=2 fp=ca6cad13489df176 -->
+
+**Date**: 2026-09-27
+**Task**: Pioneer DDJ 风格双盘控制台 + 全站细节风格统一（已上线）
+**Branch**: `worktree-dj-controller-style`
+
+### Summary
+
+打碟机放大后重做为 Pioneer DDJ 风格双盘控制台（有声搓碟、热点/循环/跳拍/采样、BEAT FX、SYNC、TAP），全站改为浅色标题栏并加底部状态栏收口，修复登录后底部截断；修复 Firefox 回路静音与低频方波卡顿；已部署生产并验证
+
+### Main Changes
+
+- 新增 audio-engine.js / deck-worklet.js / deck.css：双盘流式+解码缓冲、AudioWorklet 与 ScriptProcessor 共用 DeckCore
+- BEAT FX 六单元常驻、切换只改增益；TRANS 改正弦 LFO+软削波门限
+- 全站：浅色渐变标题栏、底部状态栏、admin bar 扣除、配色 token、滚动条/任务栏/遮罩统一
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ea5b1b9` | feat(deck): 打碟机重做为 Pioneer DDJ 风格双盘控制台，并统一全站细节风格 |
+| `81c8e9f` | docs: 同步设计文档、站主说明与前端规范 |
+
+### Testing
+
+- [OK] 本地整站回归 44/44 x 两条音频路径；补充测试与审查复现脚本全通过
+- [OK] 无服务器 harness：Firefox/Edge x 安全/非安全上下文，FX 电平与音频线程卡顿检测
+- [OK] 生产验证（Edge+Firefox，纯 HTTP）：全部通过、无控制台报错
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 在 GitHub 创建 PR 合并 worktree-dj-controller-style 到 main
+- 后台给曲目填 BPM，拍网格更准
