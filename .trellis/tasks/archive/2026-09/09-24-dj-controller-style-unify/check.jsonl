@@ -1,0 +1,5 @@
+{"file": "DESIGN.md", "reason": "Visual design system: tokens, 0-radius rule, hard shadows, typography, do/don't list"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Win98 window helpers, player deck layout rules, forbidden patterns, a11y standards"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "npm run check, viewport containment 320-1440, stacking order contract, mobile maximize animation rules, touch targets"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "storage wrappers, sessionStorage window state, continuous audio playback invariants"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "theme/plugin module boundaries and file layout"}
