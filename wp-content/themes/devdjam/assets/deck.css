@@ -1,0 +1,432 @@
+/* DEVDJAM 打碟机：侧栏紧凑播放器 + 放大后的 DDJ 双盘控制台。
+   白底黑线、硬阴影、0 圆角（转盘 / 旋钮等硬件圆形除外）；读数用等宽字，屏幕用 LCD 黑；垫灯用站点星光色板。 */
+.player {
+    --led-pink: #ff5fd0;
+    --led-cyan: #7fe9ff;
+    --led-yellow: #ffe94a;
+    --led-green: #7dff5a;
+    --led-purple: #c9a0ff;
+    --led-orange: #ffb35c;
+    --led-blue: #8fc4ff;
+    --led-red: #ff7a7a;
+}
+
+/* ---------- 侧栏紧凑播放器 ---------- */
+.platter-wrap { position: relative; width: 100%; max-width: 120px; margin: 0 auto 3px; aspect-ratio: 1; }
+.platter {
+    position: relative; width: 100%; height: 100%; border-radius: 50%; border: 2px solid var(--line);
+    background: repeating-radial-gradient(circle, #111 0 2px, #2a2a2a 2px 4px);
+    cursor: grab; touch-action: none; user-select: none;
+    transform: rotate(var(--angle, 0deg));
+}
+/* 外沿频闪点：唱盘按音频位置旋转时可见 */
+.platter::before {
+    content: ""; position: absolute; inset: -5px; border-radius: 50%; pointer-events: none;
+    background: repeating-conic-gradient(var(--line) 0 2deg, transparent 2deg 6deg);
+    -webkit-mask: radial-gradient(circle, transparent 0 calc(50% - 3px), #000 calc(50% - 3px));
+    mask: radial-gradient(circle, transparent 0 calc(50% - 3px), #000 calc(50% - 3px));
+}
+.platter::after {
+    content: ""; position: absolute; inset: 32%; border-radius: 50%;
+    background: #111111; border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.9);
+}
+.platter-label { display: none !important; }
+.platter-eye {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+    pointer-events: none; z-index: 2; user-select: none;
+}
+.platter-eye .gif { width: 44px; height: 44px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6)); }
+.player.is-scratching .platter { cursor: grabbing; }
+.tonearm { position: absolute; right: 4%; top: 0; width: 3px; height: 54%; background: var(--line); transform-origin: 50% 5px; transform: rotate(-30deg); transition: transform .4s; pointer-events: none; z-index: 3; }
+.tonearm::before { content: ""; position: absolute; top: 0; left: 50%; width: 12px; height: 12px; border-radius: 50%; background: var(--win); border: 2px solid var(--line); transform: translate(-50%, -30%); }
+.tonearm::after { content: ""; position: absolute; bottom: -3px; left: 50%; width: 8px; height: 14px; background: var(--accent); border: 1px solid var(--line); transform: translateX(-50%); }
+.player.is-playing .tonearm { transform: rotate(-14deg); }
+.lcd { padding: 4px 6px; background: var(--lcd-bg); color: var(--lcd); font-family: var(--mono); min-height: 44px; border: 1px solid var(--line); }
+.lcd-title { font-size: 11px; font-weight: 700; overflow-wrap: anywhere; }
+.lcd-status { display: block; font-size: 9px; opacity: .8; }
+.lcd-meta { display: flex; justify-content: space-between; gap: 4px; font-size: 9px; color: var(--accent-2); }
+.lcd-live { padding: 0 3px; background: var(--accent); color: #fff; font-weight: 700; }
+.seek-slider { margin: 4px 0 0; }
+.seek-slider:disabled { opacity: .4; }
+.player-time { display: flex; justify-content: space-between; font: 9px var(--mono); color: var(--muted); }
+/* 图标键窄、文字键宽，保证 "shuffle" 不溢出 */
+.deck-controls { display: grid; grid-template-columns: 0.95fr 0.75fr 1fr 0.75fr 1fr 1.35fr; gap: 2px; margin: 4px 0; }
+.deck-controls button { height: 22px; min-width: 0; padding: 0; font-size: 8px; overflow: hidden; }
+.fader { display: flex; align-items: center; gap: 4px; margin-top: 3px; font-size: 9px; color: var(--muted); }
+.fader span { width: 30px; }
+.fader input { flex: 1; }
+.fader-reset { min-height: 16px; padding: 0 4px; font-size: 8px; }
+.eq { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-top: 4px; padding-top: 4px; border-top: 1px dotted var(--line); }
+.eq label { display: flex; flex-direction: column; gap: 1px; font-size: 8px; color: var(--muted); text-align: center; }
+.player-open { width: 100%; margin-top: 6px; min-height: 24px; font-size: 10px; letter-spacing: .5px; }
+.queue { margin-top: 4px; }
+.queue summary { cursor: pointer; padding: 2px 0; font-size: 10px; }
+.queue-list { list-style: none; margin: 2px 0 0; padding: 2px; border: 1px solid var(--line); max-height: 140px; overflow: auto; }
+.queue-list li { margin: 0; }
+.queue-list button { width: 100%; min-height: 0; padding: 2px 4px; border: 0; background: none; box-shadow: none; color: var(--ink); text-align: left; font-weight: 400; overflow-wrap: anywhere; white-space: normal; }
+.queue-list button:hover, .queue-list button.is-current { background: var(--line); color: var(--win); transform: none; }
+.queue-empty { padding: 2px 4px; color: var(--muted); }
+.player-retry { width: 100%; margin-top: 4px; }
+
+/* ---------- 放大：DDJ 双盘控制台 ---------- */
+.player-pro { display: none; }
+.window.win-player.is-max .player-compact { display: none; }
+.window.win-player.is-max .player-pro { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+
+.window.win-player.is-max {
+    --jog: clamp(160px, calc(100dvh - 560px), 224px);
+    left: 50%;
+    right: auto;
+    top: calc(50% + var(--wp-admin--admin-bar--height, 0px) / 2);
+    width: min(1240px, calc(100vw - 24px));
+    max-height: min(940px, calc(100dvh - 24px - var(--wp-admin--admin-bar--height, 0px)));
+    transform: translate(-50%, -50%);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 8px 8px 0 var(--line);
+    animation: winPlayerMaxIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.window.win-player.is-max.is-unmax { animation: winPlayerMaxOut 0.15s ease both; }
+.window.win-player.is-max > .window-body { flex: 1; min-height: 0; overflow-y: auto; margin: 8px; }
+
+.ddj-label { font: 700 9px/1 var(--mono); letter-spacing: .6px; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.player-pro .ddj-btn {
+    min-height: 22px; padding: 0 6px;
+    font: 700 9px var(--mono); letter-spacing: .5px; text-transform: uppercase;
+    align-self: auto; user-select: none; -webkit-user-select: none;
+}
+.player-pro .ddj-btn.is-lit { background: var(--accent); color: #ffffff; border-color: var(--line); }
+.player-pro .ddj-btn.is-armed { background: var(--led-yellow); color: #111111; border-color: var(--line); }
+.player-pro .ddj-btn.is-blink { animation: ddj-blink 1s steps(1) infinite; }
+.player-pro .is-down, .player-pro .ddj-btn.is-down { transform: translate(2px, 2px); box-shadow: none; }
+@keyframes ddj-blink { 50% { background: var(--win); color: var(--ink); } }
+
+/* 顶部：屏幕 + BEAT FX */
+.ddj-top { display: grid; grid-template-columns: minmax(0, 1fr) 236px; gap: 8px; }
+.ddj-screen {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 20px;
+    gap: 3px 6px;
+    min-width: 0;
+    padding: 4px 5px;
+    background: var(--lcd-bg);
+    color: var(--lcd);
+    border: 1px solid var(--line);
+    box-shadow: var(--hard-sm);
+    font: 10px/1.2 var(--mono);
+}
+/* 细扫描线，与进站页的 CRT 质感呼应 */
+.ddj-screen::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .035) 0 1px, transparent 1px 3px);
+}
+.scr-deck { grid-column: 1; display: grid; grid-template-rows: 14px 40px 14px; gap: 2px; min-width: 0; }
+.scr-deck + .scr-deck { padding-top: 3px; border-top: 1px dashed #3a3a3a; }
+.scr-info { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; }
+.scr-num { flex: none; width: 14px; height: 14px; display: grid; place-items: center; background: #f2f2f2; color: #111111; font-weight: 700; }
+[data-scr="2"] > .scr-info .scr-num { background: var(--accent); color: #ffffff; }
+.scr-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
+.scr-flag { flex: none; padding: 0 3px; border: 1px solid #555555; color: #b8b8b8; font-size: 9px; line-height: 12px; text-transform: uppercase; }
+.scr-flag.is-sync { background: var(--led-cyan); border-color: var(--led-cyan); color: #111111; }
+.scr-flag.is-master { background: var(--led-yellow); border-color: var(--led-yellow); color: #111111; }
+.scr-flag.is-loop { background: var(--accent); border-color: var(--accent); color: #ffffff; }
+.scr-flag.is-busy { color: var(--led-yellow); border-color: var(--led-yellow); }
+.scr-val { flex: none; color: #bdbdbd; }
+.scr-val b { color: #ffffff; }
+.scr-time { min-width: 62px; text-align: right; color: var(--led-yellow); }
+.scr-zoom, .scr-overview { display: block; width: 100%; height: 100%; min-width: 0; }
+.scr-overview { cursor: pointer; }
+.scr-tools { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-direction: column; justify-content: center; gap: 3px; z-index: 1; }
+.scr-tools button { min-width: 0; min-height: 18px; padding: 0; font: 700 10px var(--mono); background: #111111; color: #dddddd; border-color: #666666; box-shadow: none; }
+.scr-tools button:hover { color: var(--accent); border-color: var(--accent); box-shadow: none; }
+.scr-tools button[aria-pressed="true"] { background: var(--led-cyan); color: #111111; border-color: var(--led-cyan); }
+
+.fx-unit { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 6px; background: var(--win); border: 1px solid var(--line); box-shadow: var(--hard-sm); }
+.fx-head { display: flex; align-items: center; justify-content: space-between; }
+.fx-lcd { display: flex; align-items: baseline; gap: 8px; padding: 3px 6px; background: var(--lcd-bg); color: var(--lcd); font: 11px var(--mono); border: 1px solid var(--line); }
+.fx-lcd b { flex: 1; letter-spacing: 1px; }
+.fx-lcd span:last-child { color: var(--led-yellow); }
+.fx-row { display: flex; align-items: center; gap: 4px; }
+.fx-row .knob-cell { margin-left: auto; }
+.fx-ch .ddj-btn { min-width: 28px; }
+.player-pro .fx-on[aria-pressed="true"] { background: var(--accent); color: #ffffff; animation: ddj-blink var(--beat, 1s) steps(1) infinite; }
+
+/* 控制台机箱：与内容区一致的点阵底 */
+.ddj-console {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 252px minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px;
+    background-color: var(--win-2);
+    background-image: radial-gradient(var(--line-soft) 1px, transparent 1.5px);
+    background-size: 12px 12px;
+    border: 1px solid var(--line);
+    box-shadow: var(--hard-sm);
+}
+
+/* Deck */
+.ddj-deck { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 8px; background: var(--win); border: 1px solid var(--line); box-shadow: var(--hard-sm); }
+.deck-loop { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.deck-loop .ddj-label { margin-right: 2px; }
+.deck-mid { display: flex; align-items: center; justify-content: center; gap: 14px; }
+/* Deck 1 的 TEMPO 在左外侧，Deck 2 在右外侧 */
+.ddj-deck[data-ddj-deck="1"] .deck-mid { flex-direction: row-reverse; }
+
+.deck-jog { flex: none; }
+.jog {
+    position: relative;
+    width: var(--jog, 208px);
+    height: var(--jog, 208px);
+    border-radius: 50%;
+    background: repeating-conic-gradient(var(--line) 0 2deg, var(--win-2) 2deg 5deg);
+    border: 1px solid var(--line);
+    box-shadow: 3px 3px 0 var(--line);
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+/* 外圈平台（弯音区）与顶盘之间的白环 */
+.jog::before { content: ""; position: absolute; inset: 9%; border-radius: 50%; background: var(--win); border: 1px solid var(--line); pointer-events: none; }
+.jog-plate {
+    position: absolute; inset: 12%; border-radius: 50%; overflow: hidden;
+    background: repeating-radial-gradient(circle, #151515 0 2px, #2b2b2b 2px 4px);
+    border: 2px solid var(--line);
+    transform: rotate(var(--angle, 0deg));
+    pointer-events: none;
+}
+.jog-cover { position: absolute; left: 30%; top: 30%; width: 40%; height: 40%; border-radius: 50%; object-fit: cover; border: 1px solid #000000; }
+.jog-mark { position: absolute; left: 50%; top: 1%; width: 5px; height: 24%; transform: translateX(-50%); background: var(--accent); border: 1px solid #000000; }
+.jog-hub {
+    position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; transform: translate(-50%, -50%);
+    display: grid; place-items: center; border-radius: 50%;
+    background: var(--win); border: 2px solid var(--line); color: var(--ink);
+    font: 700 10px var(--mono); pointer-events: none;
+}
+.jog.is-touch { cursor: grabbing; }
+.jog.is-touch .jog-plate { box-shadow: 0 0 0 3px var(--accent); }
+.jog.is-bend::before { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+.jog:focus-visible { outline: 1px dotted var(--ink); outline-offset: 4px; }
+
+.deck-tempo { display: flex; flex-direction: column; align-items: center; gap: 4px; height: var(--jog, 208px); flex: none; }
+.player-pro .deck-tempo .sync { min-height: 30px; padding: 2px 5px; line-height: 1.05; }
+.player-pro .ddj-btn.sync[aria-pressed="true"] { background: var(--led-cyan); color: #111111; border-color: var(--line); }
+.tempo-led { padding: 1px 3px; border: 1px solid var(--line-soft); color: var(--muted); font: 700 8px var(--mono); letter-spacing: .5px; text-transform: uppercase; }
+.tempo-led.is-on { background: var(--led-yellow); color: #111111; border-color: var(--line); }
+.tempo-end { font: 700 11px/1 var(--mono); color: var(--muted); }
+.ctl-fader.tempo { flex: 1; }
+.player-pro .deck-tempo .range, .player-pro .deck-tempo .tap { min-height: 20px; padding: 0 3px; font-size: 9px; text-transform: none; }
+.player-pro .deck-tempo .tap { text-transform: uppercase; }
+
+.deck-bottom { flex: 1; display: flex; gap: 8px; align-items: stretch; }
+.transport { display: flex; flex-direction: column; gap: 5px; width: 62px; flex: none; }
+.player-pro .transport .ddj-btn { width: 100%; }
+.player-pro .transport .shift { min-height: 20px; }
+.player-pro .transport .cue, .player-pro .transport .play { flex: 1; min-height: 34px; font-size: 11px; }
+.player-pro .transport .shift.is-lit { background: var(--line); color: var(--win); }
+.player-pro .transport .cue.is-lit { background: var(--led-yellow); color: #111111; }
+.player-pro .transport .play.is-lit { background: var(--accent); color: #ffffff; }
+.transport .play .icon { width: 11px; height: 11px; }
+
+/* 打击垫随面板高度拉伸，填满 Deck 下半部分 */
+.pad-block { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.pad-modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
+.player-pro .pad-modes .ddj-btn { min-width: 0; padding: 0 2px; font-size: 8px; line-height: 1; white-space: normal; }
+.pads { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: minmax(34px, 1fr); gap: 5px; }
+.player-pro .pad {
+    --pad: var(--led-pink);
+    align-self: stretch;
+    min-width: 0; height: auto; min-height: 34px; padding: 0 2px;
+    background: var(--win); color: var(--ink);
+    border: 1px solid var(--line); box-shadow: 2px 2px 0 var(--line);
+    font: 700 10px var(--mono); touch-action: manipulation;
+    overflow: hidden; user-select: none; -webkit-user-select: none;
+}
+.player-pro .pad span { white-space: nowrap; }
+.player-pro .pad.is-dim { color: var(--muted); }
+.player-pro .pad.is-lit { background: var(--pad); color: #111111; border-color: var(--line); }
+.player-pro .pad.is-set { background: color-mix(in srgb, var(--pad) 42%, var(--win)); color: var(--ink); }
+.player-pro .pad:hover { color: var(--ink); border-color: var(--line); box-shadow: 2px 2px 0 var(--accent); }
+.player-pro .pad.is-lit:hover { color: #111111; }
+.pads[data-mode="hotcue"] .pad:nth-child(1) { --pad: var(--led-pink); }
+.pads[data-mode="hotcue"] .pad:nth-child(2) { --pad: var(--led-cyan); }
+.pads[data-mode="hotcue"] .pad:nth-child(3) { --pad: var(--led-yellow); }
+.pads[data-mode="hotcue"] .pad:nth-child(4) { --pad: var(--led-green); }
+.pads[data-mode="hotcue"] .pad:nth-child(5) { --pad: var(--led-purple); }
+.pads[data-mode="hotcue"] .pad:nth-child(6) { --pad: var(--led-orange); }
+.pads[data-mode="hotcue"] .pad:nth-child(7) { --pad: var(--led-blue); }
+.pads[data-mode="hotcue"] .pad:nth-child(8) { --pad: var(--led-red); }
+.pads[data-mode="loop"] .pad { --pad: var(--led-yellow); }
+.pads[data-mode="jump"] .pad { --pad: var(--led-cyan); }
+.pads[data-mode="sampler"] .pad { --pad: var(--led-purple); }
+
+/* 自定义推子：刻度 + 凹槽 + 带中线的推子帽 */
+.ctl-fader { --pos: 0.5; position: relative; flex: none; touch-action: none; cursor: pointer; user-select: none; }
+.ctl-fader::before { content: ""; position: absolute; background: var(--line); pointer-events: none; }
+.ctl-fader.v { width: 26px; min-height: 56px; }
+.ctl-fader.v::before { left: 50%; top: 7px; bottom: 7px; width: 4px; transform: translateX(-50%); }
+.ctl-fader.v::after {
+    content: ""; position: absolute; top: 7px; bottom: 7px; left: 0; right: 0; pointer-events: none;
+    background:
+        repeating-linear-gradient(180deg, var(--line-soft) 0 1px, transparent 1px 10%) left top / 5px 100% no-repeat,
+        repeating-linear-gradient(180deg, var(--line-soft) 0 1px, transparent 1px 10%) right top / 5px 100% no-repeat;
+}
+.ctl-fader.tempo::after {
+    background:
+        linear-gradient(var(--accent), var(--accent)) center / 100% 2px no-repeat,
+        repeating-linear-gradient(180deg, var(--line-soft) 0 1px, transparent 1px 10%) left top / 5px 100% no-repeat,
+        repeating-linear-gradient(180deg, var(--line-soft) 0 1px, transparent 1px 10%) right top / 5px 100% no-repeat;
+}
+.ctl-fader.h { height: 26px; min-width: 80px; }
+.ctl-fader.h::before { top: 50%; left: 7px; right: 7px; height: 4px; transform: translateY(-50%); }
+.ctl-fader.h::after {
+    content: ""; position: absolute; left: 7px; right: 7px; top: 0; bottom: 0; pointer-events: none;
+    background:
+        linear-gradient(var(--line-soft), var(--line-soft)) center top / 1px 5px no-repeat,
+        repeating-linear-gradient(90deg, var(--line-soft) 0 1px, transparent 1px 10%) left bottom / 100% 5px no-repeat;
+}
+.ctl-fader .cap { position: absolute; z-index: 1; display: block; background: var(--win); border: 1px solid var(--line); box-shadow: 2px 2px 0 var(--line); pointer-events: none; }
+.ctl-fader .cap::after { content: ""; position: absolute; background: var(--line); }
+.ctl-fader.v .cap { left: 1px; right: 1px; height: 14px; top: calc(var(--pos) * (100% - 14px)); }
+.ctl-fader.v .cap::after { left: 3px; right: 3px; top: 5px; height: 2px; }
+.ctl-fader.h .cap { top: 1px; bottom: 1px; width: 14px; left: calc(var(--pos) * (100% - 14px)); }
+.ctl-fader.h .cap::after { top: 3px; bottom: 3px; left: 5px; width: 2px; }
+.ctl-fader.is-active .cap { background: var(--accent-soft, #fff3f8); box-shadow: 2px 2px 0 var(--accent); }
+.ctl-fader.is-synced .cap { background: var(--led-cyan); }
+.ctl-fader:focus-visible, .ctl-knob:focus-visible { outline: 1px dotted var(--ink); outline-offset: 3px; }
+
+/* 自定义旋钮：黑色指针 + 外圈粉色数值弧（双极旋钮从 12 点出发） */
+.knob-cell { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.ctl-knob {
+    --turn: 0deg; --a0: 0deg; --a1: 0deg;
+    position: relative; flex: none; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--win); border: 1px solid var(--line); box-shadow: 2px 2px 0 var(--line);
+    cursor: ns-resize; touch-action: none; user-select: none;
+}
+.ctl-knob::before {
+    content: ""; position: absolute; inset: -5px; border-radius: 50%; pointer-events: none;
+    background: conic-gradient(from var(--a0), var(--accent) 0 calc(var(--a1) - var(--a0)), transparent 0);
+    -webkit-mask: radial-gradient(circle, transparent 0 calc(50% - 3px), #000 calc(50% - 3px) calc(50% - 1px), transparent calc(50% - 1px));
+    mask: radial-gradient(circle, transparent 0 calc(50% - 3px), #000 calc(50% - 3px) calc(50% - 1px), transparent calc(50% - 1px));
+}
+.ctl-knob::after { content: ""; position: absolute; left: 50%; top: 2px; width: 2px; height: 8px; margin-left: -1px; background: var(--line); transform-origin: 1px 10px; transform: rotate(var(--turn)); }
+.ctl-knob.is-active { box-shadow: 2px 2px 0 var(--accent); }
+.ctl-knob.browse {
+    width: 32px; height: 32px; cursor: grab;
+    background: repeating-conic-gradient(var(--line) 0 4deg, var(--win) 4deg 18deg);
+}
+.ctl-knob.browse::before { display: none; }
+.ctl-knob.browse::after { top: 3px; height: 10px; transform-origin: 1px 12px; background: var(--accent); width: 3px; }
+
+/* 混音台 */
+.ddj-mixer { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 8px; background: var(--win); border: 1px solid var(--line); box-shadow: var(--hard-sm); }
+.mix-browse { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding-bottom: 6px; border-bottom: 1px dotted var(--line-soft); }
+.player-pro .mix-browse .ddj-btn { padding: 0 5px; font-size: 8px; }
+.mix-body { display: grid; grid-template-columns: 1fr auto 1fr; gap: 6px; align-items: stretch; }
+.mix-strip { display: flex; justify-content: center; gap: 6px; }
+.mix-strip[data-ch="2"] { flex-direction: row-reverse; }
+/* 通道旋钮的标签放在外侧，省出纵向空间：CH1 标签在左，CH2 标签在右 */
+.mix-knobs { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; }
+.mix-knobs .knob-cell { flex-direction: row; gap: 4px; }
+.mix-strip[data-ch="1"] .knob-cell { flex-direction: row-reverse; }
+.mix-knobs .ddj-label { width: 24px; }
+.mix-strip[data-ch="1"] .ddj-label { text-align: right; }
+.mix-master { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0 6px; border-left: 1px dotted var(--line-soft); border-right: 1px dotted var(--line-soft); }
+.meter-pair { display: flex; flex: 1; gap: 3px; }
+.meter {
+    --lvl: 0; position: relative; flex: none; width: 8px; min-height: 80px;
+    background: repeating-linear-gradient(to top, var(--line-soft) 0 3px, transparent 3px 5px);
+}
+.meter::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(to top, var(--ink) 0 62%, var(--accent-2) 62% 84%, var(--accent) 84%);
+    -webkit-mask: repeating-linear-gradient(to top, #000 0 3px, transparent 3px 5px);
+    mask: repeating-linear-gradient(to top, #000 0 3px, transparent 3px 5px);
+    clip-path: inset(calc((1 - var(--lvl)) * 100%) 0 0 0);
+}
+.mix-faders { display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch; gap: 6px; height: 88px; }
+.mix-faders .ctl-fader { justify-self: center; height: 100%; }
+.ddj-brand { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; user-select: none; }
+.ddj-brand b { font: 400 18px/1 var(--gothic); color: var(--ink); text-shadow: 1px 1px 0 var(--accent); }
+.ddj-brand span { font: 700 8px var(--mono); letter-spacing: 1px; color: var(--muted); }
+.mix-xfader { display: flex; align-items: center; gap: 6px; padding-top: 6px; border-top: 1px dotted var(--line-soft); }
+.mix-xfader .ctl-fader { flex: 1; }
+
+/* 曲库浏览器 */
+.ddj-browser { display: flex; flex-direction: column; min-width: 0; background: var(--win); border: 1px solid var(--line); box-shadow: var(--hard-sm); }
+.browser-head { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 4px 6px; border-bottom: 1px solid var(--line); background: var(--win-2); }
+.browser-count { padding: 0 4px; background: var(--lcd-bg); color: var(--lcd); font: 700 10px var(--mono); }
+.browser-hint { margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 9px var(--mono); color: var(--muted); }
+.browser-wrap { min-width: 0; max-height: clamp(84px, calc(100dvh - 700px), 220px); overflow: auto; }
+.browser-table { width: 100%; border-collapse: collapse; background: var(--win); font: 11px var(--mono); white-space: nowrap; }
+.browser-table > thead > tr > th {
+    position: sticky; top: 0; z-index: 1; height: 20px; padding: 0 6px;
+    background: var(--win-2); color: var(--ink); box-shadow: inset 0 -1px 0 var(--line);
+    font: 700 9px var(--mono); letter-spacing: .5px; text-align: left; text-transform: uppercase;
+}
+.browser-table > tbody > tr > td { height: 26px; padding: 0 6px; border-bottom: 1px dotted var(--line-soft); color: inherit; }
+.browser-table > tbody > tr { cursor: pointer; }
+.browser-table > tbody > tr:hover { background: var(--accent-soft, #fff3f8); }
+.browser-table > tbody > tr.is-selected { background: var(--line); color: var(--win); }
+.browser-table .c-no { width: 28px; color: var(--muted); }
+.browser-table .c-art { width: 30px; }
+.browser-table .c-art img { display: block; width: 22px; height: 22px; object-fit: cover; border: 1px solid var(--line); }
+.browser-table .c-title { max-width: 0; width: 100%; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
+.browser-table .c-num { width: 58px; text-align: right; }
+.browser-table .c-load { width: 118px; text-align: right; }
+.player-pro .lib-load { min-height: 18px; padding: 0 5px; font-size: 9px; margin-left: 3px; }
+.lib-deck { display: inline-block; margin-right: 2px; padding: 0 3px; font: 700 9px var(--mono); border: 1px solid var(--line); }
+.lib-deck.d1 { background: #111111; color: #ffffff; }
+.lib-deck.d2 { background: var(--accent); color: #ffffff; }
+.browser-empty { text-align: center; color: var(--muted); }
+
+html[data-effects="off"] .player-pro .is-blink,
+html[data-effects="off"] .player-pro .fx-on[aria-pressed="true"] { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+    .player-pro .is-blink, .player-pro .fx-on[aria-pressed="true"] { animation: none; }
+}
+
+@media (max-width: 1100px) {
+    .ddj-console { grid-template-columns: minmax(0, 1fr) 236px minmax(0, 1fr); }
+    .window.win-player.is-max { --jog: clamp(150px, calc(100dvh - 560px), 190px); }
+}
+@media (max-width: 980px) {
+    .ddj-top { grid-template-columns: 1fr; }
+    .ddj-console { grid-template-columns: 1fr 1fr; }
+    .ddj-mixer { grid-column: 1 / -1; grid-row: 2; }
+    .browser-hint { display: none; }
+}
+@media (max-width: 720px) {
+    /* 打碟机弹窗改用通用的 winMaxIn/Out：winPlayerMaxIn 末帧带 translate(-50%,-50%)，
+       fill-mode: both 会盖过 transform: none，窗口会飞出视口 */
+    .window.win-player.is-max {
+        --jog: min(56vw, 220px); left: 62px; right: 4px; width: auto; transform: none; animation-name: winMaxIn;
+        /* 登录后避开顶部的 WordPress 工具栏 */
+        top: calc(2vh + var(--wp-admin--admin-bar--height, 0px));
+        max-height: calc(96dvh - var(--wp-admin--admin-bar--height, 0px));
+    }
+    .window.win-player.is-max.is-unmax { animation-name: winMaxOut; }
+    .ddj-console { grid-template-columns: 1fr; }
+    .ddj-mixer { grid-column: auto; grid-row: auto; }
+    .browser-wrap { max-height: 240px; }
+}
+@media (max-width: 600px) {
+    .play-button { min-width: 44px; min-height: 40px; }
+    .deck-controls button { min-height: 36px; }
+    input[type="range"].seek-slider::-webkit-slider-thumb { width: 18px; height: 24px; }
+    .player-pro .pad { height: 42px; min-height: 42px; }
+    .player-pro .ddj-btn { min-height: 30px; }
+    .player-pro .transport .cue, .player-pro .transport .play { min-height: 44px; }
+    .ctl-knob { width: 30px; height: 30px; }
+    .ctl-fader.h { height: 34px; }
+    .ctl-fader.h .cap { width: 18px; left: calc(var(--pos) * (100% - 18px)); }
+    /* 窄屏曲库：隐藏封面与时长，LOAD 只留盘号，把宽度让给曲名 */
+    .browser-table .c-art, .browser-table .c-time, .lib-load-word { display: none; }
+    .browser-table .c-num { width: 44px; }
+    .browser-table .c-load { width: 96px; }
+    .player-pro .lib-load { min-width: 34px; min-height: 30px; }
+}

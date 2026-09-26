@@ -2,22 +2,23 @@
   'use strict';
   const config = window.DEVDJAM;
   const audio = document.getElementById('devdjam-audio');
+  const audioB = document.getElementById('devdjam-audio-b');
   const deck = document.querySelector('[data-player]');
-  if (!config || !audio || !deck) return;
+  if (!config || !audio || !audioB || !deck || typeof config.createEngine !== 'function') return;
 
   const $ = (selector) => deck.querySelector(selector);
   const seek = $('[data-seek]');
-  const volume = $('[data-volume]');
   const queue = $('[data-queue-list]');
   const status = $('[data-player-status]');
   const retry = $('[data-player-retry]');
-  const trayTitle = document.querySelector('[data-tray-title]');
   const state = { tracks: [], index: -1, queueController: null, error: null, shuffle: false };
   const storage = {
     get(key) { try { return localStorage.getItem(key); } catch { return null; } },
     set(key, value) { try { localStorage.setItem(key, value); } catch { /* 偏好可选 */ } },
   };
   const sparkColors = ['#7fe9ff', '#ff5fd0', '#ffe94a', '#7dff5a', '#b21ed6'];
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  let seeking = false;
 
   // ---------- 界面文案中英切换：英文原文作键 ----------
   const zh = {
@@ -32,6 +33,7 @@
     'dj deck': '打碟机', cue: '起点', loop: '循环', shuffle: '随机', pitch: '变速', low: '低', mid: '中', hi: '高',
     visitors: '访客', 'last updated': '最近更新', rss: '订阅', muted: '已静音', unmuted: '取消静音',
     'sign the guestbook': '写下留言', name: '名字', email: '邮箱', message: '留言', send: '发送', 'awaiting approval': '等待审核', 'login required': '需要登录',
+    'dj controller': '打碟控制台', 'thanks for visiting': '谢谢来访', title: '曲名', 'double-click row to load': '双击整行装载',
   };
   let lang = storage.get('dj-lang') === 'zh' ? 'zh' : 'en';
   const t = (key) => (lang === 'zh' && zh[key]) || key;
@@ -58,16 +60,282 @@
     } catch { return ''; }
   };
   function message(key) { status.dataset.i18n = key; status.textContent = t(key); }
+
+  // ---------- 音频引擎：Deck 1 = 全站常驻播放器，Deck 2 只在放大的控制台里装载 ----------
+  const engine = config.createEngine({ elements: [audio, audioB], workletUrl: config.workletUrl });
+  config.engine = engine; // 仅挂在 DEVDJAM 命名空间下，便于站长在控制台排查与自动化验收
+  const [deckA, deckB] = engine.decks;
+  const { SAMPLE_NAMES } = config.audioConstants;
+  const REV_SECONDS = 1.8; // 33⅓ 转/分钟，唱盘一圈 = 1.8 秒音频
+  const effectsOn = () => document.documentElement.dataset.effects !== 'off';
+  // 已有过用户交互才创建 AudioContext，避免浏览器"未经手势启动"的警告
+  const mayStartAudio = () => !navigator.userActivation || navigator.userActivation.hasBeenActive;
+
+  // 热点 / CUE 点按曲目存本机；键名加前缀，保证按写入顺序淘汰
+  const cueStore = {
+    read() { try { return JSON.parse(localStorage.getItem('dj-cues') || '{}'); } catch { return {}; } },
+    get(id) { return this.read()[`t${id}`] || null; },
+    set(id, value) {
+      const all = this.read();
+      delete all[`t${id}`];
+      all[`t${id}`] = value;
+      Object.keys(all).slice(0, -60).forEach((key) => delete all[key]);
+      try { localStorage.setItem('dj-cues', JSON.stringify(all)); } catch { /* 可选 */ }
+    },
+  };
+  engine.decks.forEach((d) => {
+    const persist = () => { if (d.track) cueStore.set(d.track.id, { cue: d.cue, hot: d.hotcues, grid: d.gridOverride }); };
+    d.on('cues', persist);
+    d.on('grid', persist);
+  });
+
+  // ---------- 参数存储：同一参数可有多个视图（紧凑滑条 / 控制台旋钮推子），单一数据源 ----------
+  const params = new Map();
+  function defineParam(id, spec) {
+    params.set(id, { step: 0.05, bipolar: false, text: (v) => `${Math.round(v * 100)}%`, ...spec, value: spec.def, views: new Set() });
+  }
+  function setParam(id, value, { apply = true, from = null } = {}) {
+    const p = params.get(id);
+    if (!p) return;
+    const v = Number(value) || 0;
+    p.value = apply ? clamp(v, p.min, p.max) : v;
+    if (apply) p.apply(p.value);
+    p.views.forEach((view) => { if (view !== from) view(p.value); });
+  }
+  const savedVolume = Number(storage.get('devdjam-volume'));
+  const signed = (v, digits = 1, unit = '') => `${v >= 0 ? '+' : ''}${v.toFixed(digits)}${unit}`;
+  defineParam('master', {
+    min: 0, max: 1, def: storage.get('devdjam-volume') !== null && Number.isFinite(savedVolume) ? clamp(savedVolume, 0, 1) : 0.7,
+    apply: (v) => { engine.set('master', v); storage.set('devdjam-volume', String(v)); },
+  });
+  defineParam('xfader', { min: 0, max: 1, def: 0.5, apply: (v) => engine.set('xfader', v), text: (v) => `${Math.round((1 - v) * 100)} / ${Math.round(v * 100)}` });
+  defineParam('fx.level', { min: 0, max: 1, def: 0.5, apply: (v) => engine.set('fx.level', v) });
+  [1, 2].forEach((n) => {
+    ['trim', 'hi', 'mid', 'low', 'cfx'].forEach((key) => defineParam(`ch${n}.${key}`, {
+      min: -1, max: 1, def: 0, bipolar: true, apply: (v) => engine.set(`ch${n}.${key}`, v),
+      text: key === 'cfx' ? (v) => (Math.abs(v) < 0.03 ? 'off' : `${v < 0 ? 'LPF' : 'HPF'} ${Math.round(Math.abs(v) * 100)}%`)
+        : key === 'trim' ? (v) => signed(12 * v, 1, 'dB') : (v) => (v <= -0.99 ? 'kill' : signed(v < 0 ? 26 * v : 6 * v, 1, 'dB')),
+    }));
+    defineParam(`ch${n}.fader`, { min: 0, max: 1, def: 1, apply: (v) => engine.set(`ch${n}.fader`, v) });
+    defineParam(`d${n}.tempo`, { min: -10, max: 10, def: 0, step: 0.1, bipolar: true, apply: (v) => engine.decks[n - 1].setTempo(v), text: (v) => signed(v, 1, '%') });
+  });
+  setParam('master', params.get('master').value);
+
+  // 原生滑条（紧凑播放器）绑定到参数
+  function bindInput(input, id) {
+    if (!input) return;
+    const view = (v) => { input.value = String(v); };
+    params.get(id).views.add(view);
+    view(params.get(id).value);
+    input.addEventListener('input', () => setParam(id, input.value, { from: view }));
+  }
+  bindInput($('[data-volume]'), 'master');
+  bindInput($('[data-pitch]'), 'd1.tempo');
+  deck.querySelectorAll('[data-eq]').forEach((input) => bindInput(input, `ch1.${input.dataset.eq}`));
+
+  // 控制台旋钮 / 推子：指针拖动、滚轮、键盘、双击复位；抓住推子帽为相对拖动，点槽位直接跳
+  function mountControl(el) {
+    const id = el.dataset.param;
+    const p = params.get(id);
+    if (!p) return;
+    const knob = el.classList.contains('ctl-knob');
+    const horizontal = el.classList.contains('h');
+    const invert = el.dataset.invert === '1';
+    el.setAttribute('role', 'slider');
+    el.tabIndex = 0;
+    if (!knob) el.setAttribute('aria-orientation', horizontal ? 'horizontal' : 'vertical');
+    const ratio = (v) => (clamp(v, p.min, p.max) - p.min) / (p.max - p.min);
+    const view = (v) => {
+      const r = ratio(v);
+      if (knob) {
+        const turn = -135 + r * 270;
+        el.style.setProperty('--turn', `${turn}deg`);
+        el.style.setProperty('--a0', `${p.bipolar ? Math.min(0, turn) : -135}deg`);
+        el.style.setProperty('--a1', `${p.bipolar ? Math.max(0, turn) : turn}deg`);
+      } else {
+        el.style.setProperty('--pos', (horizontal || invert ? r : 1 - r).toFixed(4));
+      }
+      el.setAttribute('aria-valuemin', String(p.min));
+      el.setAttribute('aria-valuemax', String(p.max));
+      el.setAttribute('aria-valuenow', String(Math.round(v * 100) / 100));
+      el.setAttribute('aria-valuetext', p.text(v));
+    };
+    p.views.add(view);
+    view(p.value);
+    const set = (v) => setParam(id, v);
+    let drag = null;
+    const valueAt = (event) => {
+      const box = drag.rect;
+      let r = horizontal ? (event.clientX - box.left - 7) / (box.width - 14) : (event.clientY - box.top - 7) / (box.height - 14);
+      r = clamp(r, 0, 1);
+      if (!horizontal && !invert) r = 1 - r;
+      return p.min + r * (p.max - p.min);
+    };
+    el.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      el.focus({ preventScroll: true });
+      try { el.setPointerCapture(event.pointerId); } catch { /* 可选 */ }
+      el.classList.add('is-active');
+      engine.start();
+      if (knob) { drag = { y: event.clientY, v: p.value }; return; }
+      const rect = el.getBoundingClientRect();
+      const cap = el.querySelector('.cap').getBoundingClientRect();
+      const onCap = event.clientX >= cap.left - 3 && event.clientX <= cap.right + 3 && event.clientY >= cap.top - 3 && event.clientY <= cap.bottom + 3;
+      drag = { rect, start: horizontal ? event.clientX : event.clientY, v: p.value, relative: onCap || el.classList.contains('tempo') };
+      if (!drag.relative) set(valueAt(event));
+    });
+    el.addEventListener('pointermove', (event) => {
+      if (!drag) return;
+      const range = p.max - p.min;
+      if (knob) { set(drag.v + ((drag.y - event.clientY) / (event.shiftKey ? 640 : 160)) * range); return; }
+      if (!drag.relative) { set(valueAt(event)); return; }
+      const size = (horizontal ? drag.rect.width : drag.rect.height) - 14;
+      let delta = ((horizontal ? event.clientX : event.clientY) - drag.start) / size;
+      if (!horizontal && !invert) delta = -delta;
+      set(drag.v + delta * range * (event.shiftKey ? 0.25 : 1));
+    });
+    const end = () => { drag = null; el.classList.remove('is-active'); };
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+    el.addEventListener('dblclick', () => set(p.def));
+    el.addEventListener('keydown', (event) => {
+      const small = p.step;
+      const steps = { ArrowUp: small, ArrowRight: small, ArrowDown: -small, ArrowLeft: -small, PageUp: small * 5, PageDown: -small * 5 };
+      if (event.key in steps) { event.preventDefault(); set(p.value + steps[event.key]); }
+      else if (event.key === 'Home') { event.preventDefault(); set(p.min); }
+      else if (event.key === 'End') { event.preventDefault(); set(p.max); }
+    });
+    if (knob) el.addEventListener('wheel', (event) => { event.preventDefault(); set(p.value - Math.sign(event.deltaY) * p.step); }, { passive: false });
+  }
+
+  // 可按住的硬件键：按下 / 松开分别触发（CUE 试听、热点试听、SHIFT、IN 长按）
+  function holdable(el, onDown, onUp) {
+    if (!el) return;
+    let active = false;
+    let viaKey = false;
+    const down = (event) => { if (active) return; active = true; viaKey = event.type === 'keydown'; el.classList.add('is-down'); onDown(event); };
+    const up = (event) => { if (!active) return; active = false; el.classList.remove('is-down'); onUp?.(event); };
+    el.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      try { el.setPointerCapture(event.pointerId); } catch { /* 可选 */ }
+      engine.start();
+      down(event);
+    });
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+    el.addEventListener('lostpointercapture', up);
+    el.addEventListener('keydown', (event) => {
+      if ((event.key === ' ' || event.key === 'Enter') && !event.repeat) { event.preventDefault(); engine.start(); down(event); }
+    });
+    el.addEventListener('keyup', (event) => { if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); up(event); } });
+    // 键盘按住时焦点被移走（点了别处 / 切走窗口）：keyup 不会再送到这里，视同松开，避免 CUE 试听等卡住
+    el.addEventListener('blur', (event) => { if (viaKey) up(event); });
+  }
+
+  // 转盘：顶盘按住拖动 = 搓碟（位置跟手），外圈拖动 = 弯音；键盘 ←/→ 微调，空格播放
+  function bindJog(el, d, { rim = 0.78, onToggle } = {}) {
+    if (!el) return;
+    let drag = null;
+    let idle = 0;
+    const settle = () => {
+      if (!drag) return;
+      if (drag.type === 'scratch') { drag.vel = 0; d.scratchTo(drag.target, 0); }
+      else { drag.amount = 0; d.setBend(0); }
+    };
+    const step = (event) => {
+      const angle = Math.atan2(event.clientY - drag.cy, event.clientX - drag.cx);
+      let delta = angle - drag.angle;
+      if (delta > Math.PI) delta -= 2 * Math.PI; else if (delta < -Math.PI) delta += 2 * Math.PI;
+      drag.angle = angle;
+      const dt = Math.max(1, event.timeStamp - drag.t) / 1000;
+      drag.t = event.timeStamp;
+      if (drag.type === 'scratch') {
+        drag.total += delta;
+        drag.target = drag.base + (drag.total / (2 * Math.PI)) * REV_SECONDS;
+        drag.vel = drag.vel * 0.5 + (((delta / (2 * Math.PI)) * REV_SECONDS) / dt) * 0.5;
+        d.scratchTo(drag.target, clamp(drag.vel, -6, 6));
+      } else {
+        drag.amount = clamp(drag.amount * 0.6 + (delta / dt / (2 * Math.PI)) * 0.12 * 0.4, -0.5, 0.5);
+        d.setBend(drag.amount);
+      }
+      clearTimeout(idle);
+      idle = setTimeout(settle, 45);
+    };
+    el.addEventListener('pointerdown', (event) => {
+      // 第二个触点（多指 / 手掌）不接管：否则会覆盖正在进行的手势，并丢掉"搓碟前是否在播放"
+      if (event.button !== 0 || !d.track || drag) return;
+      const box = el.getBoundingClientRect();
+      const cx = box.left + box.width / 2;
+      const cy = box.top + box.height / 2;
+      const r = Math.hypot(event.clientX - cx, event.clientY - cy) / (box.width / 2);
+      if (r > 1.02) return;
+      event.preventDefault();
+      el.focus({ preventScroll: true });
+      try { el.setPointerCapture(event.pointerId); } catch { /* 可选 */ }
+      const angle = Math.atan2(event.clientY - cy, event.clientX - cx);
+      if (r <= rim) {
+        d.scratchStart();
+        const base = d.headPosition();
+        drag = { type: 'scratch', id: event.pointerId, cx, cy, angle, t: event.timeStamp, total: 0, base, target: base, vel: 0 };
+        el.classList.add('is-touch');
+        deck.classList.toggle('is-scratching', d === deckA);
+      } else {
+        engine.start();
+        drag = { type: 'bend', id: event.pointerId, cx, cy, angle, t: event.timeStamp, amount: 0 };
+        el.classList.add('is-bend');
+      }
+      wake();
+    });
+    el.addEventListener('pointermove', (event) => {
+      if (!drag || event.pointerId !== drag.id) return;
+      const events = typeof event.getCoalescedEvents === 'function' ? event.getCoalescedEvents() : [];
+      (events.length ? events : [event]).forEach(step);
+    });
+    const end = (event) => {
+      if (!drag || event.pointerId !== drag.id) return;
+      clearTimeout(idle);
+      if (drag.type === 'scratch') d.scratchEnd(); else d.setBend(0);
+      drag = null;
+      el.classList.remove('is-touch', 'is-bend');
+      deck.classList.remove('is-scratching');
+      wake();
+    };
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+    el.addEventListener('lostpointercapture', end);
+    el.addEventListener('keydown', (event) => {
+      if (!d.track) return;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+        event.preventDefault();
+        const dir = event.key === 'ArrowRight' ? 1 : -1;
+        if (d.isPlaying) {
+          d.setBend(dir * 0.08);
+          clearTimeout(idle);
+          idle = setTimeout(() => d.setBend(0), 250);
+        } else d.seek(d.position() + dir * d.beatLen());
+        wake();
+      } else if (event.key === ' ' || event.key === 'Enter') {
+        event.preventDefault();
+        onToggle();
+      }
+    });
+  }
+
+  // ---------- 紧凑播放器（Deck 1） ----------
+  const platter = $('[data-platter]');
+  const liveB = $('[data-deck2-live]');
   function broadcast() {
     const track = activeTrack();
-    const playing = track && !audio.paused && !audio.ended;
-    if (trayTitle) trayTitle.textContent = playing ? track.title : t('stopped');
+    const playing = track && deckA.isPlaying;
+    document.querySelectorAll('[data-tray-title]').forEach((el) => { el.textContent = playing ? track.title : t('stopped'); });
   }
   function syncButtons() {
     const hasTrack = state.index >= 0 && !!activeTrack();
-    const playing = hasTrack && !audio.paused && !audio.ended;
+    const playing = hasTrack && deckA.isPlaying;
     deck.classList.toggle('is-playing', playing);
-    document.body.classList.toggle('is-playing', playing);
+    document.body.classList.toggle('is-playing', engine.decks.some((d) => d.isPlaying));
     $('[data-play-icon]').hidden = playing;
     $('[data-pause-icon]').hidden = !playing;
     const toggle = $('[data-player-action="toggle"]');
@@ -76,6 +344,7 @@
     $('[data-player-action="cue"]').disabled = !hasTrack;
     $('[data-player-action="prev"]').disabled = state.tracks.length < 2;
     $('[data-player-action="next"]').disabled = state.tracks.length < 2;
+    if (liveB) liveB.hidden = !deckB.isPlaying;
     document.querySelectorAll('[data-track-id]').forEach((button) => {
       const isCurrent = Number(button.dataset.trackId) === activeTrack()?.id;
       const isTrackPlaying = isCurrent && playing;
@@ -98,35 +367,27 @@
       button.setAttribute('aria-label', `${t(isTrackPlaying ? 'pause' : 'play')} ${title}`);
     });
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
-
-    // 同步 Pro 控制台 Deck A
-    const proDeckA = $('[data-pro-deck="a"]');
-    if (proDeckA) proDeckA.classList.toggle('is-playing', playing);
-    const proPlayA = $('[data-pro-btn="play-a"]');
-    if (proPlayA) proPlayA.classList.toggle('is-active', playing);
-    const proPlayIconA = $('[data-pro-play-icon="a"]');
-    const proPauseIconA = $('[data-pro-pause-icon="a"]');
-    if (proPlayIconA) proPlayIconA.hidden = playing;
-    if (proPauseIconA) proPauseIconA.hidden = !playing;
-
     broadcast();
   }
+  let compactText = '';
   function progress() {
-    const duration = Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : activeTrack()?.duration || 0;
-    $('[data-elapsed]').textContent = time(audio.currentTime);
-    $('[data-duration]').textContent = time(duration);
-    seek.disabled = !(Number.isFinite(audio.duration) && audio.duration > 0);
-    seek.value = duration > 0 ? String(Math.round((audio.currentTime / duration) * 1000)) : '0';
-    seek.setAttribute('aria-valuetext', `${time(audio.currentTime)} / ${time(duration)}`);
-
-    // 同步 Pro 控制台 Deck A 进度
-    const proTimeA = $('[data-pro-time="a"]');
-    if (proTimeA) proTimeA.textContent = `${time(audio.currentTime)} / ${time(duration)}`;
-    const proSeekA = $('[data-pro-seek="a"]');
-    if (proSeekA) {
-      proSeekA.disabled = seek.disabled;
-      proSeekA.value = seek.value;
+    const duration = deckA.duration || activeTrack()?.duration || 0;
+    const pos = deckA.position();
+    const text = `${time(pos)}|${time(duration)}`;
+    seek.disabled = !deckA.track || !(duration > 0);
+    if (text !== compactText) {
+      compactText = text;
+      $('[data-elapsed]').textContent = time(pos);
+      $('[data-duration]').textContent = time(duration);
+      seek.setAttribute('aria-valuetext', `${time(pos)} / ${time(duration)}`);
+      platter?.setAttribute('aria-valuenow', String(duration > 0 ? Math.round((pos / duration) * 1000) : 0));
     }
+    if (!seeking) seek.value = duration > 0 ? String(Math.round((pos / duration) * 1000)) : '0';
+  }
+  function updateBpm() {
+    const bpm = deckA.bpm();
+    $('[data-bpm]').textContent = bpm ? `${bpm.toFixed(1)} bpm` : '--- bpm';
+    $('[data-rate]').textContent = signed(deckA.tempo, 1, '%');
   }
   function renderQueue() {
     queue.replaceChildren();
@@ -150,7 +411,7 @@
       });
     }
     syncButtons();
-    if (typeof renderProLibrary === 'function') renderProLibrary();
+    renderBrowser();
   }
   function renderTrack() {
     const track = activeTrack();
@@ -162,16 +423,6 @@
       if (track?.cover) { cover.src = track.cover; cover.hidden = false; }
       else { cover.hidden = true; cover.removeAttribute('src'); }
     }
-
-    // 同步 Pro 控制台 Deck A 磁带信息
-    const proTitleA = $('[data-pro-title="a"]');
-    if (proTitleA) proTitleA.textContent = track?.title || 'no tape';
-    const proCoverA = $('[data-pro-cover="a"]');
-    if (proCoverA) {
-      if (track?.cover) { proCoverA.src = track.cover; proCoverA.hidden = false; }
-      else { proCoverA.hidden = true; proCoverA.removeAttribute('src'); }
-    }
-
     if (track && 'mediaSession' in navigator && 'MediaMetadata' in window) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: track.title, artist: config.siteName || 'DEVDJAM', album: 'DEVDJAM',
@@ -182,37 +433,32 @@
     syncButtons();
     updateBpm();
   }
-  async function play() {
+  function playError(error) {
+    if (error?.name === 'AbortError') return;
+    state.error = 'audio';
+    message(error?.name === 'NotAllowedError' ? 'tap play again' : "can't play this file");
+    retry.hidden = false;
+    syncButtons();
+  }
+  function play() {
     if (!activeTrack()) return;
     state.error = null;
     retry.hidden = true;
-    message('loading');
-    ensureEq();
-    try {
-      await audio.play();
-    } catch (error) {
-      if (error.name === 'AbortError') return;
-      state.error = 'audio';
-      message(error.name === 'NotAllowedError' ? 'tap play again' : "can't play this file");
-      retry.hidden = false;
-      syncButtons();
-    }
+    if (!deckA.ready) message('loading');
+    deckA.play().catch(playError);
   }
+  function toggleA() { if (deckA.isPlaying) deckA.pause(); else play(); }
   function selectTrack(index, autoplay = true) {
     if (index < 0 || index >= state.tracks.length) return;
     const track = state.tracks[index];
-    const changed = index !== state.index || audio.getAttribute('src') !== track.url || state.error === 'audio';
+    const changed = index !== state.index || deckA.track?.url !== track.url || state.error === 'audio';
     state.index = index;
     state.error = null;
     retry.hidden = true;
-    if (changed) {
-      audio.pause();
-      audio.src = track.url;
-      audio.load();
-    }
+    if (changed) deckA.load(track, { cues: cueStore.get(track.id) });
     renderTrack();
     message('ready');
-    if (autoplay) void play();
+    if (autoplay) play();
   }
   async function loadTracks() {
     state.queueController?.abort();
@@ -225,21 +471,19 @@
       if (!Array.isArray(data)) throw new Error('Invalid queue');
       const old = activeTrack();
       const tracks = data.filter((item) => Number.isInteger(item.id) && typeof item.title === 'string' && typeof item.url === 'string' && mediaURL(item.url))
-        .map((item) => ({ ...item, url: mediaURL(item.url), cover: item.cover ? mediaURL(item.cover) : '', duration: Number(item.duration) || 0 }));
+        .map((item) => ({ ...item, url: mediaURL(item.url), cover: item.cover ? mediaURL(item.cover) : '', duration: Number(item.duration) || 0, bpm: Number(item.bpm) || 0 }));
       state.tracks = tracks;
       const nextIndex = old ? tracks.findIndex((track) => track.id === old.id) : -1;
       if (nextIndex >= 0) {
         state.index = nextIndex;
-        if (old.url !== tracks[nextIndex].url) selectTrack(nextIndex, !audio.paused);
+        if (old.url !== tracks[nextIndex].url) selectTrack(nextIndex, deckA.isPlaying);
         else renderTrack();
       } else if (tracks.length) {
         state.index = -1;
         selectTrack(0, false);
       } else {
         state.index = -1;
-        audio.pause();
-        audio.removeAttribute('src');
-        audio.load();
+        deckA.unload();
         message('stopped');
         renderTrack();
       }
@@ -248,7 +492,7 @@
       renderQueue();
     } catch (error) {
       if (error.name === 'AbortError') return;
-      if (audio.paused) message('queue offline');
+      if (!deckA.isPlaying) message('queue offline');
       state.error = 'queue';
       retry.hidden = false;
     }
@@ -262,7 +506,7 @@
     } else selectTrack((state.index + 1) % state.tracks.length);
   }
   function previous() {
-    if (audio.currentTime > 3) { audio.currentTime = 0; return; }
+    if (deckA.position() > 3) { deckA.jumpTo(0); progress(); return; }
     if (state.tracks.length) selectTrack((state.index - 1 + state.tracks.length) % state.tracks.length);
   }
   document.addEventListener('click', async (event) => {
@@ -272,402 +516,682 @@
     if (!state.tracks.some((track) => track.id === id)) await loadTracks();
     const index = state.tracks.findIndex((track) => track.id === id);
     if (index < 0) { message('not available'); return; }
-    if (index === state.index && !audio.paused) audio.pause();
+    if (index === state.index && deckA.isPlaying) deckA.pause();
     else selectTrack(index);
   });
+  const playerWin = deck.closest('.window');
   deck.addEventListener('click', (event) => {
     const action = event.target.closest('[data-player-action]')?.dataset.playerAction;
-    if (action === 'toggle') { if (audio.paused) void play(); else audio.pause(); }
+    if (action === 'toggle') toggleA();
     else if (action === 'next') next();
     else if (action === 'prev') previous();
-    else if (action === 'cue') { audio.currentTime = 0; progress(); }
-    else if (action === 'loop') { audio.loop = !audio.loop; $('[data-player-action="loop"]').setAttribute('aria-pressed', String(audio.loop)); }
+    else if (action === 'cue') { deckA.jumpTo(deckA.cue || 0); progress(); }
+    else if (action === 'loop') { deckA.setRepeat(!deckA.repeat); $('[data-player-action="loop"]').setAttribute('aria-pressed', String(deckA.repeat)); }
     else if (action === 'shuffle') { state.shuffle = !state.shuffle; $('[data-player-action="shuffle"]').setAttribute('aria-pressed', String(state.shuffle)); }
-    else if (action === 'pitch-reset') { pitch.value = '0'; applyPitch(); }
+    else if (action === 'pitch-reset') setParam('d1.tempo', 0);
+    else if (action === 'open-console') playerWin?.querySelector('[data-window-action="max"]')?.click();
   });
-
-  // ---------- 打碟机：变速、转盘搓碟、三段 EQ ----------
-  const pitch = $('[data-pitch]');
-  const platter = $('[data-platter]');
-  const rateOut = $('[data-rate]');
-  const bpmOut = $('[data-bpm]');
-  const REV_SECONDS = 1.8; // 33⅓ 转/分钟，一圈 1.8 秒
-  function applyPitch() {
-    const percent = Number(pitch.value) || 0;
-    audio.playbackRate = 1 + percent / 100;
-    try { audio.preservesPitch = false; audio.mozPreservesPitch = false; } catch { /* 可选 */ }
-    rateOut.textContent = `${percent >= 0 ? '+' : ''}${percent.toFixed(1)}%`;
-    platter.style.animationDuration = `${REV_SECONDS / audio.playbackRate}s`;
-    updateBpm();
-  }
-  function updateBpm() {
-    const bpm = activeTrack()?.bpm;
-    bpmOut.textContent = bpm ? `${(bpm * audio.playbackRate).toFixed(1)} bpm` : '--- bpm';
-  }
-  pitch.addEventListener('input', applyPitch);
-  applyPitch();
-  // 转盘：拖动即搓碟，按角度换算成秒
-  let scratch = null;
-  const angleAt = (event) => {
-    const box = platter.getBoundingClientRect();
-    return Math.atan2(event.clientY - (box.top + box.height / 2), event.clientX - (box.left + box.width / 2));
-  };
-  platter.addEventListener('pointerdown', (event) => {
-    if (!activeTrack() || !Number.isFinite(audio.duration)) return;
-    platter.setPointerCapture(event.pointerId);
-    scratch = { angle: angleAt(event), wasPlaying: !audio.paused };
-    audio.pause();
-    deck.classList.add('is-scratching');
-  });
-  platter.addEventListener('pointermove', (event) => {
-    if (!scratch) return;
-    const angle = angleAt(event);
-    let delta = angle - scratch.angle;
-    if (delta > Math.PI) delta -= 2 * Math.PI; else if (delta < -Math.PI) delta += 2 * Math.PI;
-    scratch.angle = angle;
-    audio.currentTime = Math.max(0, Math.min(audio.duration, audio.currentTime + (delta / (2 * Math.PI)) * REV_SECONDS));
-    platter.style.transform = `rotate(${(audio.currentTime / REV_SECONDS) * 360}deg)`;
-    progress();
-  });
-  const endScratch = () => {
-    if (!scratch) return;
-    const resume = scratch.wasPlaying;
-    scratch = null;
-    deck.classList.remove('is-scratching');
-    platter.style.transform = '';
-    if (resume) void play();
-  };
-  platter.addEventListener('pointerup', endScratch);
-  platter.addEventListener('pointercancel', endScratch);
-  platter.addEventListener('keydown', (event) => {
-    if (!activeTrack()) return;
-    if (event.key === 'ArrowRight') audio.currentTime += 5;
-    else if (event.key === 'ArrowLeft') audio.currentTime -= 5;
-    else if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); if (audio.paused) void play(); else audio.pause(); }
-  });
-  // 三段 EQ：首次播放时接入 Web Audio，失败则静默降级
-  let eq = null;
-  function ensureEq() {
-    if (eq !== null || !('AudioContext' in window)) return;
-    try {
-      const ctx = new AudioContext();
-      const source = ctx.createMediaElementSource(audio);
-      const low = ctx.createBiquadFilter(); low.type = 'lowshelf'; low.frequency.value = 200;
-      const mid = ctx.createBiquadFilter(); mid.type = 'peaking'; mid.frequency.value = 1000; mid.Q.value = 1;
-      const high = ctx.createBiquadFilter(); high.type = 'highshelf'; high.frequency.value = 4000;
-      source.connect(low); low.connect(mid); mid.connect(high); high.connect(ctx.destination);
-      eq = { ctx, low, mid, high };
-      deck.querySelectorAll('[data-eq]').forEach(applyEq);
-    } catch { eq = false; }
-    if (eq && eq.ctx.state === 'suspended') void eq.ctx.resume();
-  }
-  function applyEq(input) {
-    if (!eq) return;
-    eq[input.dataset.eq].gain.value = Number(input.value) || 0;
-  }
-  deck.querySelectorAll('[data-eq]').forEach((input) => input.addEventListener('input', () => applyEq(input)));
-  audio.addEventListener('ratechange', updateBpm);
   retry.addEventListener('click', () => {
     if (state.error === 'audio' && activeTrack()) selectTrack(state.index);
     else void loadTracks();
   });
   seek.addEventListener('input', () => {
-    if (Number.isFinite(audio.duration) && audio.duration > 0) {
-      audio.currentTime = (Number(seek.value) / 1000) * audio.duration;
+    const duration = deckA.duration || activeTrack()?.duration || 0;
+    if (duration > 0) {
+      seeking = true;
+      // jumpTo：拖到循环外会退出循环（控制台关着时紧凑播放器没有 EXIT 键，否则会被循环困住）
+      deckA.jumpTo((Number(seek.value) / 1000) * duration);
+      seeking = false;
       progress();
     }
   });
-  const savedVolume = storage.get('devdjam-volume');
-  const initialVolume = savedVolume !== null && Number.isFinite(Number(savedVolume)) ? Math.max(0, Math.min(1, Number(savedVolume))) : 0.7;
-  audio.volume = initialVolume;
-  volume.value = String(initialVolume);
-  volume.addEventListener('input', () => {
-    audio.volume = Number(volume.value);
-    storage.set('devdjam-volume', volume.value);
-  });
-  audio.addEventListener('playing', () => {
-    const track = activeTrack();
-    message([track?.bpm ? `${track.bpm} bpm` : '', track?.key || ''].filter(Boolean).join(' / ') || 'playing');
-    state.error = null;
-    retry.hidden = true;
+  bindJog(platter, deckA, { rim: 2, onToggle: toggleA });
+
+  let wasPlayingA = false;
+  deckA.on('state', () => {
+    const now = deckA.isPlaying;
+    if (wasPlayingA && !now && deckA.track && !state.error && !deckA.scratching && !deckA.silent) message('paused');
+    wasPlayingA = now;
     syncButtons();
+    wake();
   });
-  audio.addEventListener('pause', () => {
-    if (activeTrack() && !state.error && !audio.ended) message('paused');
-    syncButtons();
+  deckA.on('status', (kind) => {
+    if (kind === 'playing') {
+      const track = activeTrack();
+      message([track?.bpm ? `${track.bpm} bpm` : '', track?.key || ''].filter(Boolean).join(' / ') || 'playing');
+      state.error = null;
+      retry.hidden = true;
+    } else if (kind === 'buffering' && deckA.isPlaying) message('buffering');
   });
-  audio.addEventListener('waiting', () => { if (activeTrack() && !audio.paused) message('buffering'); });
-  audio.addEventListener('loadedmetadata', progress);
-  audio.addEventListener('durationchange', progress);
-  audio.addEventListener('timeupdate', progress);
-  audio.addEventListener('ended', () => {
-    if (state.index + 1 < state.tracks.length) selectTrack(state.index + 1);
+  deckA.on('ended', () => {
+    // 控制台打开时像真实唱盘一样停在曲尾；平时按播放列表自动下一首
+    if (!consoleOpen && state.index + 1 < state.tracks.length) selectTrack(state.index + 1);
     else { message('end'); syncButtons(); }
   });
-  audio.addEventListener('error', () => {
-    if (!activeTrack() || !audio.getAttribute('src')) return;
+  deckA.on('error', () => {
     state.error = 'audio';
     message("can't play this file");
     retry.hidden = false;
     syncButtons();
   });
+  deckA.on('tempo', updateBpm);
+  deckA.on('analysis', updateBpm);
+  deckA.on('meta', () => { progress(); wake(); });
+  deckA.on('seek', () => { progress(); wake(); });
+  deckB.on('state', syncButtons);
   if ('mediaSession' in navigator) {
-    const handlers = { play: () => void play(), pause: () => audio.pause(), previoustrack: previous, nexttrack: next,
-      seekto: (details) => { if (Number.isFinite(details.seekTime) && Number.isFinite(audio.duration)) audio.currentTime = Math.max(0, Math.min(audio.duration, details.seekTime)); } };
+    const handlers = { play: () => play(), pause: () => deckA.pause(), previoustrack: previous, nexttrack: next,
+      seekto: (details) => { if (Number.isFinite(details.seekTime)) deckA.jumpTo(details.seekTime); } };
     Object.entries(handlers).forEach(([name, handler]) => {
       try { navigator.mediaSession.setActionHandler(name, handler); } catch { /* 可选能力 */ }
     });
   }
 
-  // ---------- 双盘专业工作台控制器 (DECK A + MIXER + DECK B) ----------
-  const audioB = document.getElementById('devdjam-audio-b');
-  const deckB = { track: null, playing: false };
+  // ---------- 放大后的 DDJ 双盘控制台 ----------
+  const pro = $('[data-player-pro]');
+  const LOOP_BEATS = [0.25, 0.5, 1, 2, 4, 8, 16, 32];
+  const LOOP_LABELS = ['1/4', '1/2', '1', '2', '4', '8', '16', '32'];
+  const JUMPS = [-1, 1, -2, 2, -4, 4, -8, 8];
+  const RANGES = [6, 10, 16, 50];
+  const HOT_COLORS = ['#ff5fd0', '#7fe9ff', '#ffe94a', '#7dff5a', '#c9a0ff', '#ffb35c', '#8fc4ff', '#ff7a7a'];
+  const SPANS = [2, 3, 4, 6, 8, 12, 16];
+  let spanIndex = 3;
+  let consoleOpen = false;
+  let keyShift = false;
+  let accent = '#ff3d8a';
+  let selected = 0;
+  const dpr = () => Math.min(2, window.devicePixelRatio || 1);
 
-  const proDeckB = $('[data-pro-deck="b"]');
-  const proTitleB = $('[data-pro-title="b"]');
-  const proTimeB = $('[data-pro-time="b"]');
-  const proSeekB = $('[data-pro-seek="b"]');
-  const proCoverB = $('[data-pro-cover="b"]');
-  const proPlayB = $('[data-pro-btn="play-b"]');
-  const playIconB = $('[data-pro-play-icon="b"]');
-  const pauseIconB = $('[data-pro-pause-icon="b"]');
-  const proPlatterB = $('[data-pro-platter="b"]');
-  const proPlatterA = $('[data-pro-platter="a"]');
-  const proLoopB = $('[data-pro-btn="loop-b"]');
-
-  const volSliderA = $('[data-pro-vol="a"]');
-  const volSliderB = $('[data-pro-vol="b"]');
-  const crossfader = $('[data-mixer-crossfader]');
-
-  function updateDualVolumes() {
-    const cf = crossfader ? Number(crossfader.value) : 50;
-    const blendA = cf <= 50 ? 1 : Math.max(0, (100 - cf) / 50);
-    const blendB = cf >= 50 ? 1 : Math.max(0, cf / 50);
-    const va = volSliderA ? Number(volSliderA.value) : 0.8;
-    const vb = volSliderB ? Number(volSliderB.value) : 0.8;
-    audio.volume = Math.max(0, Math.min(1, va * blendA));
-    if (audioB) audioB.volume = Math.max(0, Math.min(1, vb * blendB));
-  }
-  volSliderA?.addEventListener('input', updateDualVolumes);
-  volSliderB?.addEventListener('input', updateDualVolumes);
-  crossfader?.addEventListener('input', updateDualVolumes);
-
-  function loadDeckB(track, autoplay = true) {
-    if (!track || !audioB) return;
-    deckB.track = track;
-    if (proTitleB) proTitleB.textContent = track.title;
-    if (proCoverB) {
-      if (track.cover) { proCoverB.src = track.cover; proCoverB.hidden = false; }
-      else { proCoverB.hidden = true; proCoverB.removeAttribute('src'); }
-    }
-    audioB.pause();
-    audioB.src = track.url;
-    audioB.load();
-    updateDualVolumes();
-    if (autoplay) audioB.play().catch(() => {});
-  }
-
-  function updateProgressB() {
-    if (!audioB) return;
-    const dur = Number.isFinite(audioB.duration) && audioB.duration > 0 ? audioB.duration : deckB.track?.duration || 0;
-    if (proTimeB) proTimeB.textContent = `${time(audioB.currentTime)} / ${time(dur)}`;
-    if (proSeekB) {
-      proSeekB.disabled = !(Number.isFinite(audioB.duration) && audioB.duration > 0);
-      proSeekB.value = dur > 0 ? String(Math.round((audioB.currentTime / dur) * 1000)) : '0';
-    }
-  }
-
-  if (audioB) {
-    audioB.addEventListener('timeupdate', updateProgressB);
-    audioB.addEventListener('loadedmetadata', updateProgressB);
-    audioB.addEventListener('durationchange', updateProgressB);
-    audioB.addEventListener('playing', () => {
-      deckB.playing = true;
-      proDeckB?.classList.add('is-playing');
-      proPlayB?.classList.add('is-active');
-      if (playIconB) playIconB.hidden = true;
-      if (pauseIconB) pauseIconB.hidden = false;
-    });
-    audioB.addEventListener('pause', () => {
-      deckB.playing = false;
-      proDeckB?.classList.remove('is-playing');
-      proPlayB?.classList.remove('is-active');
-      if (playIconB) playIconB.hidden = false;
-      if (pauseIconB) pauseIconB.hidden = true;
-    });
-    audioB.addEventListener('ended', () => {
-      deckB.playing = false;
-      proDeckB?.classList.remove('is-playing');
-      proPlayB?.classList.remove('is-active');
-      if (playIconB) playIconB.hidden = false;
-      if (pauseIconB) pauseIconB.hidden = true;
-    });
-  }
-
-  proSeekB?.addEventListener('input', () => {
-    if (audioB && Number.isFinite(audioB.duration) && audioB.duration > 0) {
-      audioB.currentTime = (Number(proSeekB.value) / 1000) * audioB.duration;
-      updateProgressB();
-    }
-  });
-  const proSeekA = $('[data-pro-seek="a"]');
-  proSeekA?.addEventListener('input', () => {
-    if (Number.isFinite(audio.duration) && audio.duration > 0) {
-      audio.currentTime = (Number(proSeekA.value) / 1000) * audio.duration;
-      progress();
-    }
-  });
-
-  // Pro 播放按钮点击
-  $('[data-pro-btn="play-a"]')?.addEventListener('click', () => {
-    if (audio.paused) void play(); else audio.pause();
-  });
-  proPlayB?.addEventListener('click', () => {
-    if (!audioB) return;
-    if (!deckB.track && state.tracks.length) {
-      const candidate = state.tracks.length > 1 ? state.tracks[1] : state.tracks[0];
-      loadDeckB(candidate, true);
-      return;
-    }
-    if (audioB.paused) audioB.play().catch(() => {}); else audioB.pause();
-  });
-
-  // Pro Loop 循环
-  $('[data-pro-btn="loop-a"]')?.addEventListener('click', () => {
-    audio.loop = !audio.loop;
-    $('[data-pro-btn="loop-a"]')?.setAttribute('aria-pressed', String(audio.loop));
-    $('[data-player-action="loop"]')?.setAttribute('aria-pressed', String(audio.loop));
-  });
-  proLoopB?.addEventListener('click', () => {
-    if (!audioB) return;
-    audioB.loop = !audioB.loop;
-    proLoopB.setAttribute('aria-pressed', String(audioB.loop));
-  });
-
-  // 双盘搓碟逻辑绑定
-  function attachPlatterScratch(platterEl, audioElement, onScratchStateChange) {
-    if (!platterEl || !audioElement) return;
-    let scratchData = null;
-    const getAngle = (event) => {
-      const box = platterEl.getBoundingClientRect();
-      return Math.atan2(event.clientY - (box.top + box.height / 2), event.clientX - (box.left + box.width / 2));
+  const ui = [1, 2].map((n) => {
+    const root = pro.querySelector(`[data-ddj-deck="${n}"]`);
+    const screen = pro.querySelector(`.scr-deck[data-scr="${n}"]`);
+    const zoom = screen.querySelector('[data-scr-canvas="zoom"]');
+    const over = screen.querySelector('[data-scr-canvas="overview"]');
+    const field = (name) => screen.querySelector(`[data-scr="${name}"]`);
+    return {
+      n, deck: engine.decks[n - 1], root, mode: 'hotcue', shift: false,
+      jog: root.querySelector('[data-jog]'), plate: root.querySelector('[data-jog-plate]'), cover: root.querySelector('[data-jog-cover]'),
+      pads: [...root.querySelectorAll('[data-pad]')], padsBox: root.querySelector('.pads'),
+      btn: (act) => root.querySelector(`[data-act="${act}"]`),
+      masterLed: root.querySelector('[data-master-led]'),
+      tempoFader: root.querySelector('.ctl-fader.tempo'),
+      fields: { title: field('title'), mode: field('mode'), sync: field('sync'), master: field('master'), loop: field('loop'), bpm: field('bpm'), key: field('key'), tempo: field('tempo'), time: field('time') },
+      zoom, over, zoomCtx: zoom.getContext('2d'), overCtx: over.getContext('2d'),
+      overImage: document.createElement('canvas'), overDirty: true, overX: -1, text: {},
     };
-    platterEl.addEventListener('pointerdown', (event) => {
-      if (!audioElement.src || !Number.isFinite(audioElement.duration)) return;
-      try { platterEl.setPointerCapture(event.pointerId); } catch {}
-      scratchData = { angle: getAngle(event), wasPlaying: !audioElement.paused };
-      audioElement.pause();
-      onScratchStateChange(true);
+  });
+  const shiftOf = (u) => u.shift || keyShift;
+  const setText = (u, key, el, value) => { if (el && u.text[key] !== value) { u.text[key] = value; el.textContent = value; } };
+
+  pro.querySelectorAll('[data-param]').forEach(mountControl);
+
+  function renderPads(u) {
+    const d = u.deck;
+    u.padsBox.dataset.mode = u.mode;
+    u.pads.forEach((pad, i) => {
+      let label;
+      let lit = false;
+      let dim = false;
+      let aria;
+      if (u.mode === 'hotcue') {
+        const at = d.hotcues[i];
+        label = String.fromCharCode(65 + i);
+        lit = at != null;
+        dim = !lit;
+        aria = lit ? `Hot cue ${label} ${time(at)}` : `Hot cue ${label}: empty`;
+      } else if (u.mode === 'loop') {
+        label = LOOP_LABELS[i];
+        lit = d.loop.active && d.loop.beats === LOOP_BEATS[i];
+        aria = `Beat loop ${label}`;
+      } else if (u.mode === 'jump') {
+        const j = JUMPS[i];
+        label = j < 0 ? `◀${-j}` : `${j}▶`;
+        aria = `Beat jump ${j}`;
+      } else {
+        label = SAMPLE_NAMES[i];
+        lit = !!engine.sampler?.active(i);
+        aria = `Sampler ${label}`;
+      }
+      const span = pad.firstElementChild;
+      if (span.textContent !== label) span.textContent = label;
+      pad.classList.toggle('is-lit', lit);
+      pad.classList.toggle('is-dim', dim);
+      pad.setAttribute('aria-label', aria);
     });
-    platterEl.addEventListener('pointermove', (event) => {
-      if (!scratchData) return;
-      const angle = getAngle(event);
-      let delta = angle - scratchData.angle;
-      if (delta > Math.PI) delta -= 2 * Math.PI; else if (delta < -Math.PI) delta += 2 * Math.PI;
-      scratchData.angle = angle;
-      audioElement.currentTime = Math.max(0, Math.min(audioElement.duration, audioElement.currentTime + (delta / (2 * Math.PI)) * REV_SECONDS));
-      platterEl.style.transform = `rotate(${(audioElement.currentTime / REV_SECONDS) * 360}deg)`;
-    });
-    const end = () => {
-      if (!scratchData) return;
-      const resume = scratchData.wasPlaying;
-      scratchData = null;
-      onScratchStateChange(false);
-      platterEl.style.transform = '';
-      if (resume) audioElement.play().catch(() => {});
-    };
-    platterEl.addEventListener('pointerup', end);
-    platterEl.addEventListener('pointercancel', end);
+    u.root.querySelectorAll('[data-pad-mode]').forEach((btn) => btn.setAttribute('aria-pressed', String(btn.dataset.padMode === u.mode)));
   }
 
-  attachPlatterScratch(proPlatterA, audio, (active) => {
-    $('[data-pro-deck="a"]')?.classList.toggle('is-scratching', active);
-  });
-  attachPlatterScratch(proPlatterB, audioB, (active) => {
-    $('[data-pro-deck="b"]')?.classList.toggle('is-scratching', active);
-  });
+  function renderDeck(u) {
+    const d = u.deck;
+    const playing = d.isPlaying;
+    const atCue = d.track && Math.abs(d.position() - d.cue) < 0.03;
+    const play = u.btn('play');
+    play.classList.toggle('is-lit', playing);
+    play.classList.toggle('is-blink', !playing && !!d.track);
+    const cue = u.btn('cue');
+    cue.classList.toggle('is-lit', !!d.track && (d.cuePreview || (!playing && atCue)));
+    cue.classList.toggle('is-blink', !!d.track && !playing && !atCue);
+    u.btn('shift').classList.toggle('is-lit', shiftOf(u));
+    u.btn('sync').setAttribute('aria-pressed', String(d.sync));
+    u.masterLed.classList.toggle('is-on', engine.masterDeck() === d);
+    u.tempoFader?.classList.toggle('is-synced', d.sync);
+    u.btn('tap').classList.toggle('is-armed', !!d.gridOverride);
+    setText(u, 'range', u.btn('range'), `±${d.range}`);
+    const { loop } = d;
+    const pending = !d.ready && loop.active;
+    u.btn('loop-in').classList.toggle('is-armed', loop.in != null && loop.out == null);
+    u.btn('loop-out').classList.toggle('is-lit', loop.active);
+    u.btn('loop-exit').classList.toggle('is-lit', loop.active);
+    u.btn('loop-exit').classList.toggle('is-blink', pending);
+    ['loop-half', 'loop-double'].forEach((act) => { u.btn(act).disabled = loop.out == null; });
+    renderPads(u);
+    renderFlags(u);
+  }
 
-  // XY Pad 交互绑定
-  function attachXYPad(padEl, dotEl) {
-    if (!padEl || !dotEl) return;
-    let dragging = false;
-    function updateDot(event) {
-      const box = padEl.getBoundingClientRect();
-      const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-      const x = clamp((event.clientX - box.left) / box.width, 0, 1);
-      const y = clamp((event.clientY - box.top) / box.height, 0, 1);
-      dotEl.style.left = `${(x * 100).toFixed(1)}%`;
-      dotEl.style.top = `${(y * 100).toFixed(1)}%`;
+  function renderFlags(u) {
+    const d = u.deck;
+    const f = u.fields;
+    const phase = { empty: 'empty', stream: 'stream', analyzing: 'loading', ready: '', error: 'stream only' }[d.phase] ?? '';
+    setText(u, 'mode', f.mode, phase);
+    f.mode.hidden = !phase;
+    f.mode.classList.toggle('is-busy', d.phase === 'analyzing');
+    f.sync.hidden = !d.sync;
+    f.master.hidden = engine.masterDeck() !== d;
+    f.loop.hidden = !d.loop.active;
+    setText(u, 'title', f.title, d.track?.title || t('no tape'));
+    setText(u, 'key', f.key, d.track?.key || '--');
+    const art = d.track?.cover || '';
+    if (u.text.cover !== art) {
+      u.text.cover = art;
+      if (art) { u.cover.src = art; u.cover.hidden = false; } else { u.cover.hidden = true; u.cover.removeAttribute('src'); }
     }
-    padEl.addEventListener('pointerdown', (event) => {
-      try { padEl.setPointerCapture(event.pointerId); } catch {}
-      dragging = true;
-      updateDot(event);
-    });
-    padEl.addEventListener('pointermove', (event) => {
-      if (!dragging) return;
-      updateDot(event);
-    });
-    const stop = () => {
-      if (!dragging) return;
-      dragging = false;
-      dotEl.style.left = '50%';
-      dotEl.style.top = '50%';
-    };
-    padEl.addEventListener('pointerup', stop);
-    padEl.addEventListener('pointercancel', stop);
   }
-  attachXYPad($('[data-pro-pad="a"]'), $('[data-pad-dot="a"]'));
-  attachXYPad($('[data-pro-pad="b"]'), $('[data-pad-dot="b"]'));
 
-  // 底部曲库列表渲染与独立加载
-  function renderProLibrary() {
-    const list = $('[data-pro-library-list]');
-    if (!list) return;
-    list.replaceChildren();
+  function cycleRange(u) {
+    const d = u.deck;
+    const range = RANGES[(RANGES.indexOf(d.range) + 1) % RANGES.length];
+    d.setRange(range);
+    const p = params.get(`d${u.n}.tempo`);
+    p.min = -range;
+    p.max = range;
+    if (u.n === 1) { const pitch = $('[data-pitch]'); pitch.min = String(-range); pitch.max = String(range); }
+    setParam(`d${u.n}.tempo`, d.tempo, { apply: false });
+    renderDeck(u);
+  }
+
+  // 装载：Deck 1 跟随站点播放列表；Deck 2 独立。表格不重建（盘号角标由 track 事件就地更新），键盘焦点不丢
+  function loadInto(n, index) {
+    const track = state.tracks[index];
+    if (!track) return;
+    engine.start();
+    if (n === 1) selectTrack(index, false);
+    else deckB.load(track, { cues: cueStore.get(track.id) });
+  }
+
+  ui.forEach((u) => {
+    const d = u.deck;
+    const toggle = u.n === 1 ? toggleA : () => d.toggle().catch(() => {});
+    bindJog(u.jog, d, { onToggle: toggle });
+    holdable(u.btn('shift'), () => { u.shift = true; renderDeck(u); }, () => { u.shift = false; renderDeck(u); });
+    // TAP 在按下瞬间计时（click 要等松手，会带入按压时长的抖动）
+    holdable(u.btn('tap'), () => {
+      if (shiftOf(u)) d.clearGrid(); else d.tap();
+      wake();
+    });
+    holdable(u.btn('cue'), () => { if (shiftOf(u)) d.toStart(); else d.cueDown(); wake(); }, () => { d.cueUp(); wake(); });
+    let loopTimer = 0;
+    let loopHeld = false;
+    holdable(u.btn('loop-in'), () => {
+      loopHeld = false;
+      loopTimer = setTimeout(() => { loopHeld = true; d.beatLoop(4); }, 450);
+    }, () => {
+      clearTimeout(loopTimer);
+      if (!loopHeld) d.loopIn();
+    });
+    u.pads.forEach((pad, index) => {
+      let held = ''; // 按下时的垫模式：松手按同一模式收尾，按住热点垫时切了模式也能结束试听
+      holdable(pad, () => {
+        held = u.mode;
+        const shift = shiftOf(u);
+        if (held === 'hotcue') d.hotcueDown(index, { shift });
+        else if (held === 'loop') d.beatLoop(LOOP_BEATS[index]);
+        else if (held === 'jump') d.beatJump(JUMPS[index]);
+        else if (engine.sampler) { if (shift) engine.sampler.stop(index); else engine.sampler.trigger(index); }
+        wake();
+      }, () => { if (held === 'hotcue') d.hotcueUp(index); });
+    });
+    u.root.addEventListener('click', (event) => {
+      const mode = event.target.closest('[data-pad-mode]')?.dataset.padMode;
+      if (mode) { u.mode = mode; renderPads(u); return; }
+      const act = event.target.closest('[data-act]')?.dataset.act;
+      if (act === 'play') {
+        engine.start();
+        const run = d.playPress({ shift: shiftOf(u) });
+        if (u.n === 1) run.catch(playError); else run.catch(() => {});
+      } else if (act === 'sync') {
+        engine.start();
+        if (shiftOf(u)) cycleRange(u); else engine.toggleSync(d);
+      } else if (act === 'range') cycleRange(u);
+      else if (act === 'loop-out') d.loopOut();
+      else if (act === 'loop-exit') d.loopExit();
+      else if (act === 'loop-half') d.loopResize(0.5);
+      else if (act === 'loop-double') d.loopResize(2);
+      wake();
+    });
+    u.over.addEventListener('pointerdown', (event) => {
+      if (!d.track || !(d.duration > 0)) return;
+      const box = u.over.getBoundingClientRect();
+      engine.start();
+      d.jumpTo(clamp((event.clientX - box.left) / box.width, 0, 1) * d.duration);
+      wake();
+    });
+    d.on('*', (type) => {
+      if (type === 'track' || type === 'analysis') { u.overDirty = true; renderBrowserBadges(); }
+      if (type === 'tempo') setParam(`d${u.n}.tempo`, d.tempo, { apply: false });
+      renderDeck(u);
+      ui.forEach((other) => { if (other !== u) renderFlags(other); });
+      wake();
+    });
+    d.on('sync-fail', () => {
+      const btn = u.btn('sync');
+      btn.classList.add('is-blink');
+      setTimeout(() => btn.classList.remove('is-blink'), 900);
+    });
+  });
+  const renderShift = () => ui.forEach(renderDeck);
+  window.addEventListener('keydown', (event) => { if (event.key === 'Shift' && !keyShift) { keyShift = true; renderShift(); } });
+  window.addEventListener('keyup', (event) => { if (event.key === 'Shift') { keyShift = false; renderShift(); } });
+  window.addEventListener('blur', () => { if (keyShift) { keyShift = false; renderShift(); } });
+
+  // BEAT FX 与采样器（引擎启动后才存在）
+  const fxUnit = pro.querySelector('[data-fx-unit]');
+  const fxField = (name) => fxUnit.querySelector(`[data-fx="${name}"]`);
+  function renderFx() {
+    const fx = engine.fx;
+    const name = fx ? fx.type : 'ECHO';
+    const channel = fx ? fx.channel : '1';
+    fxField('name').textContent = name;
+    fxField('beat').textContent = fx ? fx.beatLabel : '1/2';
+    const bpm = engine.fxBpm(channel);
+    fxField('bpm').textContent = bpm.toFixed(1);
+    fxUnit.style.setProperty('--beat', `${(60 / bpm).toFixed(3)}s`);
+    fxUnit.querySelector('[data-fx-act="on"]').setAttribute('aria-pressed', String(!!fx?.enabled));
+    fxUnit.querySelectorAll('[data-fx-ch]').forEach((btn) => btn.setAttribute('aria-pressed', String(btn.dataset.fxCh === channel)));
+  }
+  fxUnit.addEventListener('click', (event) => {
+    const act = event.target.closest('[data-fx-act]')?.dataset.fxAct;
+    const channel = event.target.closest('[data-fx-ch]')?.dataset.fxCh;
+    if (!act && !channel) return;
+    engine.start();
+    const fx = engine.fx;
+    if (!fx) return;
+    if (channel) fx.setChannel(channel);
+    else if (act === 'on') fx.setOn(!fx.enabled);
+    else if (act === 'select') fx.cycleType(keyShift ? -1 : 1);
+    else if (act === 'beat-down') fx.stepBeat(-1);
+    else if (act === 'beat-up') fx.stepBeat(1);
+    renderFx();
+  });
+  engine.on('start', () => {
+    engine.fx.on('change', renderFx);
+    engine.sampler.on('change', () => ui.forEach(renderPads));
+    renderFx();
+  });
+
+  // 屏幕：量化开关与波形缩放
+  pro.querySelector('.scr-tools').addEventListener('click', (event) => {
+    const act = event.target.closest('[data-screen-act]')?.dataset.screenAct;
+    if (act === 'quantize') {
+      engine.quantize = !engine.quantize;
+      event.target.closest('button').setAttribute('aria-pressed', String(engine.quantize));
+    } else if (act === 'zoom-in') spanIndex = Math.max(0, spanIndex - 1);
+    else if (act === 'zoom-out') spanIndex = Math.min(SPANS.length - 1, spanIndex + 1);
+    wake();
+  });
+
+  // ---------- 曲库浏览器：BROWSE 旋钮 / 点选 / 双击装载 ----------
+  const libList = pro.querySelector('[data-lib-list]');
+  const browseKnob = pro.querySelector('[data-browse]');
+  function renderBrowser() {
+    pro.querySelector('[data-lib-count]').textContent = String(state.tracks.length).padStart(2, '0');
+    libList.replaceChildren();
+    selected = clamp(selected, 0, Math.max(0, state.tracks.length - 1));
     if (!state.tracks.length) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = '<td colspan="5" style="text-align:center; padding:10px; color:#7b82a0;">library empty</td>';
-      list.appendChild(tr);
+      const row = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.colSpan = 7;
+      cell.className = 'browser-empty';
+      cell.dataset.i18n = 'empty';
+      cell.textContent = t('empty');
+      row.append(cell);
+      libList.append(row);
       return;
     }
     state.tracks.forEach((track, index) => {
-      const tr = document.createElement('tr');
-      const coverSrc = track.cover || (config.homeUrl ? config.homeUrl + '/wp-content/themes/devdjam/assets/logo.png' : '');
-      tr.innerHTML = `
-        <td><img class="pro-lib-cover" src="${coverSrc}" alt=""></td>
-        <td style="font-weight:700;"></td>
-        <td style="color:#ffcc00;">${track.bpm ? track.bpm + ' BPM' : '---'}</td>
-        <td style="color:#8c93b3;">${time(track.duration)}</td>
-        <td class="pro-lib-actions">
-          <button type="button" class="pro-load-btn" data-load-deck="a" data-idx="${index}">LOAD A</button>
-          <button type="button" class="pro-load-btn" data-load-deck="b" data-idx="${index}">LOAD B</button>
-        </td>
-      `;
-      // 标题在服务端已解码为纯文本，必须用 textContent 写入，不能拼进 innerHTML 被当 HTML 解析
-      tr.cells[1].textContent = track.title;
-      list.appendChild(tr);
+      const row = document.createElement('tr');
+      row.dataset.idx = String(index);
+      const cell = (className, text) => {
+        const td = document.createElement('td');
+        td.className = className;
+        if (text !== undefined) td.textContent = text;
+        row.append(td);
+        return td;
+      };
+      cell('c-no', String(index + 1).padStart(2, '0'));
+      const art = cell('c-art');
+      if (track.cover) {
+        const img = document.createElement('img');
+        img.src = track.cover;
+        img.alt = '';
+        img.loading = 'lazy';
+        art.append(img);
+      }
+      cell('c-title', track.title);
+      cell('c-num', track.bpm ? String(track.bpm) : '--');
+      cell('c-num c-key', track.key || '--');
+      cell('c-num c-time', time(track.duration));
+      const load = cell('c-load');
+      const badges = document.createElement('span');
+      badges.className = 'lib-badges';
+      load.append(badges);
+      [1, 2].forEach((n) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ddj-btn lib-load';
+        btn.dataset.loadDeck = String(n);
+        const word = document.createElement('span');
+        word.className = 'lib-load-word';
+        word.textContent = 'load '; // 按钮是弹性容器，普通空格会被当作行尾空白吞掉
+        btn.append(word, String(n));
+        btn.setAttribute('aria-label', `Load ${track.title} to deck ${n}`);
+        load.append(btn);
+      });
+      libList.append(row);
     });
-    // 如果 Deck B 尚无曲目，默认载入曲库第 2 首（若无则第 1 首）
-    if (!deckB.track && state.tracks.length) {
-      const candidate = state.tracks.length > 1 ? state.tracks[1] : state.tracks[0];
-      loadDeckB(candidate, false);
+    renderBrowserBadges();
+    renderSelection(false);
+  }
+  function renderBrowserBadges() {
+    libList.querySelectorAll('tr[data-idx]').forEach((row) => {
+      const track = state.tracks[Number(row.dataset.idx)];
+      const badges = row.querySelector('.lib-badges');
+      if (!track || !badges) return;
+      badges.replaceChildren();
+      ui.forEach((u) => {
+        if (u.deck.track?.id !== track.id) return;
+        const badge = document.createElement('span');
+        badge.className = `lib-deck d${u.n}`;
+        badge.textContent = String(u.n);
+        badges.append(badge);
+      });
+    });
+  }
+  function renderSelection(scroll = true) {
+    libList.querySelectorAll('tr[data-idx]').forEach((row) => {
+      const on = Number(row.dataset.idx) === selected;
+      row.classList.toggle('is-selected', on);
+      if (on && scroll) row.scrollIntoView({ block: 'nearest' });
+    });
+    browseKnob.style.setProperty('--turn', `${selected * 24}deg`);
+    browseKnob.setAttribute('aria-valuemax', String(Math.max(1, state.tracks.length)));
+    browseKnob.setAttribute('aria-valuenow', String(selected + 1));
+    browseKnob.setAttribute('aria-valuetext', state.tracks[selected]?.title || t('empty'));
+  }
+  const moveSelection = (stepBy) => {
+    if (!state.tracks.length) return;
+    selected = clamp(selected + stepBy, 0, state.tracks.length - 1);
+    renderSelection();
+  };
+  libList.addEventListener('click', (event) => {
+    const row = event.target.closest('tr[data-idx]');
+    if (!row) return;
+    const index = Number(row.dataset.idx);
+    const loadBtn = event.target.closest('[data-load-deck]');
+    if (loadBtn) { loadInto(Number(loadBtn.dataset.loadDeck), index); return; }
+    selected = index;
+    renderSelection(false);
+  });
+  // 双击装载：优先空闲的盘；两台都在放时装到被 Crossfader 推没声的那台，两边都听得见就不动（用 LOAD 键明确指定）
+  libList.addEventListener('dblclick', (event) => {
+    const row = event.target.closest('tr[data-idx]');
+    if (!row || event.target.closest('[data-load-deck]')) return;
+    const x = engine.values.xfader;
+    const n = !deckA.isPlaying ? 1 : !deckB.isPlaying ? 2 : x > 0.9 ? 1 : x < 0.1 ? 2 : 0;
+    if (n) loadInto(n, Number(row.dataset.idx));
+  });
+  pro.querySelector('.mix-browse').addEventListener('click', (event) => {
+    const target = event.target.closest('[data-load]');
+    if (target) loadInto(Number(target.dataset.load), selected);
+  });
+  let browseDrag = null;
+  browseKnob.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    browseKnob.focus({ preventScroll: true });
+    try { browseKnob.setPointerCapture(event.pointerId); } catch { /* 可选 */ }
+    browseDrag = { y: event.clientY };
+  });
+  browseKnob.addEventListener('pointermove', (event) => {
+    if (!browseDrag) return;
+    const steps = Math.trunc((event.clientY - browseDrag.y) / 18);
+    if (steps) { browseDrag.y += steps * 18; moveSelection(steps); }
+  });
+  ['pointerup', 'pointercancel'].forEach((type) => browseKnob.addEventListener(type, () => { browseDrag = null; }));
+  browseKnob.addEventListener('wheel', (event) => { event.preventDefault(); moveSelection(Math.sign(event.deltaY)); }, { passive: false });
+  browseKnob.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowRight') { event.preventDefault(); moveSelection(1); }
+    else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') { event.preventDefault(); moveSelection(-1); }
+    else if (event.key === 'Enter') { event.preventDefault(); loadInto(event.shiftKey ? 2 : 1, selected); }
+  });
+
+  // ---------- 屏幕绘制：滚动放大波形（拍线 / 热点 / 循环 / 播放头）+ 总览波形 ----------
+  function fit(canvas) {
+    const ratio = dpr();
+    const w = Math.max(1, Math.round(canvas.clientWidth * ratio));
+    const h = Math.max(1, Math.round(canvas.clientHeight * ratio));
+    if (canvas.width === w && canvas.height === h) return false;
+    canvas.width = w;
+    canvas.height = h;
+    return true;
+  }
+  const fitAll = () => ui.forEach((u) => { fit(u.zoom); if (fit(u.over)) u.overDirty = true; });
+  if ('ResizeObserver' in window) new ResizeObserver(() => { if (consoleOpen) { fitAll(); wake(); } }).observe(pro.querySelector('[data-screen]'));
+
+  function columnMax(arr, b0, b1) {
+    let m = 0;
+    for (let b = b0; b < b1; b += 1) if (arr[b] > m) m = arr[b];
+    return m;
+  }
+  function drawWave(g, a, t0, pxPerSec, w, h, stepPx) {
+    const mid = h / 2;
+    const bps = a.binsPerSec;
+    const n = a.peak.length;
+    const layer = (arr, scale, color) => {
+      g.fillStyle = color;
+      g.beginPath();
+      for (let x = 0; x < w; x += stepPx) {
+        const b0 = Math.floor((t0 + x / pxPerSec) * bps);
+        const b1 = Math.max(b0 + 1, Math.floor((t0 + (x + stepPx) / pxPerSec) * bps));
+        if (b1 <= 0 || b0 >= n) continue;
+        const v = (columnMax(arr, Math.max(0, b0), Math.min(n, b1)) / 255) * scale * (mid - 1);
+        if (v >= 0.5) g.rect(x, mid - v, stepPx, v * 2);
+      }
+      g.fill();
+    };
+    layer(a.peak, 1, '#d9d9d9');
+    layer(a.low, 1, accent);
+    layer(a.high, 0.7, '#7fe9ff');
+  }
+  function drawZoom(u, pos) {
+    const { zoom: c, zoomCtx: g, deck: d } = u;
+    const w = c.width;
+    const h = c.height;
+    const ratio = dpr();
+    g.fillStyle = '#0b0b0b';
+    g.fillRect(0, 0, w, h);
+    if (!d.track) return;
+    const span = SPANS[spanIndex];
+    const pxPerSec = w / span;
+    const t0 = pos - span / 2;
+    const xAt = (sec) => (sec - t0) * pxPerSec;
+    const { loop } = d;
+    if (loop.in != null) {
+      const x0 = xAt(loop.in);
+      const x1 = loop.out != null ? xAt(loop.out) : x0 + ratio;
+      g.fillStyle = loop.active ? 'rgba(255, 233, 74, .24)' : 'rgba(255, 233, 74, .1)';
+      g.fillRect(x0, 0, x1 - x0, h);
+    }
+    const a = d.analysis;
+    if (d.gridBpm()) {
+      const beat = d.beatLen();
+      const offset = d.gridOffset();
+      for (let k = Math.ceil((t0 - offset) / beat); ; k += 1) {
+        const x = xAt(offset + k * beat);
+        if (x > w) break;
+        g.fillStyle = k % 4 === 0 ? '#6a6a6a' : '#2e2e2e';
+        g.fillRect(Math.round(x), 0, ratio, h);
+      }
+    }
+    if (a) drawWave(g, a, t0, pxPerSec, w, h, ratio);
+    else {
+      g.fillStyle = '#8a8a8a';
+      g.font = `${10 * ratio}px "Courier New", monospace`;
+      g.fillText(d.phase === 'analyzing' ? 'ANALYZING...' : 'STREAM', 8 * ratio, h / 2 + 4 * ratio);
+    }
+    const marker = (sec, color, label, bottom = false) => {
+      const x = xAt(sec);
+      if (x < -20 || x > w + 20) return;
+      g.fillStyle = color;
+      g.fillRect(Math.round(x), 0, ratio, h);
+      g.beginPath();
+      const y = bottom ? h : 0;
+      const dir = bottom ? -1 : 1;
+      g.moveTo(x - 4 * ratio, y); g.lineTo(x + 4 * ratio, y); g.lineTo(x, y + dir * 6 * ratio);
+      g.fill();
+      if (label) {
+        g.font = `bold ${9 * ratio}px "Courier New", monospace`;
+        g.fillText(label, x + 3 * ratio, bottom ? h - 2 * ratio : 15 * ratio);
+      }
+    };
+    d.hotcues.forEach((at, i) => { if (at != null) marker(at, HOT_COLORS[i], String.fromCharCode(65 + i)); });
+    marker(d.cue, '#ffb35c', '', true);
+    g.fillStyle = accent;
+    g.fillRect(Math.round(w / 2) - ratio, 0, 2 * ratio, h);
+  }
+  function buildOverview(u) {
+    const img = u.overImage;
+    img.width = u.over.width;
+    img.height = u.over.height;
+    const g = img.getContext('2d');
+    g.fillStyle = '#0b0b0b';
+    g.fillRect(0, 0, img.width, img.height);
+    const a = u.deck.analysis;
+    if (a) drawWave(g, a, 0, img.width / a.duration, img.width, img.height, 1);
+    u.overDirty = false;
+    u.overX = -1;
+  }
+  function drawOverview(u, pos) {
+    const { over: c, overCtx: g, deck: d } = u;
+    if (u.overDirty) buildOverview(u);
+    const duration = d.duration || d.analysis?.duration || 0;
+    const w = c.width;
+    const h = c.height;
+    const x = duration > 0 ? Math.round((pos / duration) * w) : 0;
+    const key = `${x}|${d.loop.active}|${d.loop.in}|${d.loop.out}|${d.hotcues.join()}|${d.cue}`;
+    if (key === u.overX) return;
+    u.overX = key;
+    g.drawImage(u.overImage, 0, 0);
+    if (!(duration > 0)) return;
+    const ratio = dpr();
+    g.fillStyle = 'rgba(0, 0, 0, .5)';
+    g.fillRect(0, 0, x, h);
+    const xAt = (sec) => (sec / duration) * w;
+    if (d.loop.in != null && d.loop.out != null) {
+      g.fillStyle = d.loop.active ? 'rgba(255, 233, 74, .35)' : 'rgba(255, 233, 74, .15)';
+      g.fillRect(xAt(d.loop.in), 0, Math.max(ratio, xAt(d.loop.out) - xAt(d.loop.in)), h);
+    }
+    d.hotcues.forEach((at, i) => { if (at != null) { g.fillStyle = HOT_COLORS[i]; g.fillRect(Math.round(xAt(at)), 0, ratio, h); } });
+    g.fillStyle = '#ffb35c';
+    g.fillRect(Math.round(xAt(d.cue)), h - 3 * ratio, 2 * ratio, 3 * ratio);
+    g.fillStyle = '#ffffff';
+    g.fillRect(x - ratio, 0, 2 * ratio, h);
+  }
+
+  // 电平表：峰值换算 dBFS（-48…0），快起慢落
+  const meterEls = { ch1: pro.querySelector('[data-meter="ch1"]'), ch2: pro.querySelector('[data-meter="ch2"]'), L: pro.querySelector('[data-meter="L"]'), R: pro.querySelector('[data-meter="R"]') };
+  const meterLevel = { ch1: 0, ch2: 0, L: 0, R: 0 };
+  const meterShown = { ch1: 0, ch2: 0, L: 0, R: 0 };
+  let meterAt = 0;
+  function drawMeters(now) {
+    const levels = engine.levels();
+    const dt = meterAt ? Math.min(0.1, (now - meterAt) / 1000) : 0;
+    meterAt = now;
+    Object.keys(meterEls).forEach((key) => {
+      const peak = levels ? levels[key] : 0;
+      const norm = peak > 0 ? clamp((20 * Math.log10(peak) + 48) / 48, 0, 1) : 0;
+      const next = Math.max(norm, meterLevel[key] - dt * 0.9);
+      meterLevel[key] = next;
+      // 只节流 DOM 写入；内部电平每帧照常回落，否则高刷新率屏（≥240Hz）每帧回落量低于阈值，表会卡住不落
+      if (Math.abs(next - meterShown[key]) > 0.004 || (next === 0 && meterShown[key] !== 0)) {
+        meterShown[key] = next;
+        meterEls[key].style.setProperty('--lvl', next.toFixed(3));
+      }
+    });
+  }
+
+  function consoleFrame(now) {
+    ui.forEach((u) => {
+      const d = u.deck;
+      const pos = d.position();
+      if (effectsOn() || d.scratching || d.silent) u.plate.style.setProperty('--angle', `${((pos / REV_SECONDS) * 360) % 360}deg`);
+      const f = u.fields;
+      const bpm = d.bpm();
+      setText(u, 'bpm', f.bpm, bpm ? bpm.toFixed(2) : '---.--');
+      setText(u, 'tempo', f.tempo, signed(d.tempo, 1, '%'));
+      const left = Math.max(0, (d.duration || 0) - pos);
+      setText(u, 'time', f.time, d.track ? `-${time(left)}.${Math.floor((left % 1) * 10)}` : '-00:00.0');
+      u.jog.setAttribute('aria-valuenow', String(d.duration > 0 ? Math.round((pos / d.duration) * 100) : 0));
+      drawZoom(u, pos);
+      drawOverview(u, pos);
+      const atCue = d.track && Math.abs(pos - d.cue) < 0.03;
+      if (u.text.atCue !== atCue) { u.text.atCue = atCue; renderDeck(u); }
+    });
+    drawMeters(now);
+  }
+  function compactFrame() {
+    progress();
+    if (platter && (effectsOn() || deckA.scratching || deckA.silent)) {
+      platter.style.setProperty('--angle', `${((deckA.position() / REV_SECONDS) * 360) % 360}deg`);
     }
   }
 
-  $('[data-pro-library-list]')?.addEventListener('click', (event) => {
-    const btn = event.target.closest('[data-load-deck]');
-    if (!btn) return;
-    const targetDeck = btn.dataset.loadDeck;
-    const idx = Number(btn.dataset.idx);
-    if (idx < 0 || idx >= state.tracks.length) return;
-    const track = state.tracks[idx];
-    if (targetDeck === 'a') {
-      selectTrack(idx, true);
-    } else if (targetDeck === 'b') {
-      loadDeckB(track, true);
+  let raf = 0;
+  function wake() { if (!raf) raf = requestAnimationFrame(frame); }
+  function frame(now) {
+    raf = 0;
+    if (consoleOpen) consoleFrame(now); else compactFrame();
+    const moving = engine.decks.some((d) => d.isPlaying || d.scratching || d.silent);
+    const ringing = consoleOpen && Object.values(meterLevel).some((v) => v > 0);
+    if (moving || ringing || (consoleOpen && engine.sampler?.voices.size)) wake();
+  }
+
+  // 放大 / 还原：控制台打开时进入演奏模式（按需解码两盘，精确循环与有声搓碟）
+  function syncConsole() {
+    const open = !!playerWin && playerWin.classList.contains('is-max') && !playerWin.classList.contains('is-unmax');
+    if (open === consoleOpen) return;
+    consoleOpen = open;
+    engine.setPerformance(open);
+    if (open) {
+      if (mayStartAudio()) engine.start();
+      accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || accent;
+      fitAll();
+      ui.forEach((u) => { u.overDirty = true; u.overX = -1; renderDeck(u); });
+      renderBrowser();
+      renderFx();
     }
-  });
+    wake();
+  }
+  if (playerWin) new MutationObserver(syncConsole).observe(playerWin, { attributes: true, attributeFilter: ['class'] });
 
   // ---------- 站内导航：只替换正文，音频保持挂载 ----------
   // 页面 HTML 缓存 + 悬停预取：命中缓存时立即切换，再后台刷新。
@@ -730,7 +1254,10 @@
     });
     const titleText = document.querySelector('.win-content .title-bar-text');
     if (titleText) {
-      titleText.querySelector('span').textContent = incoming.dataset.title || view;
+      // 同步 data-i18n，否则随后的 applyLanguage() 会把标题改回首次加载页的名字
+      const label = titleText.querySelector('span');
+      label.dataset.i18n = incoming.dataset.title || view;
+      label.textContent = t(label.dataset.i18n);
       const titleIcon = titleText.querySelector('img');
       const freshIcon = page.doc.querySelector('.win-content .title-bar-text img');
       if (titleIcon && freshIcon) titleIcon.src = freshIcon.src;
@@ -1319,10 +1846,10 @@
     sticker.classList.add(`hit-${sticker.dataset.anim || 'pop'}`);
     burst(sticker);
     const [action, arg] = sticker.dataset.sticker.split(':');
-    if (action === 'play') { if (!activeTrack()) message('no tape'); else if (audio.paused) void play(); else audio.pause(); }
+    if (action === 'play') { if (!activeTrack()) message('no tape'); else toggleA(); }
     else if (action === 'next') next();
     else if (action === 'prev') previous();
-    else if (action === 'mute') { audio.muted = !audio.muted; message(audio.muted ? 'muted' : 'unmuted'); }
+    else if (action === 'mute') { engine.setMuted(!engine.muted); message(engine.muted ? 'muted' : 'unmuted'); }
     else if (action === 'top') window.scrollTo({ top: 0, behavior: 'smooth' });
     else if (action === 'theme') { const order = ['milk', 'ink', 'cherry']; setTheme(order[(order.indexOf(document.documentElement.dataset.theme || 'milk') + 1) % order.length]); }
     else if (action === 'fx') toggleEffects();
