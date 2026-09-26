@@ -31,7 +31,9 @@ const storage = {
 |---|---|---|
 | `dj-lang` | `'zh'` \| `'en'` | Interface localization dictionary key |
 | `dj-theme` | `'milk'` \| `'ink'` \| `'cherry'` | Visual color palette applied to `data-theme` |
-| `dj-fx` | `'on'` \| `'off'` | Particle and sticker motion animations toggle |
+| `devdjam-effects` | `'on'` \| `'off'` | Particle and sticker motion animations toggle |
+| `devdjam-volume` | `'0'`…`'1'` | MASTER level. The compact `vol` slider and the console MASTER knob are two views of the same param |
+| `dj-cues` | `JSON { "t<trackId>": { cue, hot: [8 × seconds\|null] } }` | Memory CUE + hot cues A–H per track; newest 60 tracks kept (key prefix keeps insertion order) |
 
 ### 2. Session UI State (`sessionStorage`)
 
@@ -82,8 +84,20 @@ All write operations are confined to `wp-admin`. The frontend only consumes ligh
 - If uncached, shows `aria-busy="true"` on `#site-content` while fetching, then stores in `pages`.
 
 ### Continuous Audio Playback
-- Audio element `#devdjam-audio` and DJ deck container `.dj-deck` exist strictly outside `#site-content`.
-- Swapping page views NEVER reloads the audio player or clears playback buffers.
+- Audio elements `#devdjam-audio` (Deck 1) / `#devdjam-audio-b` (Deck 2) and the player container live strictly outside `#site-content`.
+- Swapping page views NEVER reloads the audio player or clears playback buffers. This also holds in buffer mode: the engine (AudioContext + deck voices) lives in the persistent shell.
+
+### Audio Engine State (in memory, `DEVDJAM.engine`)
+- Each `Deck` has two playback modes:
+  - `stream` (default): the `<audio>` element plays progressively. A visitor who just presses play never downloads/decodes the whole file.
+  - `buffer`: `fetch → decodeAudioData → Int16 → DeckCore voice`. Needed for audible scratching, sample-accurate loops and click-free jumps.
+- Decoding is triggered only by: opening the maximized console, loading a track while it is open, or touching the compact platter. The switch is a 60 ms crossfade handoff at the current position.
+- `deck.phase`: `empty | stream | analyzing | ready | error`. `error` = stays in stream mode (scratch degrades to silent seek).
+- Two positions — never mix them up:
+  - `headPosition()`: read-head position where the next command takes effect. Use it as the base of every *relative* operation (beat jump, phase align, scratch anchor).
+  - `position()`: audible position (head minus output latency × rate, folded back into an active loop). Use it for display and for *setting* points (CUE, hot cues, loop IN/OUT).
+  - Mixing them produces errors of `rate × latency` (≈0.16 beat at 180 BPM with 55 ms latency).
+- Analysis results (`bpm`, `offset`, waveform bytes) are cached per track id (LRU 8).
 
 ---
 

@@ -27,8 +27,11 @@ c:/Users/Administrator/Desktop/devdjamblog/
 │   │       │   │   └── ms_sans_serif*
 │   │       │   ├── fonts/           # Display & Gothic fonts (UnifrakturMaguntia)
 │   │       │   ├── gif/             # Packaged GifCities retro GIF stickers
-│   │       │   ├── site.css         # Main stylesheet (themes, layout, animations)
-│   │       │   ├── site.js          # Main client controller (player, SPA, windows)
+│   │       │   ├── site.css         # Site shell stylesheet (themes, layout, windows, footer, animations)
+│   │       │   ├── deck.css         # DJ deck styles: sidebar compact player + maximized DDJ controller
+│   │       │   ├── deck-worklet.js  # DSP core (DeckCore): AudioWorklet module AND plain-script fallback
+│   │       │   ├── audio-engine.js  # Audio engine: decks, mixer, BEAT FX, sampler, BPM/waveform analysis (no DOM)
+│   │       │   ├── site.js          # UI controller: players/console views, SPA, windows, stickers
 │   │       │   └── favicon.svg
 │   │       ├── parts/
 │   │       │   └── player.php       # Persistent DJ Deck audio player component
@@ -85,12 +88,18 @@ c:/Users/Administrator/Desktop/devdjamblog/
   - `views/single.php`: Article/music detail reading view with meta details and back links.
 
 ### 3. Client Controller (`assets/site.js`)
-- Single monolithic IIFE controller managing:
-  - `AudioPlayer`: Web Audio API, HTML5 Audio, queue, track switching, pitch/EQ.
+- Single IIFE UI controller managing:
+  - Player views: sidebar compact player (= Deck 1, the site playlist) and the maximized DDJ console (screen, decks, mixer, BEAT FX, tape library). Views never touch Web Audio nodes directly — they call the engine and render its state.
+  - Param store: `defineParam` / `setParam` — one source of truth per control value, several views (native range inputs in the compact player, custom knobs/faders in the console).
   - `Router`: SPA link clicks, prefetching on hover/touch, in-memory page cache.
   - `WindowManager`: Min/max window states saved in `sessionStorage`.
   - `Preferences`: Theme (`milk` / `ink` / `cherry`) and language (`zh` / `en`) saved in `localStorage`.
   - `FX`: Particle trail, animated sticker clicks, visitor counter.
+
+### 3a. Audio Engine (`assets/audio-engine.js`) and DSP core (`assets/deck-worklet.js`)
+- Script order (functions.php): inline config (`Object.assign` onto `window.DEVDJAM`) → `deck-worklet.js` → `audio-engine.js` → `site.js`.
+- `audio-engine.js` has no DOM knowledge. It exposes `DEVDJAM.createEngine({ elements, workletUrl })` and `DEVDJAM.audioConstants`; site.js stores the instance at `DEVDJAM.engine` (debugging / automated acceptance).
+- `deck-worklet.js` defines `DeckCore` once. In an AudioWorklet scope it registers the `devdjam-deck` processor; as a normal page script it exports `DEVDJAM.DeckCore` for the ScriptProcessor fallback. Never fork the DSP into two copies.
 
 ### 4. Core Content Plugin (`devdjam-core.php`)
 - Declares data models independently of the theme:

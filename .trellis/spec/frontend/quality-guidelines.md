@@ -36,6 +36,22 @@ python dev/qa.py
 
 ---
 
+## Audio Engine Contracts
+
+- **Two DSP hosts, one core**: secure contexts (HTTPS / localhost) run `DeckCore` in an AudioWorklet. The production site is served over plain HTTP (details in the local, untracked `docs/PRODUCTION.md`), where browsers do not expose `audioWorklet`, so the ScriptProcessor fallback is the production path. Every audio change must be verified on both paths — simulate production with `Object.defineProperty(BaseAudioContext.prototype, 'audioWorklet', { get() { return undefined; } })` in a Playwright init script.
+- **Report timestamps**: voice reports carry the context time of the *end* of the rendered block. Worklet reports are in the past (extrapolate forward to `currentTime`); ScriptProcessor reports are in the future (`playbackTime` of a queued buffer — do not extrapolate the head).
+- **Main-thread budget on the fallback path**: long synchronous work starves ScriptProcessor callbacks and causes dropouts. Chunk heavy loops with the engine's `idle()` (MessageChannel yield; `setTimeout` is clamped to ≥4 ms).
+- **Casual playback stays cheap**: pressing play on a list item must not create a buffer voice (`DEVDJAM.engine.decks[0].voice === null` until the console is opened or the platter is touched).
+- **Levels in tests**: a single analyser read is a 21 ms window and can fall between drum hits — sample levels repeatedly over ≥300 ms before asserting silence or signal.
+- **No delay-free cycles in the audio graph**: the BEAT FX output feeds the channel returns, which reach the master bus, whose send feeds the FX again. Per the Web Audio spec a cycle without a `DelayNode` must be muted — Firefox mutes the *entire* master output (verified: PHASER / ROLL / TRANS → 0.000 even with FX off). Chromium silently tolerates it, so Chromium-only testing hides the bug. Keep the one-render-quantum `DelayNode` on the master send, and verify graph changes on Firefox too (`python -m playwright install firefox`, then `p.firefox.launch(...)`).
+- **Force a stereo master bus**: `masterBus.channelCountMode = 'explicit'` with 2 channels. Otherwise an all-mono mix (mono MP3 in stream mode) stays mono and the L/R splitter → merger meter path plays it on the left speaker only.
+- **Mono / stale-report hygiene**: position reports carry the seek sequence number (`seq`); drop reports older than the last seek, or the display jumps back one frame after every jump.
+- **No low-frequency non-sine `OscillatorNode`s**: Firefox builds a band-limited wavetable the first time a `square` / `sawtooth` / `triangle` oscillator is rendered at a new frequency range. For an LFO at a few Hz that table has thousands of partials and freezes the whole audio thread for ~0.3 s (measured: context clock frozen 108–123 ms, audio 330 ms behind). Use a sine LFO and shape it with a `WaveShaperNode` (TRANS uses `tanh(8x)` → rounded square gate, ~18 ms edges). Audio-rate non-sine oscillators (sampler voices) are fine.
+- **FX rack is persistent**: all six BEAT FX units are built once at engine start and switched with per-unit input/output gate gains (20 ms crossfade). Never create / disconnect audio nodes while performing — graph topology changes are the most common source of glitches.
+- **How to measure glitches**: in a page, sample `performance.now()` against `ctx.currentTime` every 5 ms around an action; "audio fell behind wall clock" > ~20 ms or a frozen context clock means the audio thread stalled. A serverless Playwright harness (route-fulfilled `http://localhost/` = secure/worklet, `http://harness.test/` = insecure/ScriptProcessor) runs this in Firefox and Chromium without WordPress.
+
+---
+
 ## Code Standards & Required Patterns
 
 ### 1. Zero-Warning Rule

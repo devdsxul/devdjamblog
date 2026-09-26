@@ -25,6 +25,11 @@ colors:
   on-accent-yellow: "#111111"
   lcd-background: "#111111"
   lcd-text: "#ffffff"
+  titlebar-start: "#ffd3e5"
+  titlebar-end: "#ffffff"
+  on-titlebar: "#111111"
+  accent-soft: "#fff3f8"
+  accent-line: "#ffd0e2"
 typography:
   headline-gothic:
     fontFamily: OldEnglish, "Old English Text MT", UnifrakturMaguntia, serif
@@ -79,12 +84,18 @@ components:
     rounded: "{rounded.none}"
     padding: "{spacing.sm}"
   window-titlebar:
-    backgroundColor: "{colors.primary}"
-    textColor: "{colors.on-primary}"
+    backgroundColor: "linear-gradient(90deg, {colors.titlebar-start}, {colors.titlebar-end})"
+    textColor: "{colors.on-titlebar}"
     typography: "{typography.headline-window}"
     rounded: "{rounded.none}"
     padding: "{spacing.sm}"
     height: 24px
+  status-bar:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.secondary}"
+    typography: "{typography.mono-track}"
+    rounded: "{rounded.none}"
+    height: 22px
   button-retro:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.on-surface}"
@@ -138,6 +149,8 @@ The visual identity is founded upon a crisp, monochrome high-contrast bedrock, e
 - **Tertiary / Accent Pink (`#ff3d8a`)**: Radiant Harajuku hot pink (`{colors.tertiary}`). The primary interactive beacon—ignites active navigation badges, hover borders, vinyl pitch indicators, and animated sparkles.
 - **Accent Yellow (`#ffd400`)**: Cautionary cyber-gold (`{colors.accent-yellow}`). Employed for keyboard skip links, emergency audio cue markers, and high-priority notices.
 - **LCD Background (`#111111`) & Text (`#ffffff`)**: High-contrast monochrome terminal palette for DJ deck readouts, track telemetry, and fader displays.
+- **Title Bar Gradient (`--bar-a` → `--bar-b`, text `--bar-ink`)**: Window title bars are light, not black: a Win98-style horizontal gradient from a pastel pink tint (`#ffd3e5`) to white, black lowercase text, and a 1px `--line` rule under the bar. Ink theme uses `#4a2238` → `#1a1a1a` with light text; Cherry uses `#ffd0d8` → white.
+- **Accent Tints (`--accent-soft`, `--accent-line`)**: Pale pink hover backgrounds and borders (`#fff3f8` / `#ffd0e2` in Milk) shared by dock links, list rows and the tape library, redefined per theme instead of hard-coded.
 - **Theme Variations**: The design supports an alternate **Ink** dark mode (`html[data-theme="ink"]`, `#111111` canvas with `#f2f2f2` borders) and a **Cherry** mode (`html[data-theme="cherry"]`, ruby crimson accents).
 
 ## Typography
@@ -160,9 +173,10 @@ The desktop environment is framed within a fixed 100vh viewport simulating a com
 
 - **Dock Sidebar (`116px`)**: Pinned flush to the left, housing the site mascot GIF, primary section links, and social redirects (`.dock-foot`).
 - **Main Workspace (`#site-content`)**: Fluid multi-window flex layout accommodating independent, movable, and resizable Win98 windows (`.window`).
+- **Bottom Status Bar (`.site-foot`)**: A Win98 status bar closes the bottom of the desktop (≥601px): `© year DEVDJAM` | a marquee with the site tagline and the now-playing title | a CSS LED (grey stopped, pink playing) and clock. On ≤600px the fixed bottom taskbar is the frame instead. The viewport lock subtracts `--wp-admin--admin-bar--height`, so logged-in pages are never cut off at the bottom.
 - **DJ Deck Console (`.win-player`)**:
-  - Compact Mode: A single turntable platter and quick-play track queue embedded conveniently on the sidebar.
-  - Dual-Deck Workstation Mode: When maximized, transitions into a full horizontal twin-deck mixing console: Deck A on the left, central dual-fader DJ mixer with crossfader in the center, Deck B on the right, and the full cassette crate table below.
+  - Compact Mode: A single turntable platter and quick-play track queue embedded conveniently on the sidebar. It is the site-wide player (Deck 1) and supports scratching on the platter.
+  - DDJ Controller Mode: When maximized, it becomes a Pioneer DDJ-style two-deck controller: a black LCD screen on top (two scrolling waveforms with beat grid + overviews, next to the BEAT FX unit), Deck 1 | Mixer | Deck 2 in the middle (jog wheels, tempo faders, loop row, SHIFT/CUE/PLAY, 8 performance pads each; isolator EQ, CFX, meters, faders, crossfader in the mixer), and the tape library browser below.
 - **Entrance Gate (`.enter[data-enter]`)**: A full-screen immersive cyber-goth threshold featuring CRT scanlines, 3D chrome blackletter lettering, and a Win98 segmented loading bar before granting entrance.
 - **Responsive Mobile Flow**: Stacks the persistent left dock into a collapsible drawer, expands post lists into single-column cards, and docks the audio player to an accessible sticky bottom sheet.
 
@@ -174,17 +188,18 @@ True to 1990s desktop operating systems, elevation is created through directiona
 - **Mechanical Tactile Depress**: Active interactive elements physically translate `(2px, 2px)` on pointer press with `box-shadow: none`, emulating the click of a physical spring-loaded microswitch.
 - **Sunken Well Inset**: Form inputs, textareas, and LCD meters feature an inset bevel shadow (`inset 2px 2px 0 #d0d0d0`), creating the sensation of recessed plastic cutouts.
 - **Window Shades**: Minimized windows collapse down cleanly to their title bar height with small hard shadows, leaving the underlying astro desktop wallpaper visible.
+- **Modal Backdrop**: Maximized windows dim the desk with a 2px pixel dither (Win98 "shut down" screen), never a blur.
 
 ## Shapes
 
 - **Zero Border Radius (`{rounded.none}`)**: All windows, dialogs, buttons, list rows, and input boxes possess strictly sharp `0px` rectangular corners. Rounded corners on structural chrome are forbidden.
-- **Full Circular Platters (`{rounded.full}`)**: `9999px` border radii are reserved exclusively for vinyl records, rotating turntable platters, and turntable tonearm pivots.
+- **Full Circular Platters (`{rounded.full}`)**: `9999px` border radii are reserved exclusively for circular hardware: vinyl records, rotating turntable platters and jog wheels, rotary knobs, and turntable tonearm pivots. Buttons and performance pads stay square.
 - **Sticker Rotation**: Active navigation badges and sticker decals carry slight imperfect analog rotations (e.g., `-2.5deg` to `-3.5deg`), imparting a physical zine/scrapbook collage aesthetic.
 
 ## Components
 
 - **Windows 98 Window (`.window`, `dj_window_open`)**:
-  - Composition: 1px black outline, 3px solid drop shadow, gradient title bar with pixelated icon, and minimize (`-`) / maximize (`□`) control buttons.
+  - Composition: 1px black outline, 3px solid drop shadow, light pink-to-white gradient title bar with pixelated icon and black lowercase caption, and flat white minimize (`-`) / maximize (`□`) buttons whose glyphs follow the caption color.
   - Rule: Explicitly lacks a close (`×`) button to preserve window state in the desktop session. Double-clicking the title bar toggles window shade minimization.
 - **Retro Sticker Buttons (`button`, `.button`)**:
   - High-contrast white background, black monospace text, tactile drop shadow.
@@ -193,8 +208,9 @@ True to 1990s desktop operating systems, elevation is created through directiona
   - Local GifCities animated clips (`assets/gif/`) with pointer capture drag-and-drop.
   - Features collision push-away physics so stickers glide away rather than stacking clumsily on top of one another. Positions persist across page changes via `sessionStorage`.
 - **Continuous Audio Player (DJ Turntable)**:
-  - Powered by a persistent `HTMLAudioElement`.
+  - Powered by persistent `HTMLAudioElement`s plus a Web Audio engine (`audio-engine.js`). Casual listening streams through `<audio>`; the controller decodes tracks on demand for audible scratching, loops, hot cues and beat sync.
   - Seamless SPA-style PJAX page transitions guarantee music keeps spinning without interruption while visitors read articles or browse beats.
+  - Pad LEDs, waveform and meter colors come from the neocities sparkle palette (pink `#ff5fd0`, cyan `#7fe9ff`, yellow `#ffe94a`, green `#7dff5a`, lavender `#c9a0ff`) on white hardware panels and black LCD screens.
 - **Honest Empty States (`dj_empty`)**:
   - No synthetic placeholder articles or fake follower counters. Empty sections render honest retro illustrations (e.g., cassette tape, construction shovel) and clear inviting copy.
 
