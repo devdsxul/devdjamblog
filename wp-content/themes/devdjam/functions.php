@@ -13,15 +13,21 @@ add_action('after_setup_theme', static function () {
 
 add_action('wp_enqueue_scripts', static function () {
     $base = get_template_directory_uri() . '/assets/';
+    $ver = '3.1.0';
     wp_enqueue_style('devdjam-98', $base . '98/98.css', array(), '0.1.20');
-    wp_enqueue_style('devdjam', $base . 'site.css', array('devdjam-98'), '3.0.0');
-    wp_enqueue_script('devdjam', $base . 'site.js', array(), '3.0.0', true);
-    wp_add_inline_script('devdjam', 'window.DEVDJAM = ' . wp_json_encode(array(
+    wp_enqueue_style('devdjam', $base . 'site.css', array('devdjam-98'), $ver);
+    wp_enqueue_style('devdjam-deck', $base . 'deck.css', array('devdjam'), $ver);
+    // DSP 核心：同一文件既作 AudioWorklet 模块，也作非安全上下文（纯 HTTP）下 ScriptProcessor 回退用的普通脚本
+    wp_enqueue_script('devdjam-dsp', $base . 'deck-worklet.js', array(), $ver, true);
+    wp_enqueue_script('devdjam-audio', $base . 'audio-engine.js', array('devdjam-dsp'), $ver, true);
+    wp_enqueue_script('devdjam', $base . 'site.js', array('devdjam-audio'), $ver, true);
+    wp_add_inline_script('devdjam-dsp', 'window.DEVDJAM = Object.assign(window.DEVDJAM || {}, ' . wp_json_encode(array(
         'tracksUrl' => rest_url('devdjam/v1/tracks'),
         'hitsUrl' => rest_url('devdjam/v1/hits'),
         'homeUrl' => home_url('/'),
         'siteName' => get_bloginfo('name'),
-    )) . ';', 'before');
+        'workletUrl' => add_query_arg('ver', $ver, $base . 'deck-worklet.js'),
+    )) . ');', 'before');
 });
 
 // 首屏前读取本地保存的语言与配色，避免闪烁。

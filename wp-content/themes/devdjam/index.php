@@ -185,6 +185,12 @@ $latest = get_posts(array('post_type' => array('post', 'dj_music', 'dj_beat'), '
     </aside>
 </div>
 </div>
+<?php $tagline = get_bloginfo('description'); ?>
+<footer class="site-foot status-bar" role="contentinfo">
+    <p class="status-bar-field site-foot-copy">© <?php echo esc_html(date('Y')); ?> DEVDJAM</p>
+    <p class="status-bar-field marquee"><span>✦ <?php if ($tagline !== '') echo esc_html($tagline) . ' ✦ '; ?><?php echo dj_text('now playing'); ?>: <span data-tray-title>stopped</span> ✦ <?php echo dj_text('thanks for visiting'); ?> ✦</span></p>
+    <p class="status-bar-field site-foot-tray"><i class="site-foot-led" aria-hidden="true"></i><span data-clock>--:--</span></p>
+</footer>
 <div class="desk-dim" data-dim hidden></div>
 <div class="navigation-status screen-reader-text" role="status" aria-live="polite"></div>
 <?php wp_footer(); ?>
