@@ -925,3 +925,38 @@ Fixed 7 mobile layout defects and XSS vulnerability, added author display and i1
 
 - 在 GitHub 创建 PR 合并 worktree-dj-controller-style 到 main
 - 后台给曲目填 BPM，拍网格更准
+
+
+## Session 21: DJ 控制台收尾：质量检查、安装 gh、合并 PR
+<!-- trellis-session: v=2 fp=db1499ff74d3da7e -->
+
+**Date**: 2026-09-27
+**Task**: DJ 控制台收尾：质量检查、安装 gh、合并 PR
+**Branch**: `worktree-dj-controller-style`
+
+### Summary
+
+恢复中断会话：完成 trellis-check（语法与规范清单通过），winget 安装 gh 2.101.0 并登录，建 PR 将 worktree-dj-controller-style 合并到 main
+
+### Main Changes
+
+- trellis-check：npm run check 通过；无调试日志、存储读写均 try/catch、无外链、无关闭按钮、无 TODO
+- 安装 GitHub CLI 2.101.0（winget），账号 devdsxul 已登录
+
+### Git Commits
+
+(No commits - planning session)
+
+### Testing
+
+- [OK] npm run check：Syntax OK（13 个文件）
+- [OK] 未跑 dev/qa.py：本机空闲内存约 1.1GB，沿用上轮生产环境 Edge/Firefox 实测证据
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 内存充足时补跑 python dev/qa.py
+- 后台给线上曲目填写 BPM
