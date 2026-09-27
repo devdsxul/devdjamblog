@@ -30,7 +30,8 @@ c:/Users/Administrator/Desktop/devdjamblog/
 │   │       │   ├── site.css         # Site shell stylesheet (themes, layout, windows, footer, animations)
 │   │       │   ├── deck.css         # DJ deck styles: sidebar compact player + maximized DDJ controller
 │   │       │   ├── deck-worklet.js  # DSP core (DeckCore): AudioWorklet module AND plain-script fallback
-│   │       │   ├── audio-engine.js  # Audio engine: decks, mixer, BEAT FX, sampler, BPM/waveform analysis (no DOM)
+│   │       │   ├── audio-engine.js  # Audio engine: decks, mixer, BEAT FX, sampler (no DOM)
+│   │       │   ├── track-analysis.js # BPM / beat grid / waveform / key detection, shared by the deck and wp-admin (no DOM)
 │   │       │   ├── site.js          # UI controller: players/console views, SPA, windows, stickers
 │   │       │   └── favicon.svg
 │   │       ├── parts/
@@ -49,7 +50,7 @@ c:/Users/Administrator/Desktop/devdjamblog/
 │       └── devdjam-core/            # Core backend content & REST plugin
 │           ├── devdjam-core.php     # CPTs (dj_music, dj_beat), meta, REST API
 │           ├── admin.css            # Custom styling for wp-admin beat editors
-│           └── admin.js             # Media library audio picker script for wp-admin
+│           └── admin.js             # wp-admin: media pickers + BPM / key auto-detect (editor and control-room batch)
 │
 ├── dev/                             # Local development & verification toolchain
 │   ├── server.mjs                   # WordPress Playground local runner (Node.js)
@@ -97,7 +98,9 @@ c:/Users/Administrator/Desktop/devdjamblog/
   - `FX`: Particle trail, animated sticker clicks, visitor counter.
 
 ### 3a. Audio Engine (`assets/audio-engine.js`) and DSP core (`assets/deck-worklet.js`)
-- Script order (functions.php): inline config (`Object.assign` onto `window.DEVDJAM`) → `deck-worklet.js` → `audio-engine.js` → `site.js`.
+- Script order (functions.php): inline config (`Object.assign` onto `window.DEVDJAM`) → `deck-worklet.js` + `track-analysis.js` → `audio-engine.js` → `site.js`. Asset version is the single `DEVDJAM_ASSET_VER` constant.
+- `track-analysis.js` is registered on `init` as `devdjam-analysis` (front end **and** wp-admin) and exports `DEVDJAM.analysis = { checkpoint, decodeAudio, analyzeBuffer, detectKey }`. The deck and the devdjam-core admin auto-detect both use it — never copy the analysis into the plugin. The plugin shows detect UI only when `wp_script_is('devdjam-analysis', 'registered')`.
+- Key strings are DJ short names (`Am`, `F#m`, `C`, `Bb`). Relative major / minor (`Am` vs `C`) is the known ambiguity of profile matching; the owner can overwrite the field.
 - `audio-engine.js` has no DOM knowledge. It exposes `DEVDJAM.createEngine({ elements, workletUrl })` and `DEVDJAM.audioConstants`; site.js stores the instance at `DEVDJAM.engine` (debugging / automated acceptance).
 - `deck-worklet.js` defines `DeckCore` once. In an AudioWorklet scope it registers the `devdjam-deck` processor; as a normal page script it exports `DEVDJAM.DeckCore` for the ScriptProcessor fallback. Never fork the DSP into two copies.
 

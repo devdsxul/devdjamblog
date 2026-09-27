@@ -27,7 +27,7 @@ npm run dev
 
 - **杂谈**：使用 WordPress 文章编辑器；文章详情页、首页最新推荐及归档卡片中完整展示作者与发布时间，且支持通过顶部控制面板进行中/英文（author / 作者）国际化切换。
 - **音乐分享**：单独的音乐栏目，可加 Cloud Rap、Jerk Rap 等标签。
-- **Beats**：填写标题，选择音频、封面，可选填 BPM、调性和介绍，发布后自动进入曲库。
+- **Beats**：填写标题，选择音频、封面，可选填 BPM、调性和介绍，发布后自动进入曲库。BPM 和调性空着时，选好音频会自动识别；控制室首页可以一键补齐所有缺失的曲目。
 - **页面**：编辑「链接」与「关于」的正文。
 - **留言簿**：访客留言走 WordPress 原生评论，在「评论」菜单审核或删除。
 - 前台右上角「控制面板」可切换中/英文界面、三套配色和动效开关；窗口的 _ □ 可最小化/最大化；左侧常驻侧边栏是主导航；进站先经过一个点击进入的 loading 页。
@@ -49,7 +49,7 @@ npm run dev
 ```text
 wp-content/
   themes/devdjam/           专属主题、页面、CSS、播放器；assets/gif 与 assets/tiles 为本地打包的装饰素材
-                            assets/audio-engine.js + deck-worklet.js 为打碟机音频引擎，deck.css 为打碟机样式
+                            assets/audio-engine.js + deck-worklet.js 为打碟机音频引擎，track-analysis.js 为拍速 / 调性分析（前台打碟机与后台自动识别共用），deck.css 为打碟机样式
   plugins/devdjam-core/     内容模型、后台音轨字段、只读曲库 API
 deploy/                    初始化脚本、PHP 上传限额、反向代理示例
 dev/                       本地启动、语法检查、隔离验收、打包

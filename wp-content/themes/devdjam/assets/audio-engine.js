@@ -1,11 +1,11 @@
-/* DEVDJAM 音频引擎：双唱盘（流式 <audio> 与解码缓冲两种模式）、三段隔离 EQ 混音台、BEAT FX、采样器，
-   以及拍网格 / 波形分析。只管音频与状态，不碰界面；site.js 通过方法与事件驱动它。 */
+/* DEVDJAM 音频引擎：双唱盘（流式 <audio> 与解码缓冲两种模式）、三段隔离 EQ 混音台、BEAT FX、采样器。
+   拍网格 / 波形分析在 track-analysis.js。只管音频与状态，不碰界面；site.js 通过方法与事件驱动它。 */
 (() => {
   'use strict';
   const NS = (window.DEVDJAM = window.DEVDJAM || {});
+  const { checkpoint, decodeAudio, analyzeBuffer } = NS.analysis;
 
   const PAD_COUNT = 8;
-  const BINS_PER_SEC = 150;   // 波形与起音包络的时间分辨率
   const FX_TYPES = ['ECHO', 'REVERB', 'FLANGER', 'PHASER', 'ROLL', 'TRANS'];
   const FX_BEATS = [1 / 8, 1 / 4, 1 / 2, 3 / 4, 1, 2, 4, 8];
   const SAMPLE_NAMES = ['HORN', 'SIREN', 'LASER', 'RISER', 'BOOM', 'KICK', 'CLAP', 'STAB'];
@@ -13,20 +13,6 @@
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const dbToGain = (db) => 10 ** (db / 20);
   const glide = (ctx, param, value, tau = 0.012) => param.setTargetAtTime(value, ctx.currentTime, tau);
-  // MessageChannel 让出主线程（不受 setTimeout 的 4ms 下限影响），长计算切片执行避免卡顿与回退路径爆音
-  const yieldPort = new MessageChannel();
-  const yieldQueue = [];
-  yieldPort.port1.onmessage = () => yieldQueue.shift()?.();
-  const idle = () => new Promise((resolve) => { yieldQueue.push(resolve); yieldPort.port2.postMessage(0); });
-  // 长计算的检查点：让出主线程；任务已被新装载作废就中止，不再抢纯 HTTP 回退路径的主线程
-  async function checkpoint(stale) {
-    await idle();
-    if (stale && stale()) {
-      const error = new Error('Superseded');
-      error.name = 'AbortError';
-      throw error;
-    }
-  }
 
   class Emitter {
     constructor() { this.listeners = new Map(); }
@@ -1432,14 +1418,7 @@
     }
   }
 
-  // ---------- 解码与分析 ----------
-  function decodeAudio(ctx, data) {
-    return new Promise((resolve, reject) => {
-      const result = ctx.decodeAudioData(data, resolve, reject);
-      if (result && typeof result.then === 'function') result.then(resolve, reject);
-    });
-  }
-
+  // ---------- 解码后的缓冲转换 ----------
   // Int16 立体声交给声部：内存减半，分片转换避免卡住主线程
   async function toInt16(buffer, stale) {
     const channels = Math.min(2, buffer.numberOfChannels);
@@ -1459,115 +1438,6 @@
       out.push(dst);
     }
     return out;
-  }
-
-  // 波形峰值 + 低/中/高三段能量（150 格/秒）与起音包络 → 拍速 + 拍网格相位
-  async function analyzeBuffer(buffer, hintBpm, stale) {
-    const sr = buffer.sampleRate;
-    const n = buffer.length;
-    const left = buffer.getChannelData(0);
-    const right = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : left;
-    const hop = Math.max(1, Math.round(sr / BINS_PER_SEC));
-    const bins = Math.ceil(n / hop);
-    const binsPerSec = sr / hop;
-    const peak = new Float32Array(bins); const low = new Float32Array(bins);
-    const mid = new Float32Array(bins); const high = new Float32Array(bins);
-    const aLow = 1 - Math.exp((-2 * Math.PI * 180) / sr);
-    const aMid = 1 - Math.exp((-2 * Math.PI * 2500) / sr);
-    let yl = 0; let ym = 0;
-    for (let b = 0; b < bins; b += 1) {
-      const start = b * hop;
-      const end = Math.min(n, start + hop);
-      let pk = 0; let el = 0; let em = 0; let eh = 0;
-      for (let i = start; i < end; i += 1) {
-        const x = (left[i] + right[i]) * 0.5;
-        yl += aLow * (x - yl);
-        ym += aMid * (x - ym);
-        const lo = yl; const mi = ym - yl; const hi = x - ym;
-        const ax = x < 0 ? -x : x;
-        if (ax > pk) pk = ax;
-        el += lo * lo; em += mi * mi; eh += hi * hi;
-      }
-      const count = end - start || 1;
-      peak[b] = pk;
-      low[b] = Math.sqrt(el / count); mid[b] = Math.sqrt(em / count); high[b] = Math.sqrt(eh / count);
-      if ((b & 1023) === 1023) await checkpoint(stale);
-    }
-    const flux = new Float32Array(bins);
-    let prev = 0;
-    for (let b = 0; b < bins; b += 1) {
-      const e = Math.log1p(1000 * (2 * low[b] * low[b] + mid[b] * mid[b]));
-      flux[b] = b ? Math.max(0, e - prev) : 0;
-      prev = e;
-    }
-    const grid = await estimateGrid(flux, binsPerSec, hintBpm, stale);
-    const maxOf = (arr) => arr.reduce((m, v) => (v > m ? v : m), 0);
-    const bandMax = Math.max(maxOf(low), maxOf(mid), maxOf(high));
-    const bytes = (arr, max) => {
-      const out = new Uint8Array(arr.length);
-      const k = max > 0 ? 255 / max : 0;
-      for (let i = 0; i < arr.length; i += 1) out[i] = Math.min(255, Math.round(arr[i] * k));
-      return out;
-    };
-    return {
-      bpm: grid.bpm, offset: grid.offset, binsPerSec, duration: n / sr,
-      peak: bytes(peak, maxOf(peak)), low: bytes(low, bandMax), mid: bytes(mid, bandMax), high: bytes(high, bandMax),
-    };
-  }
-
-  async function estimateGrid(flux, bps, hint, stale) {
-    const N = flux.length;
-    if (N < bps * 4) return { bpm: hint || 120, offset: 0 };
-    let mean = 0;
-    for (let i = 0; i < N; i += 1) mean += flux[i];
-    mean /= N;
-    const f = new Float32Array(N);
-    for (let i = 0; i < N; i += 1) f[i] = flux[i] - mean;
-    const acf = (lag) => {
-      const i0 = Math.floor(lag);
-      const fr = lag - i0;
-      const limit = N - i0 - 1;
-      if (limit < bps) return 0;
-      let s = 0;
-      for (let i = 0; i < limit; i += 1) s += f[i] * (f[i + i0] + (f[i + i0 + 1] - f[i + i0]) * fr);
-      return s / limit;
-    };
-    const score = (bpm, lags) => {
-      const period = (60 * bps) / bpm;
-      return lags.reduce((sum, k) => sum + acf(period * k) / Math.sqrt(k), 0);
-    };
-    const search = async (from, to, step, lags, weight) => {
-      let best = from; let bestScore = -Infinity;
-      for (let bpm = from, i = 0; bpm <= to + 1e-9; bpm += step, i += 1) {
-        const s = score(bpm, lags) * weight(bpm);
-        if (s > bestScore) { bestScore = s; best = bpm; }
-        if ((i & 15) === 15) await checkpoint(stale);
-      }
-      return best;
-    };
-    const flat = () => 1;
-    let bpm;
-    if (hint > 0) {
-      bpm = await search(hint - 2, hint + 2, 0.02, [1, 2, 4, 8, 16], flat);
-    } else {
-      const prior = (b) => Math.exp(-0.5 * (Math.log2(b / 115) / 0.8) ** 2);
-      bpm = await search(60, 190, 0.5, [1, 2, 4], prior);
-      bpm = await search(bpm - 0.6, bpm + 0.6, 0.02, [1, 2, 4, 8, 16], flat);
-      while (bpm < 70) bpm *= 2;
-      while (bpm > 185) bpm /= 2;
-    }
-    // 相位：在一个拍长内梳状搜索起音最集中的位置
-    const period = (60 * bps) / bpm;
-    let bestPhase = 0; let bestSum = -Infinity;
-    for (let phase = 0; phase < period; phase += 0.25) {
-      let s = 0;
-      for (let k = phase; k < N - 1; k += period) {
-        const i = Math.floor(k);
-        s += flux[i] + (flux[i + 1] - flux[i]) * (k - i);
-      }
-      if (s > bestSum) { bestSum = s; bestPhase = phase; }
-    }
-    return { bpm: Math.round(bpm * 100) / 100, offset: bestPhase / bps };
   }
 
   NS.createEngine = (options) => new Engine(options);

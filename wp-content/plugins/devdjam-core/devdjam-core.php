@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DEVDJAM Core
  * Description: Music notes, beats, audio metadata and the DEVDJAM listening queue.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Requires at least: 6.6
  * Requires PHP: 8.1
  * Author: DEVDJAM
@@ -122,6 +122,30 @@ function devdjam_admin_menu() {
 }
 add_action('admin_menu', 'devdjam_admin_menu');
 
+// 带有效音频、但 BPM 或调性还空着的曲目（含草稿），供控制室批量识别；rest 为 REST 路由段
+function devdjam_tracks_missing_meta() {
+    $posts = get_posts(array('post_type' => array('dj_beat', 'dj_music'), 'post_status' => array('publish', 'draft', 'pending', 'future', 'private'),
+        'posts_per_page' => -1, 'orderby' => 'date', 'order' => 'DESC'));
+    $out = array();
+    foreach ($posts as $post) {
+        $audio_id = absint(get_post_meta($post->ID, '_dj_audio_id', true));
+        $bpm = absint(get_post_meta($post->ID, '_dj_bpm', true));
+        $key = (string) get_post_meta($post->ID, '_dj_key', true);
+        if (($bpm && $key !== '') || !devdjam_valid_audio($audio_id) || !current_user_can('edit_post', $post->ID)) {
+            continue;
+        }
+        $out[] = array(
+            'id' => $post->ID,
+            'rest' => $post->post_type === 'dj_beat' ? 'beats' : 'music',
+            'title' => html_entity_decode(wp_strip_all_tags(get_the_title($post)), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+            'url' => esc_url_raw(wp_get_attachment_url($audio_id)),
+            'bpm' => $bpm,
+            'key' => $key,
+        );
+    }
+    return $out;
+}
+
 function devdjam_admin_home() {
     if (!current_user_can('edit_posts')) {
         return;
@@ -157,6 +181,16 @@ function devdjam_admin_home() {
         <p>文章使用标准 WordPress 编辑器。发布 Beat 与音乐分享时，均可在「音轨资料」里直接选择或上传音频和封面；草稿不会进入公开曲库。</p>
         <p>「链接」和「关于」可在 <a href="<?php echo esc_url(admin_url('edit.php?post_type=page')); ?>">页面</a> 中编辑。删除内容可先放回收站，删除媒体文件则会影响引用它的播放器。</p>
         <p><a class="button" href="<?php echo esc_url(home_url('/')); ?>">查看网站 ↗</a> <a class="button" href="<?php echo esc_url(admin_url('upload.php')); ?>">打开媒体库</a></p>
+        <?php if (devdjam_can_detect()) : $pending = devdjam_tracks_missing_meta(); ?>
+            <h2>BPM / 调性自动识别</h2>
+            <p>在浏览器里分析音频，只补空着的 BPM 和调性，不改已经填过的。识别结果可以在各曲目的「音轨资料」里手动改。</p>
+            <?php if ($pending) : ?>
+                <p><button type="button" class="button button-primary" id="dj-detect-all" data-tracks="<?php echo esc_attr(wp_json_encode($pending)); ?>">识别缺失的 <?php echo esc_html((string) count($pending)); ?> 首</button></p>
+                <ol class="dj-detect-log" id="dj-detect-log" hidden></ol>
+            <?php else : ?>
+                <p class="description">所有带音频的曲目都已有 BPM 和调性。</p>
+            <?php endif; ?>
+        <?php endif; ?>
         <?php if (current_user_can('manage_options') && !get_option('devdjam_pages_ready')) : ?>
             <h2>首次设置</h2>
             <p>创建空白的首页、杂谈、链接和关于页面，并设置首页与文章页；同名页面会直接复用。</p>
@@ -166,15 +200,24 @@ function devdjam_admin_home() {
     <?php
 }
 
+// 自动识别复用主题的音轨分析脚本；主题未启用时不显示识别入口
+function devdjam_can_detect() {
+    return wp_script_is('devdjam-analysis', 'registered');
+}
+
 function devdjam_admin_assets($hook) {
     $screen = get_current_screen();
     $is_dj_screen = $screen && in_array($screen->post_type, array('dj_beat', 'dj_music'), true);
-    if ($hook === 'toplevel_page_devdjam' || $is_dj_screen) {
-        wp_enqueue_style('devdjam-admin', plugins_url('admin.css', __FILE__), array(), '1.0.0');
+    $is_home = $hook === 'toplevel_page_devdjam';
+    if ($is_home || $is_dj_screen) {
+        wp_enqueue_style('devdjam-admin', plugins_url('admin.css', __FILE__), array(), '1.1.0');
     }
+    $analysis = devdjam_can_detect() ? array('devdjam-analysis') : array();
     if ($is_dj_screen && in_array($hook, array('post.php', 'post-new.php'), true)) {
         wp_enqueue_media();
-        wp_enqueue_script('devdjam-admin', plugins_url('admin.js', __FILE__), array('media-views'), '1.0.0', true);
+        wp_enqueue_script('devdjam-admin', plugins_url('admin.js', __FILE__), array_merge(array('media-views'), $analysis), '1.1.0', true);
+    } elseif ($is_home && $analysis) {
+        wp_enqueue_script('devdjam-admin', plugins_url('admin.js', __FILE__), array_merge(array('wp-api-fetch'), $analysis), '1.1.0', true);
     }
 }
 add_action('admin_enqueue_scripts', 'devdjam_admin_assets');
@@ -220,8 +263,12 @@ function devdjam_beat_meta_html($post) {
     </div>
     <div class="dj-fields">
         <p><label for="dj-bpm">BPM（可选）</label><input type="number" min="1" max="999" id="dj-bpm" name="dj_bpm" value="<?php echo esc_attr($bpm ? (string) $bpm : ''); ?>" placeholder="例如 140"></p>
-        <p><label for="dj-key">调性（可选）</label><input type="text" maxlength="40" id="dj-key" name="dj_key" value="<?php echo esc_attr(get_post_meta($post->ID, '_dj_key', true)); ?>" placeholder="例如 F minor"></p>
+        <p><label for="dj-key">调性（可选）</label><input type="text" maxlength="40" id="dj-key" name="dj_key" value="<?php echo esc_attr(get_post_meta($post->ID, '_dj_key', true)); ?>" placeholder="例如 Fm"></p>
     </div>
+    <?php if (devdjam_can_detect()) : ?>
+        <p><button type="button" class="button" id="dj-detect" <?php disabled(!$url); ?>>自动识别 BPM / 调性</button>
+            <span class="description" id="dj-detect-status">选择音频后，BPM 和调性为空时会自动识别；识别结果可以手动改。</span></p>
+    <?php endif; ?>
     <p class="description">曲名填在上方标题，正文可写作品简介。点发布后会自动进入网站的播放队列并展示在首页。</p>
     <?php
 }
@@ -365,7 +412,8 @@ foreach (array('dj_beat', 'dj_music') as $type) {
         if ($column === 'dj_audio') {
             $valid = devdjam_valid_audio(absint(get_post_meta($id, '_dj_audio_id', true)));
             $bpm = absint(get_post_meta($id, '_dj_bpm', true));
-            echo esc_html(($valid ? '已关联音频' : '待补充音频') . ($bpm ? ' · ' . $bpm . ' BPM' : ''));
+            $key = (string) get_post_meta($id, '_dj_key', true);
+            echo esc_html(($valid ? '已关联音频' : '待补充音频') . ($bpm ? ' · ' . $bpm . ' BPM' : '') . ($key !== '' ? ' · ' . $key : ''));
         }
     }, 10, 2);
 }

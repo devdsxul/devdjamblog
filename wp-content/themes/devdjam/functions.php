@@ -11,15 +11,22 @@ add_action('after_setup_theme', static function () {
     add_theme_support('automatic-feed-links');
 });
 
+const DEVDJAM_ASSET_VER = '3.2.0';
+
+// 音轨分析（拍速 / 调性）：前台打碟机与 devdjam-core 后台的自动识别共用，所以在 init 注册、前后台都可用
+add_action('init', static function () {
+    wp_register_script('devdjam-analysis', get_template_directory_uri() . '/assets/track-analysis.js', array(), DEVDJAM_ASSET_VER, true);
+});
+
 add_action('wp_enqueue_scripts', static function () {
     $base = get_template_directory_uri() . '/assets/';
-    $ver = '3.1.0';
+    $ver = DEVDJAM_ASSET_VER;
     wp_enqueue_style('devdjam-98', $base . '98/98.css', array(), '0.1.20');
     wp_enqueue_style('devdjam', $base . 'site.css', array('devdjam-98'), $ver);
     wp_enqueue_style('devdjam-deck', $base . 'deck.css', array('devdjam'), $ver);
     // DSP 核心：同一文件既作 AudioWorklet 模块，也作非安全上下文（纯 HTTP）下 ScriptProcessor 回退用的普通脚本
     wp_enqueue_script('devdjam-dsp', $base . 'deck-worklet.js', array(), $ver, true);
-    wp_enqueue_script('devdjam-audio', $base . 'audio-engine.js', array('devdjam-dsp'), $ver, true);
+    wp_enqueue_script('devdjam-audio', $base . 'audio-engine.js', array('devdjam-dsp', 'devdjam-analysis'), $ver, true);
     wp_enqueue_script('devdjam', $base . 'site.js', array('devdjam-audio'), $ver, true);
     wp_add_inline_script('devdjam-dsp', 'window.DEVDJAM = Object.assign(window.DEVDJAM || {}, ' . wp_json_encode(array(
         'tracksUrl' => rest_url('devdjam/v1/tracks'),
