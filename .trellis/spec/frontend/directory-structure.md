@@ -39,7 +39,7 @@ c:/Users/Administrator/Desktop/devdjamblog/
 │   │       ├── views/               # Content views loaded into #site-content
 │   │       │   ├── home.php         # Home portal view
 │   │       │   ├── archive.php      # Archive / list view (Music, Beats, Blog)
-│   │       │   ├── single.php       # Single post/music/beat reading view
+│   │       │   ├── single.php       # Single post/music reading view (beats redirect to their archive)
 │   │       │   └── not-found.php    # 404 error window view
 │   │       ├── comments.php         # Win98 Guestbook comment form & list
 │   │       ├── functions.php        # Theme setup, assets enqueue, PHP UI helpers
@@ -55,6 +55,7 @@ c:/Users/Administrator/Desktop/devdjamblog/
 ├── dev/                             # Local development & verification toolchain
 │   ├── server.mjs                   # WordPress Playground local runner (Node.js)
 │   ├── check.mjs                    # PHP & JavaScript syntax validation script
+│   ├── check-deck-input.mjs          # Controller pointer/rotation regression without a browser
 │   ├── qa.py                        # Automated regression and inspection suite
 │   └── package.py                   # Production zip packaging script
 │
@@ -75,9 +76,9 @@ c:/Users/Administrator/Desktop/devdjamblog/
 - Renders the non-reloading root container.
 - Keeps persistent components outside the dynamic content swap area:
   - Permanent dock navigation (`.dock`)
-  - Top status bar and control panel (`.panel`)
-  - Continuous audio player element (`#devdjam-audio` and `.dj-deck`)
-  - Modal backdrop (`[data-dim]`) and entrance gate (`.entrance-gate`)
+  - Top language selector (`.top-lang`) and control-panel window
+  - Continuous audio player (`[data-player]`, `#devdjam-audio`, `#devdjam-audio-b`)
+  - Modal backdrop (`[data-dim]`) and entrance gate (`[data-enter]`)
 - Hosts the `#site-content` container which is swapped dynamically during SPA transitions.
 
 ### 2. View Templates (`views/`)
@@ -91,6 +92,7 @@ c:/Users/Administrator/Desktop/devdjamblog/
 ### 3. Client Controller (`assets/site.js`)
 - Single IIFE UI controller managing:
   - Player views: sidebar compact player (= Deck 1, the site playlist) and the maximized DDJ console (screen, decks, mixer, BEAT FX, tape library). Views never touch Web Audio nodes directly — they call the engine and render its state.
+  - Pointer frames: `pointerFrame(el)` maps physical pointer coordinates into the controller axes, including the phone modal rotated by CSS.
   - Param store: `defineParam` / `setParam` — one source of truth per control value, several views (native range inputs in the compact player, custom knobs/faders in the console).
   - `Router`: SPA link clicks, prefetching on hover/touch, in-memory page cache.
   - `WindowManager`: Min/max window states saved in `sessionStorage`.

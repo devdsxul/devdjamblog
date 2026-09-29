@@ -33,7 +33,7 @@ const storage = {
 | `dj-theme` | `'milk'` \| `'ink'` \| `'cherry'` | Visual color palette applied to `data-theme` |
 | `devdjam-effects` | `'on'` \| `'off'` | Particle and sticker motion animations toggle |
 | `devdjam-volume` | `'0'`…`'1'` | MASTER level. The compact `vol` slider and the console MASTER knob are two views of the same param |
-| `dj-cues` | `JSON { "t<trackId>": { cue, hot: [8 × seconds\|null] } }` | Memory CUE + hot cues A–H per track; newest 60 tracks kept (key prefix keeps insertion order) |
+| `dj-cues` | `JSON { "t<trackId>": { cue, hot: [8 × seconds\|null], grid: { bpm, offset }\|null } }` | Memory CUE, hot cues A–H and optional TAP grid override per track; newest 60 tracks kept (key prefix keeps insertion order) |
 
 ### 2. Session UI State (`sessionStorage`)
 
@@ -63,10 +63,10 @@ const pages = new Map(); // key: normalized URL string, value: { doc, title, at:
 
 ### 4. Server State (REST API)
 
-All write operations are confined to `wp-admin`. The frontend only consumes lightweight read-only endpoints:
+Beat/content authoring uses authenticated WordPress operations. The public frontend reads the track list and has a separate visitor-counter write endpoint:
 - `GET /wp-json/devdjam/v1/tracks`: Fetches published beats with valid audio attachments.
   - Returns `[{ id, title, url, duration, bpm, key, cover }]`.
-- `POST /wp-json/devdjam/v1/hits`: Increments and retrieves unique visitor count.
+- `GET /wp-json/devdjam/v1/hits`: Reads the count; `POST` increments and returns it. Browser-side visit bookkeeping limits normal daily submissions; the endpoint itself does not prove unique people.
 
 ---
 
@@ -86,6 +86,10 @@ All write operations are confined to `wp-admin`. The frontend only consumes ligh
 ### Continuous Audio Playback
 - Audio elements `#devdjam-audio` (Deck 1) / `#devdjam-audio-b` (Deck 2) and the player container live strictly outside `#site-content`.
 - Swapping page views NEVER reloads the audio player or clears playback buffers. This also holds in buffer mode: the engine (AudioContext + deck voices) lives in the persistent shell.
+
+### Controller Orientation (derived UI state)
+- CSS media queries decide phone rotation; there is no persisted orientation preference or native orientation lock.
+- `syncConsole()` derives `html.has-player-max` from the maximized controller state; CSS uses it to hide the mobile taskbar while open. See the [mobile input contract](./component-guidelines.md#mobile-controller-input-contract) for pointer mapping and resize cancellation.
 
 ### Audio Engine State (in memory, `DEVDJAM.engine`)
 - Each `Deck` has two playback modes:

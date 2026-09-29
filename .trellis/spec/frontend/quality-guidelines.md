@@ -12,7 +12,7 @@ Quality assurance in DEVDJAM spans syntax validation across PHP and JavaScript, 
 
 ## Automated Verification Tools
 
-Before committing or concluding any implementation, run the project's verification suite:
+Select verification by the changed surface. Reuse valid evidence for unchanged code; a docs-only closeout needs link/fact checks, not a fresh full browser suite. The available commands are:
 
 ```bash
 # 1. Syntax check for all PHP and JavaScript files in wp-content
@@ -20,15 +20,18 @@ npm run check
 # Executes: node dev/check.mjs
 # Validates PHP 8.3 AST with php-parser and JS syntax with node --check
 
-# 2. Local development environment verification
+# 2. Deck pointer regression (no browser; required when changing controller input)
+node dev/check-deck-input.mjs
+
+# 3. Local development environment verification
 npm run dev
 # Boots WordPress Playground (PHP 8.3 + SQLite + WP 7.1) at http://127.0.0.1:8787/
 
-# 3. Packaging check
+# 4. Packaging (overwrites dist; reads the working tree, so exclude unrelated edits first)
 npm run package
 # Bundles dist/ release archives (theme, plugin, server)
 
-# 4. Playwright acceptance & responsive viewport bounds check
+# 5. Full browser acceptance, only when needed and authorized
 python dev/qa.py
 # Tests full user journeys and asserts no horizontal overflow (scrollWidth <= width)
 # and all nav links contained across viewports [320, 390, 768, 1440]
@@ -38,7 +41,7 @@ python dev/qa.py
 
 ## Audio Engine Contracts
 
-- **Two DSP hosts, one core**: secure contexts (HTTPS / localhost) run `DeckCore` in an AudioWorklet. The production site is served over plain HTTP (details in the local, untracked `docs/PRODUCTION.md`), where browsers do not expose `audioWorklet`, so the ScriptProcessor fallback is the production path. Every audio change must be verified on both paths — simulate production with `Object.defineProperty(BaseAudioContext.prototype, 'audioWorklet', { get() { return undefined; } })` in a Playwright init script.
+- **Two DSP hosts, one core**: HTTPS / localhost prefer AudioWorklet when available; the HTTP fallback and browsers without it use ScriptProcessor. The canonical production entry is HTTPS; current deployment evidence lives in `docs/DEPLOYMENT.md`, with private connection details in untracked `docs/PRODUCTION.md`. Audio graph / DSP changes need both paths verified — simulate the fallback with `Object.defineProperty(BaseAudioContext.prototype, 'audioWorklet', { get() { return undefined; } })` in a Playwright init script.
 - **Report timestamps**: voice reports carry the context time of the *end* of the rendered block. Worklet reports are in the past (extrapolate forward to `currentTime`); ScriptProcessor reports are in the future (`playbackTime` of a queued buffer — do not extrapolate the head).
 - **Main-thread budget on the fallback path**: long synchronous work starves ScriptProcessor callbacks and causes dropouts. Chunk heavy loops with the engine's `idle()` (MessageChannel yield; `setTimeout` is clamped to ≥4 ms).
 - **Casual playback stays cheap**: pressing play on a list item must not create a buffer voice (`DEVDJAM.engine.decks[0].voice === null` until the console is opened or the platter is touched).
@@ -67,7 +70,7 @@ python dev/qa.py
   }
   ```
 - **Nonce Verification**: Form submissions and AJAX handlers must verify nonces via `check_admin_referer()` or `wp_verify_nonce()`.
-- **Public Endpoints are Read-Only**: The public REST API (`/devdjam/v1/tracks`) only exposes published beats that possess a valid audio attachment (`devdjam_valid_audio()`).
+- **Track Listing is Read-Only**: The public REST API (`/devdjam/v1/tracks`) only exposes published beats that possess a valid audio attachment (`devdjam_valid_audio()`).
 
 ---
 
@@ -85,10 +88,10 @@ python dev/qa.py
 
 ### 3. Mobile Responsiveness & Touch Ergonomics
 - **Viewport Bounds Containment**: At viewports 320px, 390px, 768px, and 1440px, all navigation items in `.dock a` must satisfy `left >= -1 and right <= width + 1`, and `document.documentElement.scrollWidth <= width`. Nav links must not be horizontally scrolled off-screen or clipped.
-- **Mobile Page Flow (`<= 720px`)**: `html`/`body` drop the desktop `100dvh + overflow: hidden` lock and the page scrolls naturally; `.desk`, `.col`, `.win-content` and `#site-content` become `height: auto; overflow: visible` so every stacked window (content, dj deck, visitors, calendar) is fully visible. The banner switches to a column (letters on top, two wrapped sticker rows below) and `.pro-console` stacks Deck A / Mixer / Deck B vertically. The home hero keeps the "small cover left, title right" row at every width `<= 720px` (cover `112px`), and `.home-pane-*` carry no fixed `min-height` so short lists leave no blank strip.
+- **Mobile Page Flow (`<= 720px`)**: `html`/`body` drop the desktop `100dvh + overflow: hidden` lock and the page scrolls naturally; `.desk`, `.col`, `.win-content` and `#site-content` become `height: auto; overflow: visible` so every stacked window (content, dj deck, visitors, calendar) is fully visible. The banner switches to a column (letters on top, two wrapped sticker rows below) and the ordinary narrow layout stacks `.ddj-console`. The coarse-pointer mobile controller overrides this with a horizontally arranged, optionally rotated window; see the [mobile input contract](./component-guidelines.md#mobile-controller-input-contract). The home hero keeps the "small cover left, title right" row at every width `<= 720px` (cover `112px`), and `.home-pane-*` carry no fixed `min-height` so short lists leave no blank strip.
 - **Stacking Order Contract**: `.enter` gate (`z-index: 10000`) > mobile `.dock` taskbar (`9999`) > dragging sticker (`1000`) > `.top-lang` desktop (`250`) > maximized window (`150`) > `.desk-dim` backdrop (`120`). `body` is a flex container, so a flex child such as `.top-lang` participates in stacking through `z-index` even with `position: static`; at `<= 720px` it must be lowered to `z-index: 1` so the maximized window's title-bar buttons stay clickable.
-- **Maximize Animation on Mobile**: `winPlayerMaxIn` / `winPlayerMaxOut` end on `translate(-50%, -50%)` and run with `animation-fill-mode: both`, which overrides a later non-`!important` `transform: none`. Any breakpoint that positions `.window.win-player.is-max` with `left/right/top` must also switch it to `animation-name: winMaxIn` / `winMaxOut` (or use `!important`), or the window lands off-screen.
-- **Wide Tables Inside Modals**: `.pro-library` and `.pro-library-table-wrap` keep `min-width: 0` and `overflow: auto` so the tape library scrolls inside the maximized player on 320px instead of widening the window.
+- **Maximize Animation on Mobile**: transform animations and the old phone-window `!important` rules can override a rotated modal. The coarse-pointer controller disables maximize/restore animations and explicitly overrides those position/transform rules. Do not remove either override when tuning dimensions.
+- **Wide Content Inside Modals**: `.ddj-browser` / `.browser-wrap` contain the compact table; the mobile controller uses a 760px logical minimum and `.window-body` scrolling. The rotated outer window must remain inside the viewport; do not confuse allowed inner scrolling with page overflow.
 - **Win98 Fixed Bottom Taskbar (`<= 600px`)**: On mobile, `.dock` shifts to the bottom (`position: fixed; bottom: 0; left: 0; right: 0;`). On ultra-narrow screens (`<= 440px`), buttons collapse text labels to show only crisp 14px-16px pixel icons, fitting all 12 items (Start, 7 nav tabs, 3 social links, admin key, clock) in a single row without wrapping.
 - **Touch Hit Areas**: Interactive elements (`.title-bar-controls button`, `.play-button`, `.track-button`, `.deck-controls button`) must have touch target heights >= 36-44px. Range sliders must specify `touch-action: pan-y`.
 - **iOS Safari Font Zoom Prevention**: Form controls (`input`, `textarea`, `select`) must specify `font-size: 16px !important` on mobile viewports to prevent iOS Safari from automatically zooming the page upon focus.
@@ -98,8 +101,8 @@ python dev/qa.py
 ## Review Checklist
 
 Before finishing any task, ensure:
-- [ ] `npm run check` passes with 0 errors.
-- [ ] Acceptance suite `python dev/qa.py` passes (or manual bounds verification across 320px, 390px, 768px, 1440px).
+- [ ] For PHP / JS edits, `npm run check` passes with 0 errors; docs-only changes reuse the unchanged-code result.
+- [ ] Input edits pass `node dev/check-deck-input.mjs`. When browser / real-device acceptance is performed, record its viewport, pointer type and audio path; otherwise keep that boundary explicitly unverified.
 - [ ] Changes do not break continuous audio playback during SPA navigation.
 - [ ] No external asset links were introduced.
 - [ ] Esc key properly dismisses any open modal or maximized window.

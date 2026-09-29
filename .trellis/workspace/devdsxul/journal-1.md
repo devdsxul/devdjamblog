@@ -960,3 +960,61 @@ Fixed 7 mobile layout defects and XSS vulnerability, added author display and i1
 
 - 内存充足时补跑 python dev/qa.py
 - 后台给线上曲目填写 BPM
+
+
+## Session 22: DJ Deck 发布与知识收尾
+<!-- trellis-session: v=2 fp=32fdf88ba3a0fcfb -->
+
+**Date**: 2026-09-29
+**Task**: DJ Deck 发布与知识收尾
+**Branch**: `main`
+
+### Summary
+
+对齐紧凑曲库、手机自动旋转、HTTPS 现役入口和发布验证边界；本地文档同步完成，用户已在完整报告后授权提交推送与清场；真机验收和两项规则差异仍待处理。
+
+### Main Changes
+
+- README / DESIGN / 站主与部署手册同步当前布局、使用入口、LF 发布和回滚流程
+- 前端规范补 pointerFrame、旋转定位覆盖和触控测试合同；旧 TASK 指向已归档初始需求
+- 两条项目自动记忆缩为文档及私有资源指针；未改全局规则、hooks 或其他项目
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `04b2e69` | fix(player): 将曲库移到双盘操作区上方 |
+| `f9b2847` | fix(player): 将紧凑曲库并排放到 BEAT FX 左侧 |
+| `5f74335` | feat(player): 手机控制台自动横屏并适配触摸坐标 |
+
+### Testing
+
+- [OK] 新增：正式 HTTPS 首页无诊断参数及 HTTP 备用入口均为 200，引用 CSS/JS 3.2.2；local/remote main 均为 5f74335，容器 running
+- [OK] 复用：同一提交的 14 文件语法检查、20 项真实处理器回归、CSS 与 18 组安全区边界计算、发布文件身份和部署后 PHP 日志结果
+- [OK] 新增：本地文档路径/标题链接检查；待完成手机真机视觉、触摸、原生滚动与试听
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 本次文档/日志按用户授权提交推送；index.php 的 Spotify 修改继续独立保留
+- 完整汇报后已取得清场授权；对象与保留边界见下方执行记录
+- 待决：Trellis workflow 中上游 CLI 文档/解析器旧路径，以及无焦点虚线规范与现有 focus-visible 样式冲突；本次不改托管工作流或 UI
+
+### 清场授权与边界（2026-09-29）
+
+- 确认时间：2026-09-29T16:40:10+08:00。
+- 用户在完整收尾报告之后明确回复：「确认清理并提交推送」。
+- 授权范围：本轮三个已合并分支、dist 下三个旧发布包、四个临时脚本/包缓存和三个发布快照目录，以及本次文档/日志的提交推送。
+- 明确保留：index.php 的 Spotify 修改；预览数据库、上传文件、账号文件、种子素材、正式回归测试、私有运维记录和全部远端备份。
+- 提交采用现有 fix/dj-deck-mobile-landscape 分支承载文档，快进合入 main 并推送后删除该分支，避免额外创建清场残留。
+
+### 清场执行记录
+
+- 已删除 `dist/devdjam-core.zip`、`dist/devdjam-theme.zip`、`dist/devdjam-server.zip` 三个旧包。
+- 已删除 `.runtime/check-mobile-deck.mjs`、`update-mobile-deck.py`、`neat-sync-docs.py`、`php-parser-3.4.0.tgz`。
+- 已删除 `.runtime/release-04b2e69/`、`release-f9b2847/`、`release-5f74335/`；删除前逐文件确认可由对应 Git 提交恢复，备份记录已保存在私有运维手册。
+- 已删除旧的 `fix/dj-deck-library-top`、`fix/dj-deck-compact-library` 分支。此记录在文档合并前写入；承载本次提交的 `fix/dj-deck-mobile-landscape` 在 main 快进并推送后移除，最终分支状态以清场后 Git 审计为准。
+- 预览数据、账号、种子、正式回归测试、已安装的 PHP 检查器和远端备份均保留。本轮无生产写入，应用发布仍为 `5f74335` / 资源 `3.2.2`。

@@ -172,13 +172,13 @@ Three distinct typographic voices construct DEVDJAM's world:
 The desktop environment is framed within a fixed 100vh viewport simulating a complete personal computing screen:
 
 - **Dock Sidebar (`116px`)**: Pinned flush to the left, housing the site mascot GIF, primary section links, and social redirects (`.dock-foot`).
-- **Main Workspace (`#site-content`)**: Fluid multi-window flex layout accommodating independent, movable, and resizable Win98 windows (`.window`).
+- **Main Workspace (`#site-content`)**: Fluid multi-window flex layout with independently minimized and maximized Win98 windows (`.window`).
 - **Bottom Status Bar (`.site-foot`)**: A Win98 status bar closes the bottom of the desktop (≥601px): `© year DEVDJAM` | a marquee with the site tagline and the now-playing title | a CSS LED (grey stopped, pink playing) and clock. On ≤600px the fixed bottom taskbar is the frame instead. The viewport lock subtracts `--wp-admin--admin-bar--height`, so logged-in pages are never cut off at the bottom.
 - **DJ Deck Console (`.win-player`)**:
   - Compact Mode: A single turntable platter and quick-play track queue embedded conveniently on the sidebar. It is the site-wide player (Deck 1) and supports scratching on the platter.
-  - DDJ Controller Mode: When maximized, it becomes a Pioneer DDJ-style two-deck controller: a black LCD screen on top (two scrolling waveforms with beat grid + overviews, next to the BEAT FX unit), Deck 1 | Mixer | Deck 2 in the middle (jog wheels, tempo faders, loop row, SHIFT/CUE/PLAY, 8 performance pads each; isolator EQ, CFX, meters, faders, crossfader in the mixer), and the tape library browser below.
+  - DDJ Controller Mode: When maximized, the top row is **waveform screen | compact tape library | BEAT FX**. The library and FX panels have equal 236px desktop widths; the waveform takes the remaining space. The library shows track titles, loaded-deck badges and 1/2 load buttons, and scrolls internally. Below is **Deck 1 | Mixer | Deck 2** (jogs, tempo, loop, SHIFT/CUE/PLAY, performance pads; isolator EQ, CFX, meters and faders).
 - **Entrance Gate (`.enter[data-enter]`)**: A full-screen immersive cyber-goth threshold featuring CRT scanlines, 3D chrome blackletter lettering, and a Win98 segmented loading bar before granting entrance.
-- **Responsive Mobile Flow**: Stacks the persistent left dock into a collapsible drawer, expands post lists into single-column cards, and docks the audio player to an accessible sticky bottom sheet.
+- **Responsive Mobile Flow**: At ≤720px the page scrolls naturally with stacked windows; at ≤600px navigation becomes a fixed bottom Win98 taskbar. The compact player remains a normal window. On phone-sized coarse-pointer screens, the maximized DJ controller keeps a horizontal two-deck layout: portrait rotates the entire modal clockwise by 90°, landscape uses normal orientation. The taskbar is hidden only while that controller is open; safe areas and the WordPress admin bar are respected. Controls retain a 760px minimum logical layout width and the modal body scrolls when needed, rather than shrinking every control. Exact media-query and input-coordinate contracts live in [component guidelines](.trellis/spec/frontend/component-guidelines.md).
 
 ## Elevation & Depth
 
