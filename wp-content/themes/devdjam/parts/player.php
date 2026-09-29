@@ -116,7 +116,7 @@ $strip = static function ($n) {
         <button class="player-retry" data-player-retry type="button" hidden><?php echo dj_text('retry'); ?></button>
     </div>
 
-    <!-- 放大后的 DDJ 双盘控制台：屏幕 + BEAT FX / Deck 1 · Mixer · Deck 2 / 曲库 -->
+    <!-- 放大后的 DDJ 双盘控制台：屏幕 + BEAT FX / 曲库 / Deck 1 · Mixer · Deck 2 -->
     <div class="player-pro" data-player-pro>
         <div class="ddj-top">
             <div class="ddj-screen" data-screen>
@@ -165,6 +165,16 @@ $strip = static function ($n) {
             </div>
         </div>
 
+        <section class="ddj-browser" aria-label="Tape library">
+            <header class="browser-head"><span class="ddj-label">tape library</span><span class="browser-count" data-lib-count>00</span><span class="browser-hint">browse &#8635; + load · <?php echo dj_text('double-click row to load'); ?></span></header>
+            <div class="browser-wrap">
+                <table class="browser-table">
+                    <thead><tr><th class="c-no">#</th><th class="c-art"></th><th><?php echo dj_text('title'); ?></th><th class="c-num">bpm</th><th class="c-num c-key">key</th><th class="c-num c-time">time</th><th class="c-load">deck</th></tr></thead>
+                    <tbody data-lib-list><tr><td colspan="7" class="browser-empty"><?php echo dj_text('loading'); ?></td></tr></tbody>
+                </table>
+            </div>
+        </section>
+
         <div class="ddj-console">
             <?php $deck_panel(1); ?>
             <section class="ddj-mixer" aria-label="Mixer">
@@ -201,16 +211,6 @@ $strip = static function ($n) {
             </section>
             <?php $deck_panel(2); ?>
         </div>
-
-        <section class="ddj-browser" aria-label="Tape library">
-            <header class="browser-head"><span class="ddj-label">tape library</span><span class="browser-count" data-lib-count>00</span><span class="browser-hint">browse &#8635; + load · <?php echo dj_text('double-click row to load'); ?></span></header>
-            <div class="browser-wrap">
-                <table class="browser-table">
-                    <thead><tr><th class="c-no">#</th><th class="c-art"></th><th><?php echo dj_text('title'); ?></th><th class="c-num">bpm</th><th class="c-num c-key">key</th><th class="c-num c-time">time</th><th class="c-load">deck</th></tr></thead>
-                    <tbody data-lib-list><tr><td colspan="7" class="browser-empty"><?php echo dj_text('loading'); ?></td></tr></tbody>
-                </table>
-            </div>
-        </section>
     </div>
 
     <audio id="devdjam-audio" preload="none"></audio>
