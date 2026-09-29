@@ -432,3 +432,47 @@ html[data-effects="off"] .player-pro .fx-on[aria-pressed="true"] { animation: no
     .browser-table .c-load { width: 96px; }
     .player-pro .lib-load { min-width: 34px; min-height: 30px; }
 }
+
+/* 手机大控制台始终横向排布；竖握时旋转整个窗口，不依赖系统旋转锁或全屏 API。 */
+@media (pointer: coarse) and (max-width: 720px), (pointer: coarse) and (max-height: 600px) {
+    html.has-player-max .dock { visibility: hidden; }
+    /* 覆盖通用手机弹窗的 !important 定位，避免旧规则取消旋转。 */
+    .window.win-player.is-max {
+        --deck-rotated: 0;
+        --jog: 180px;
+        --deck-safe-x: calc(env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px));
+        --deck-safe-y: calc(env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px) + var(--wp-admin--admin-bar--height, 0px));
+        left: calc(50% + (env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) / 2) !important;
+        top: calc(50% + (env(safe-area-inset-top, 0px) + var(--wp-admin--admin-bar--height, 0px) - env(safe-area-inset-bottom, 0px)) / 2) !important;
+        right: auto !important;
+        width: calc(100dvw - var(--deck-safe-x) - 8px) !important;
+        height: calc(100dvh - var(--deck-safe-y) - 8px);
+        max-height: none !important;
+        transform: translate(-50%, -50%) !important;
+        box-shadow: 3px 3px 0 var(--line);
+    }
+    /* 旧的缩放动画会覆盖 rotate；手机改为直接展开 / 收起。 */
+    .window.win-player.is-max, .window.win-player.is-max.is-unmax { animation: none; }
+    .window.win-player.is-max > .window-body { margin: 6px; overflow: auto; overscroll-behavior: contain; }
+    .window.win-player.is-max .player-pro { min-width: 760px; }
+    .window.win-player.is-max .title-bar-controls button { min-width: 32px; min-height: 28px; }
+    .player-pro .ddj-btn { min-height: 30px; }
+    .player-pro .pad { height: 42px; min-height: 42px; }
+    .player-pro .transport .cue, .player-pro .transport .play { min-height: 44px; }
+    .ctl-knob { width: 30px; height: 30px; }
+    .ddj-top { grid-template-columns: minmax(0, 1fr) repeat(2, 180px); }
+    .ddj-screen { grid-column: auto; }
+    .ddj-browser { height: auto; }
+    .ddj-console { grid-template-columns: minmax(0, 1fr) 216px minmax(0, 1fr); }
+    .ddj-mixer { grid-column: auto; grid-row: auto; }
+    .deck-mid { gap: 8px; }
+    .deck-tempo { min-height: 190px; }
+}
+@media (pointer: coarse) and (max-width: 720px) and (orientation: portrait) {
+    .window.win-player.is-max {
+        --deck-rotated: 1;
+        width: calc(100dvh - var(--deck-safe-y) - 8px) !important;
+        height: calc(100dvw - var(--deck-safe-x) - 8px);
+        transform: translate(-50%, -50%) rotate(90deg) !important;
+    }
+}

@@ -133,6 +133,19 @@
   bindInput($('[data-pitch]'), 'd1.tempo');
   deck.querySelectorAll('[data-eq]').forEach((input) => bindInput(input, `ch1.${input.dataset.eq}`));
 
+  // 手机竖屏时控制台顺时针旋转 90°；所有拖动统一换回控件自身的坐标。
+  function pointerFrame(el) {
+    const box = el.getBoundingClientRect();
+    const rotated = getComputedStyle(el).getPropertyValue('--deck-rotated').trim() === '1';
+    return {
+      width: rotated ? box.height : box.width,
+      height: rotated ? box.width : box.height,
+      point: (event) => rotated
+        ? { x: event.clientY - box.top, y: box.right - event.clientX }
+        : { x: event.clientX - box.left, y: event.clientY - box.top },
+    };
+  }
+
   // 控制台旋钮 / 推子：指针拖动、滚轮、键盘、双击复位；抓住推子帽为相对拖动，点槽位直接跳
   function mountControl(el) {
     const id = el.dataset.param;
@@ -165,8 +178,9 @@
     const set = (v) => setParam(id, v);
     let drag = null;
     const valueAt = (event) => {
-      const box = drag.rect;
-      let r = horizontal ? (event.clientX - box.left - 7) / (box.width - 14) : (event.clientY - box.top - 7) / (box.height - 14);
+      const { frame } = drag;
+      const point = frame.point(event);
+      let r = horizontal ? (point.x - 7) / (frame.width - 14) : (point.y - 7) / (frame.height - 14);
       r = clamp(r, 0, 1);
       if (!horizontal && !invert) r = 1 - r;
       return p.min + r * (p.max - p.min);
@@ -178,26 +192,30 @@
       try { el.setPointerCapture(event.pointerId); } catch { /* 可选 */ }
       el.classList.add('is-active');
       engine.start();
-      if (knob) { drag = { y: event.clientY, v: p.value }; return; }
-      const rect = el.getBoundingClientRect();
+      const frame = pointerFrame(el);
+      const point = frame.point(event);
+      if (knob) { drag = { frame, y: point.y, v: p.value }; return; }
       const cap = el.querySelector('.cap').getBoundingClientRect();
       const onCap = event.clientX >= cap.left - 3 && event.clientX <= cap.right + 3 && event.clientY >= cap.top - 3 && event.clientY <= cap.bottom + 3;
-      drag = { rect, start: horizontal ? event.clientX : event.clientY, v: p.value, relative: onCap || el.classList.contains('tempo') };
+      drag = { frame, start: horizontal ? point.x : point.y, v: p.value, relative: onCap || el.classList.contains('tempo') };
       if (!drag.relative) set(valueAt(event));
     });
     el.addEventListener('pointermove', (event) => {
       if (!drag) return;
       const range = p.max - p.min;
-      if (knob) { set(drag.v + ((drag.y - event.clientY) / (event.shiftKey ? 640 : 160)) * range); return; }
+      const point = drag.frame.point(event);
+      if (knob) { set(drag.v + ((drag.y - point.y) / (event.shiftKey ? 640 : 160)) * range); return; }
       if (!drag.relative) { set(valueAt(event)); return; }
-      const size = (horizontal ? drag.rect.width : drag.rect.height) - 14;
-      let delta = ((horizontal ? event.clientX : event.clientY) - drag.start) / size;
+      const size = (horizontal ? drag.frame.width : drag.frame.height) - 14;
+      let delta = ((horizontal ? point.x : point.y) - drag.start) / size;
       if (!horizontal && !invert) delta = -delta;
       set(drag.v + delta * range * (event.shiftKey ? 0.25 : 1));
     });
     const end = () => { drag = null; el.classList.remove('is-active'); };
     el.addEventListener('pointerup', end);
     el.addEventListener('pointercancel', end);
+    el.addEventListener('lostpointercapture', end);
+    window.addEventListener('resize', end);
     el.addEventListener('dblclick', () => set(p.def));
     el.addEventListener('keydown', (event) => {
       const small = p.step;
@@ -245,7 +263,8 @@
       else { drag.amount = 0; d.setBend(0); }
     };
     const step = (event) => {
-      const angle = Math.atan2(event.clientY - drag.cy, event.clientX - drag.cx);
+      const point = drag.frame.point(event);
+      const angle = Math.atan2(point.y - drag.cy, point.x - drag.cx);
       let delta = angle - drag.angle;
       if (delta > Math.PI) delta -= 2 * Math.PI; else if (delta < -Math.PI) delta += 2 * Math.PI;
       drag.angle = angle;
@@ -266,24 +285,25 @@
     el.addEventListener('pointerdown', (event) => {
       // 第二个触点（多指 / 手掌）不接管：否则会覆盖正在进行的手势，并丢掉"搓碟前是否在播放"
       if (event.button !== 0 || !d.track || drag) return;
-      const box = el.getBoundingClientRect();
-      const cx = box.left + box.width / 2;
-      const cy = box.top + box.height / 2;
-      const r = Math.hypot(event.clientX - cx, event.clientY - cy) / (box.width / 2);
+      const frame = pointerFrame(el);
+      const point = frame.point(event);
+      const cx = frame.width / 2;
+      const cy = frame.height / 2;
+      const r = Math.hypot(point.x - cx, point.y - cy) / (frame.width / 2);
       if (r > 1.02) return;
       event.preventDefault();
       el.focus({ preventScroll: true });
       try { el.setPointerCapture(event.pointerId); } catch { /* 可选 */ }
-      const angle = Math.atan2(event.clientY - cy, event.clientX - cx);
+      const angle = Math.atan2(point.y - cy, point.x - cx);
       if (r <= rim) {
         d.scratchStart();
         const base = d.headPosition();
-        drag = { type: 'scratch', id: event.pointerId, cx, cy, angle, t: event.timeStamp, total: 0, base, target: base, vel: 0 };
+        drag = { type: 'scratch', id: event.pointerId, frame, cx, cy, angle, t: event.timeStamp, total: 0, base, target: base, vel: 0 };
         el.classList.add('is-touch');
         deck.classList.toggle('is-scratching', d === deckA);
       } else {
         engine.start();
-        drag = { type: 'bend', id: event.pointerId, cx, cy, angle, t: event.timeStamp, amount: 0 };
+        drag = { type: 'bend', id: event.pointerId, frame, cx, cy, angle, t: event.timeStamp, amount: 0 };
         el.classList.add('is-bend');
       }
       wake();
@@ -305,6 +325,7 @@
     el.addEventListener('pointerup', end);
     el.addEventListener('pointercancel', end);
     el.addEventListener('lostpointercapture', end);
+    window.addEventListener('resize', () => { if (drag) end({ pointerId: drag.id }); });
     el.addEventListener('keydown', (event) => {
       if (!d.track) return;
       if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
@@ -780,9 +801,9 @@
     });
     u.over.addEventListener('pointerdown', (event) => {
       if (!d.track || !(d.duration > 0)) return;
-      const box = u.over.getBoundingClientRect();
+      const frame = pointerFrame(u.over);
       engine.start();
-      d.jumpTo(clamp((event.clientX - box.left) / box.width, 0, 1) * d.duration);
+      d.jumpTo(clamp(frame.point(event).x / frame.width, 0, 1) * d.duration);
       wake();
     });
     d.on('*', (type) => {
@@ -969,14 +990,16 @@
     event.preventDefault();
     browseKnob.focus({ preventScroll: true });
     try { browseKnob.setPointerCapture(event.pointerId); } catch { /* 可选 */ }
-    browseDrag = { y: event.clientY };
+    const frame = pointerFrame(browseKnob);
+    browseDrag = { frame, y: frame.point(event).y };
   });
   browseKnob.addEventListener('pointermove', (event) => {
     if (!browseDrag) return;
-    const steps = Math.trunc((event.clientY - browseDrag.y) / 18);
+    const steps = Math.trunc((browseDrag.frame.point(event).y - browseDrag.y) / 18);
     if (steps) { browseDrag.y += steps * 18; moveSelection(steps); }
   });
-  ['pointerup', 'pointercancel'].forEach((type) => browseKnob.addEventListener(type, () => { browseDrag = null; }));
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((type) => browseKnob.addEventListener(type, () => { browseDrag = null; }));
+  window.addEventListener('resize', () => { browseDrag = null; });
   browseKnob.addEventListener('wheel', (event) => { event.preventDefault(); moveSelection(Math.sign(event.deltaY)); }, { passive: false });
   browseKnob.addEventListener('keydown', (event) => {
     if (event.key === 'ArrowDown' || event.key === 'ArrowRight') { event.preventDefault(); moveSelection(1); }
@@ -1180,6 +1203,7 @@
     const open = !!playerWin && playerWin.classList.contains('is-max') && !playerWin.classList.contains('is-unmax');
     if (open === consoleOpen) return;
     consoleOpen = open;
+    document.documentElement.classList.toggle('has-player-max', open);
     engine.setPerformance(open);
     if (open) {
       if (mayStartAudio()) engine.start();
