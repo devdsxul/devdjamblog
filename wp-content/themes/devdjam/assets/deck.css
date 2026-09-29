@@ -104,8 +104,8 @@
 .player-pro .is-down, .player-pro .ddj-btn.is-down { transform: translate(2px, 2px); box-shadow: none; }
 @keyframes ddj-blink { 50% { background: var(--win); color: var(--ink); } }
 
-/* 顶部：屏幕 + BEAT FX */
-.ddj-top { display: grid; grid-template-columns: minmax(0, 1fr) 236px; gap: 8px; }
+/* 顶部：缩窄屏幕 + 等宽曲库 / BEAT FX */
+.ddj-top { display: grid; grid-template-columns: minmax(0, 1fr) repeat(2, 236px); gap: 8px; }
 .ddj-screen {
     position: relative;
     display: grid;
@@ -357,11 +357,12 @@
 .mix-xfader .ctl-fader { flex: 1; }
 
 /* 曲库浏览器 */
-.ddj-browser { display: flex; flex-direction: column; min-width: 0; background: var(--win); border: 1px solid var(--line); box-shadow: var(--hard-sm); }
-.browser-head { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 4px 6px; border-bottom: 1px solid var(--line); background: var(--win-2); }
+.ddj-browser { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--win); border: 1px solid var(--line); box-shadow: var(--hard-sm); }
+.browser-head { display: flex; flex: none; align-items: center; gap: 8px; min-width: 0; padding: 4px 6px; border-bottom: 1px solid var(--line); background: var(--win-2); }
 .browser-count { padding: 0 4px; background: var(--lcd-bg); color: var(--lcd); font: 700 10px var(--mono); }
-.browser-hint { margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 9px var(--mono); color: var(--muted); }
-.browser-wrap { min-width: 0; max-height: clamp(84px, calc(100dvh - 700px), 220px); overflow: auto; }
+.browser-hint { display: none; }
+/* 内容不撑高顶栏；列表填满与 BEAT FX 对齐的剩余高度，超出部分内部滚动。 */
+.browser-wrap { flex: 1; min-width: 0; min-height: 0; height: 0; overflow: auto; }
 .browser-table { width: 100%; border-collapse: collapse; background: var(--win); font: 11px var(--mono); white-space: nowrap; }
 .browser-table > thead > tr > th {
     position: sticky; top: 0; z-index: 1; height: 20px; padding: 0 6px;
@@ -377,8 +378,10 @@
 .browser-table .c-art img { display: block; width: 22px; height: 22px; object-fit: cover; border: 1px solid var(--line); }
 .browser-table .c-title { max-width: 0; width: 100%; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
 .browser-table .c-num { width: 58px; text-align: right; }
-.browser-table .c-load { width: 118px; text-align: right; }
-.player-pro .lib-load { min-height: 18px; padding: 0 5px; font-size: 9px; margin-left: 3px; }
+.browser-table .c-load { width: 76px; text-align: right; }
+/* 紧凑曲库只显示曲名、已装载盘号和 LOAD 1/2，BPM / 调性仍可在屏幕查看。 */
+.browser-table .c-no, .browser-table .c-art, .browser-table .c-num, .lib-load-word { display: none; }
+.player-pro .lib-load { min-width: 24px; min-height: 22px; padding: 0 3px; font-size: 9px; margin-left: 3px; }
 .lib-deck { display: inline-block; margin-right: 2px; padding: 0 3px; font: 700 9px var(--mono); border: 1px solid var(--line); }
 .lib-deck.d1 { background: #111111; color: #ffffff; }
 .lib-deck.d2 { background: var(--accent); color: #ffffff; }
@@ -395,10 +398,10 @@ html[data-effects="off"] .player-pro .fx-on[aria-pressed="true"] { animation: no
     .window.win-player.is-max { --jog: clamp(150px, calc(100dvh - 560px), 190px); }
 }
 @media (max-width: 980px) {
-    .ddj-top { grid-template-columns: 1fr; }
+    .ddj-top { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ddj-screen { grid-column: 1 / -1; }
     .ddj-console { grid-template-columns: 1fr 1fr; }
     .ddj-mixer { grid-column: 1 / -1; grid-row: 2; }
-    .browser-hint { display: none; }
 }
 @media (max-width: 720px) {
     /* 打碟机弹窗改用通用的 winMaxIn/Out：winPlayerMaxIn 末帧带 translate(-50%,-50%)，
@@ -412,9 +415,10 @@ html[data-effects="off"] .player-pro .fx-on[aria-pressed="true"] { animation: no
     .window.win-player.is-max.is-unmax { animation-name: winMaxOut; }
     .ddj-console { grid-template-columns: 1fr; }
     .ddj-mixer { grid-column: auto; grid-row: auto; }
-    .browser-wrap { max-height: 240px; }
 }
 @media (max-width: 600px) {
+    .ddj-top { grid-template-columns: minmax(0, 1fr); }
+    .ddj-browser { height: 180px; }
     .play-button { min-width: 44px; min-height: 40px; }
     .deck-controls button { min-height: 36px; }
     input[type="range"].seek-slider::-webkit-slider-thumb { width: 18px; height: 24px; }
@@ -424,9 +428,7 @@ html[data-effects="off"] .player-pro .fx-on[aria-pressed="true"] { animation: no
     .ctl-knob { width: 30px; height: 30px; }
     .ctl-fader.h { height: 34px; }
     .ctl-fader.h .cap { width: 18px; left: calc(var(--pos) * (100% - 18px)); }
-    /* 窄屏曲库：隐藏封面与时长，LOAD 只留盘号，把宽度让给曲名 */
-    .browser-table .c-art, .browser-table .c-time, .lib-load-word { display: none; }
-    .browser-table .c-num { width: 44px; }
+    /* 窄屏放大装载按钮，保留触屏操作空间。 */
     .browser-table .c-load { width: 96px; }
     .player-pro .lib-load { min-width: 34px; min-height: 30px; }
 }

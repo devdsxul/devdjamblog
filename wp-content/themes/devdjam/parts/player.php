@@ -116,7 +116,7 @@ $strip = static function ($n) {
         <button class="player-retry" data-player-retry type="button" hidden><?php echo dj_text('retry'); ?></button>
     </div>
 
-    <!-- 放大后的 DDJ 双盘控制台：屏幕 + BEAT FX / 曲库 / Deck 1 · Mixer · Deck 2 -->
+    <!-- 放大后的 DDJ 双盘控制台：屏幕 + 曲库 + BEAT FX / Deck 1 · Mixer · Deck 2 -->
     <div class="player-pro" data-player-pro>
         <div class="ddj-top">
             <div class="ddj-screen" data-screen>
@@ -144,6 +144,15 @@ $strip = static function ($n) {
                     <button type="button" data-screen-act="zoom-out" aria-label="波形缩小">&minus;</button>
                 </div>
             </div>
+            <section class="ddj-browser" aria-label="Tape library">
+                <header class="browser-head"><span class="ddj-label">tape library</span><span class="browser-count" data-lib-count>00</span><span class="browser-hint">browse &#8635; + load · <?php echo dj_text('double-click row to load'); ?></span></header>
+                <div class="browser-wrap">
+                    <table class="browser-table">
+                        <thead><tr><th class="c-no">#</th><th class="c-art"></th><th><?php echo dj_text('title'); ?></th><th class="c-num">bpm</th><th class="c-num c-key">key</th><th class="c-num c-time">time</th><th class="c-load">deck</th></tr></thead>
+                        <tbody data-lib-list><tr><td colspan="7" class="browser-empty"><?php echo dj_text('loading'); ?></td></tr></tbody>
+                    </table>
+                </div>
+            </section>
             <div class="fx-unit" data-fx-unit aria-label="Beat FX">
                 <div class="fx-head"><span class="ddj-label">beat fx</span><button type="button" class="ddj-btn fx-on" data-fx-act="on" aria-pressed="false">on</button></div>
                 <div class="fx-lcd"><b data-fx="name">ECHO</b><span data-fx="beat">1/2</span><span data-fx="bpm">120.0</span></div>
@@ -164,16 +173,6 @@ $strip = static function ($n) {
                 </div>
             </div>
         </div>
-
-        <section class="ddj-browser" aria-label="Tape library">
-            <header class="browser-head"><span class="ddj-label">tape library</span><span class="browser-count" data-lib-count>00</span><span class="browser-hint">browse &#8635; + load · <?php echo dj_text('double-click row to load'); ?></span></header>
-            <div class="browser-wrap">
-                <table class="browser-table">
-                    <thead><tr><th class="c-no">#</th><th class="c-art"></th><th><?php echo dj_text('title'); ?></th><th class="c-num">bpm</th><th class="c-num c-key">key</th><th class="c-num c-time">time</th><th class="c-load">deck</th></tr></thead>
-                    <tbody data-lib-list><tr><td colspan="7" class="browser-empty"><?php echo dj_text('loading'); ?></td></tr></tbody>
-                </table>
-            </div>
-        </section>
 
         <div class="ddj-console">
             <?php $deck_panel(1); ?>
