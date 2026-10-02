@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DEVDJAM Core
  * Description: Music notes, beats, audio metadata and the DEVDJAM listening queue.
- * Version: 1.1.0
+ * Version: 1.1.1
  * Requires at least: 6.6
  * Requires PHP: 8.1
  * Author: DEVDJAM
@@ -210,14 +210,14 @@ function devdjam_admin_assets($hook) {
     $is_dj_screen = $screen && in_array($screen->post_type, array('dj_beat', 'dj_music'), true);
     $is_home = $hook === 'toplevel_page_devdjam';
     if ($is_home || $is_dj_screen) {
-        wp_enqueue_style('devdjam-admin', plugins_url('admin.css', __FILE__), array(), '1.1.0');
+        wp_enqueue_style('devdjam-admin', plugins_url('admin.css', __FILE__), array(), '1.1.1');
     }
     $analysis = devdjam_can_detect() ? array('devdjam-analysis') : array();
     if ($is_dj_screen && in_array($hook, array('post.php', 'post-new.php'), true)) {
         wp_enqueue_media();
-        wp_enqueue_script('devdjam-admin', plugins_url('admin.js', __FILE__), array_merge(array('media-views'), $analysis), '1.1.0', true);
+        wp_enqueue_script('devdjam-admin', plugins_url('admin.js', __FILE__), array_merge(array('media-views'), $analysis), '1.1.1', true);
     } elseif ($is_home && $analysis) {
-        wp_enqueue_script('devdjam-admin', plugins_url('admin.js', __FILE__), array_merge(array('wp-api-fetch'), $analysis), '1.1.0', true);
+        wp_enqueue_script('devdjam-admin', plugins_url('admin.js', __FILE__), array_merge(array('wp-api-fetch'), $analysis), '1.1.1', true);
     }
 }
 add_action('admin_enqueue_scripts', 'devdjam_admin_assets');

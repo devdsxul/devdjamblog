@@ -121,7 +121,7 @@ $latest = get_posts(array('post_type' => array('post', 'dj_music', 'dj_beat'), '
         <?php endforeach; ?>
         <div class="dock-divider" aria-hidden="true"></div>
         <div class="dock-social">
-            <a href="#" class="dock-social-link" data-social="spotify" target="_blank" rel="noopener noreferrer" title="Spotify" aria-label="Spotify">
+            <a href="https://open.spotify.com/playlist/37i9dQZF1EJyTMHbHyzfL8?si=zZ3Gh4IUThWgX0Dc4QBwrQ" class="dock-social-link" data-social="spotify" target="_blank" rel="noopener noreferrer" title="Spotify" aria-label="Spotify">
                 <svg class="social-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                     <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.207-2.35-1.436-5.308-1.76-8.793-.963-.335.077-.67-.133-.747-.468-.077-.335.132-.67.467-.747 3.809-.871 7.077-.502 9.723 1.115.294.18.387.562.207.856zm1.224-2.723c-.226.367-.708.482-1.075.257-2.69-1.653-6.79-2.131-9.971-1.165-.413.125-.849-.107-.974-.52-.125-.413.108-.849.52-.974 3.632-1.102 8.147-.568 11.243 1.327.367.226.482.708.257 1.075zm.105-2.835C14.692 8.95 9.375 8.775 6.297 9.71c-.494.15-1.016-.129-1.166-.623-.15-.495.129-1.017.623-1.167 3.532-1.072 9.404-.866 13.115 1.337.445.264.59.838.327 1.282-.264.444-.838.59-1.281.326z"/>
                 </svg>
