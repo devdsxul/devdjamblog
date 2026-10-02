@@ -19,3 +19,8 @@ If you're using Codex or another agent-capable tool, additional project-scoped h
 Managed by Trellis. Edits outside this block are preserved; edits inside may be overwritten by a future `trellis update`.
 
 <!-- TRELLIS:END -->
+
+
+## 本项目的 Trellis 定制
+
+平台 hook 已做项目级共享。修改 hook、升级或回退 Trellis 前，先读 [本地定制说明](docs/TRELLIS-CUSTOMIZATIONS.md)；保留原平台注册入口和模板哈希基线，不把完整实现重新复制到各平台入口。

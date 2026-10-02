@@ -176,28 +176,6 @@ def _resolve_active_task(trellis_dir: Path, hook_input: dict):
     return resolve_active_task(trellis_dir.parent, hook_input, platform="codex")
 
 
-def run_script(script_path: Path, context_key: str | None = None) -> str:
-    try:
-        env = os.environ.copy()
-        env["PYTHONIOENCODING"] = "utf-8"
-        if context_key:
-            env["TRELLIS_CONTEXT_ID"] = context_key
-        cmd = [sys.executable, "-W", "ignore", str(script_path)]
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=5,
-            cwd=str(script_path.parent.parent.parent),
-            env=env,
-        )
-        return result.stdout if result.returncode == 0 else "No context available"
-    except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError):
-        return "No context available"
-
-
 def _normalize_task_ref(task_ref: str) -> str:
     normalized = task_ref.strip()
     if not normalized:
