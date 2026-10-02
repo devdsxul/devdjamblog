@@ -1018,3 +1018,48 @@ Fixed 7 mobile layout defects and XSS vulnerability, added author display and i1
 - 已删除 `.runtime/release-04b2e69/`、`release-f9b2847/`、`release-5f74335/`；删除前逐文件确认可由对应 Git 提交恢复，备份记录已保存在私有运维手册。
 - 已删除旧的 `fix/dj-deck-library-top`、`fix/dj-deck-compact-library` 分支。此记录在文档合并前写入；承载本次提交的 `fix/dj-deck-mobile-landscape` 在 main 快进并推送后移除，最终分支状态以清场后 Git 审计为准。
 - 预览数据、账号、种子、正式回归测试、已安装的 PHP 检查器和远端备份均保留。本轮无生产写入，应用发布仍为 `5f74335` / 资源 `3.2.2`。
+
+
+## Session 23: 全仓精简发布与 worktree 清理
+<!-- trellis-session: v=2 fp=9ed38dfbfc7246b7 -->
+
+**Date**: 2026-10-02
+**Task**: 全仓精简发布与 worktree 清理
+**Branch**: `refactor/repo-simplification`
+
+### Summary
+
+九项精简完成后，按用户授权补缓存版本和Spotify提交；35dbf08已发布并核对正式入口，三个父子任务归档、三个复核worktree及对应分支清理。
+
+### Main Changes
+
+- 主题资源升至3.2.3、插件及后台资源升至1.1.1；Spotify纳入Git并核对线上一致，只发布10个WordPress文件
+- 备份保存现场原字节；首页Spotify发布前已存在相同链接，CRLF/LF差异未当成未知逻辑改动覆盖
+- 两个子任务及父任务归档到archive/2026-10，上下文清单同步至归档路径并验证通过
+- 三个复核worktree确认已提交或被后续审查替代后删除，对应分支一并删除；主预览数据、种子、账号、回归测试、发布清单和远端备份保留
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `dafd7a1` | refactor(app): 原生封面与播放器辅助代码精简 |
+| `c21a689` | refactor(trellis): 共享平台 hook 并删除闲置适配层 |
+| `f03f830` | docs(task): 记录全仓精简规划与验证 |
+| `35dbf08` | chore(release): 更新资源缓存版本并配置 Spotify 链接 |
+
+### Testing
+
+- [OK] 新增：发布准备npm run check通过14个PHP/JS文件；10个目标上传/回读与Git产物一致，5个PHP文件在服务端语法检查通过
+- [OK] 新增：正式HTTPS首页无诊断参数及源站均200，3.2.3主题与1.1.1后台共5个静态资源内容匹配，Spotify及封面标记正确，近期PHP日志无错误
+- [OK] 复用：20项播放器输入回归、精简枚举/失败传播回归、160组hook新旧差分及独立审查；未因发布版本常量变化重跑全套
+- [OK] 新增：三个归档任务上下文校验通过，清理前无唯一源码，主预览和发布证据保留
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 真实后台选图保存、手机触摸/试听及三个平台真实宿主尚未人工验收，不将部署表面核对等同完整交互通过
+- 两项旧hook行为仍保留：极短UTF-8截断替换字符，以及路径祖先.claude影响部分argv平台回退
+- 后续Windows长SSH脚本经stdin传UTF-8 bytes/LF，避免命令行长度与text模式CRLF转换；全量恢复演练仍未执行

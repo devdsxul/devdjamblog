@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 22
-- **Last Active**: 2026-09-29
+- **Total Sessions**: 23
+- **Last Active**: 2026-10-02
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1020 | Active |
+| `journal-1.md` | ~1065 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 23 | 2026-10-02 | 全仓精简发布与 worktree 清理 | `dafd7a1`, `c21a689`, `f03f830`, `35dbf08` | `refactor/repo-simplification` |
 | 22 | 2026-09-29 | DJ Deck 发布与知识收尾 | `04b2e69`, `f9b2847`, `5f74335` | `main` |
 | 21 | 2026-09-27 | DJ 控制台收尾：质量检查、安装 gh、合并 PR | - | `worktree-dj-controller-style` |
 | 20 | 2026-09-27 | Pioneer DDJ 风格双盘控制台 + 全站细节风格统一（已上线） | `ea5b1b9`, `81c8e9f` | `worktree-dj-controller-style` |
