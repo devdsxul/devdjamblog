@@ -3,7 +3,7 @@
   "name": "repo-simplification",
   "title": "全仓冗余精简",
   "description": "落实 ponytail 全仓审计的九项精简，保留现有功能与三个平台入口，明确生成文件维护边界并补齐回归验证",
-  "status": "in_progress",
+  "status": "completed",
   "dev_type": null,
   "scope": null,
   "package": null,
@@ -11,11 +11,11 @@
   "creator": "devdsxul",
   "assignee": "devdsxul",
   "createdAt": "2026-09-30",
-  "completedAt": null,
+  "completedAt": "2026-10-02",
   "branch": "refactor/repo-simplification",
   "base_branch": "main",
   "worktree_path": null,
-  "commit": null,
+  "commit": "35dbf08",
   "pr_url": null,
   "subtasks": [],
   "children": [
@@ -24,6 +24,6 @@
   ],
   "parent": null,
   "relatedFiles": [],
-  "notes": "",
+  "notes": "2026-10-02 用户批准发布与清理。35dbf08 已上线并核对正式入口/资源；归档不代表未执行的后台、真机、真实宿主人工验收通过。",
   "meta": {}
 }
