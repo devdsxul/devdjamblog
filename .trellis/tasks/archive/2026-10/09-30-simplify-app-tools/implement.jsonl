@@ -1,4 +1,4 @@
-{"file": ".trellis/tasks/09-30-repo-simplification/research/app-tools.md", "reason": "原生封面、死代码、样式和枚举事实"}
+{"file": ".trellis/tasks/archive/2026-10/09-30-repo-simplification/research/app-tools.md", "reason": "原生封面、死代码、样式和枚举事实"}
 {"file": ".trellis/spec/frontend/directory-structure.md", "reason": "主题与插件职责"}
 {"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "控件与手机行为必须保留"}
 {"file": ".trellis/spec/frontend/type-safety.md", "reason": "WordPress 字段和输出边界"}
