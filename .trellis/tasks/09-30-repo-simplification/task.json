@@ -1,0 +1,29 @@
+{
+  "id": "repo-simplification",
+  "name": "repo-simplification",
+  "title": "全仓冗余精简",
+  "description": "落实 ponytail 全仓审计的九项精简，保留现有功能与三个平台入口，明确生成文件维护边界并补齐回归验证",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "devdsxul",
+  "assignee": "devdsxul",
+  "createdAt": "2026-09-30",
+  "completedAt": null,
+  "branch": "refactor/repo-simplification",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "09-30-simplify-app-tools",
+    "09-30-simplify-trellis-hooks"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
