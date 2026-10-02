@@ -1357,29 +1357,20 @@ html.has-max .sticker {
     width: 32px !important;
     height: 32px !important;
 }
+:is(.home-split, .archive-track-list) .track-button:is(:hover, :active, .is-playing) {
+    color: var(--accent) !important;
+}
 .home-split .track-button:hover,
 .archive-track-list .track-button:hover {
-    background: transparent !important;
-    box-shadow: none !important;
-    color: var(--accent) !important;
     transform: scale(1.15);
 }
 .home-split .track-button:active,
 .archive-track-list .track-button:active {
-    background: transparent !important;
-    box-shadow: none !important;
-    color: var(--accent) !important;
     transform: scale(0.92);
 }
 .home-split .track-button:focus,
 .archive-track-list .track-button:focus {
     outline: none !important;
-}
-.home-split .track-button.is-playing,
-.archive-track-list .track-button.is-playing {
-    background: transparent !important;
-    box-shadow: none !important;
-    color: var(--accent) !important;
 }
 .home-split .track-button [hidden],
 .archive-track-list .track-button [hidden] {

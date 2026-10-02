@@ -439,11 +439,6 @@
     const title = $('[data-track-title]');
     title.textContent = track?.title || t('no tape');
     if (track) delete title.dataset.i18n; else title.dataset.i18n = 'no tape';
-    const cover = $('[data-player-cover]');
-    if (cover) {
-      if (track?.cover) { cover.src = track.cover; cover.hidden = false; }
-      else { cover.hidden = true; cover.removeAttribute('src'); }
-    }
     if (track && 'mediaSession' in navigator && 'MediaMetadata' in window) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: track.title, artist: config.siteName || 'DEVDJAM', album: 'DEVDJAM',

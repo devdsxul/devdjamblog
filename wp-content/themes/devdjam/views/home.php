@@ -139,7 +139,7 @@ $featured = !empty($latest_posts) ? $latest_posts[0] : null;
                                     </div>
                                 </div>
                                 <div class="entry-action">
-                                    <?php dj_beat_button($beat->ID); ?>
+                                    <?php dj_track_button($beat->ID); ?>
                                 </div>
                             </li>
                         <?php endforeach; ?>

@@ -6,15 +6,9 @@ import PhpParser from 'php-parser';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const parser = new PhpParser({ parser: { suppressErrors: false, version: '8.3' } });
-const files = [];
-function walk(dir) {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const filename = path.join(dir, entry.name);
-    if (entry.isDirectory()) walk(filename);
-    else files.push(filename);
-  }
-}
-walk(path.join(root, 'wp-content'));
+const files = fs.readdirSync(path.join(root, 'wp-content'), { recursive: true, withFileTypes: true })
+  .filter((entry) => !entry.isDirectory())
+  .map((entry) => path.join(entry.parentPath ?? entry.path, entry.name));
 let checked = 0;
 for (const file of files) {
   if (file.endsWith('.php')) {

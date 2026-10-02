@@ -6,7 +6,7 @@ A small corner on the internet for underground music, clouds, beats, and random 
 
 ## 本地预览
 
-本机安装 Node.js 后，在本目录执行：
+本机安装 Node.js 后，在本目录执行（当前验证环境为 Node 25.2.0；语法检查器的原生递归枚举要求 Node 18.17+，使用 20.x 时要求 20.1+；未验证旧版 Node 或预览工具在这些最低版本上的兼容性）：
 
 ```powershell
 npm ci
@@ -69,9 +69,12 @@ dist/                      可上传的主题、插件和服务器压缩包
 ```powershell
 npm run check
 node dev/check-deck-input.mjs
+node dev/check-simplification.mjs
 ```
 
-第二条是无需浏览器的打碟机输入回归：验证普通 / 旋转坐标下的旋钮、推子、搓碟、波形定位、选歌和 resize 收尾。它不替代手机真机的视觉、触摸与试听验收。文档改动只检查链接和事实；按影响范围选择验证，不自动重跑全套。
+第二条是无需浏览器的打碟机输入回归：验证普通 / 旋转坐标下的旋钮、推子、搓碟、波形定位、选歌和 resize 收尾。它不替代手机真机的视觉、触摸与试听验收。第三条核对新旧文件枚举集合、嵌套 fixture 中的语法失败传播，以及封面/按钮的静态保留合同；不替代后台特色图片选图、保存和重开实测。
+
+文档改动只检查链接和事实；按影响范围选择验证，不自动重跑全套。
 
 需要并获准进行完整浏览器验收时，使用独立的 `8788` 测试站。需要 Python、`dev/requirements.txt` 的依赖，以及 Microsoft Edge：
 

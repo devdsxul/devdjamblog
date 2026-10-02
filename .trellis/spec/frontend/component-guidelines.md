@@ -64,7 +64,7 @@ dj_window_close(array(
 | `dj_gif($name, $class, $lazy)` | Renders local GifCities animated sticker with intrinsic width/height | `dj_gif('boombox', 'hero-badge')` |
 | `dj_sticker($gif, $action, $anim, $class)` | Clickable and draggable sticker button (`data-sticker-id`) supporting free repositioning across the desktop | `dj_sticker('headphones', 'mute', 'wiggle')` |
 | `dj_empty($text, $gif)` | Honest empty state illustration & copy (no fake placeholder rows) | `dj_empty('no beats yet', 'construction')` |
-| `dj_beat_button($id, $label)` | Track play trigger wired to the global audio player controller | `dj_beat_button(12, 'play')` |
+| `dj_track_button($id, $label)` | Track play trigger wired to the global audio player controller | `dj_track_button(12, 'play')` |
 | `devdjam_default_cover_url()` | Returns fallback retro cassette tape cover URL for beats without custom artwork | `devdjam_default_cover_url()` |
 | `dj_icon($name)` | Inline SVG icon for player control buttons | `dj_icon('play')` |
 
@@ -89,7 +89,7 @@ dj_window_close(array(
 5. **Banner Sticker Distribution**: Interactive desktop stickers are centered around the top banner wings (`.banner-wing-left` and `.banner-wing-right`), keeping the core windows clean and unencumbered while allowing free drag & drop anywhere on the desk.
 6. **Dock Social Navigation & Foot Placement**: `.dock-foot` is pinned to the bottom via `margin-top: auto`. External social redirects (Spotify, Instagram, TikTok) are housed below the primary nav separated by `.dock-divider`.
 7. **Article Cover Policy**: Featured images (`has_post_thumbnail`) are restricted to card previews in lists/archives and must not render within single article views (`single.php`).
-8. **Beat Artwork & Cover Fallback**: Beats support optional custom cover artwork chosen in admin (`_thumbnail_id`). When unassigned, beats automatically fall back to the retro cassette cover (`devdjam_default_cover_url()`) across homepage list, archive grids, and the DJ deck turntable platter.
+8. **Beat Artwork & Cover Fallback**: Beats support optional custom cover artwork chosen through the native WordPress Featured Image panel (`_thumbnail_id`); music shares the same panel. When unassigned, beats automatically fall back to the retro cassette cover (`devdjam_default_cover_url()`) across homepage list, archive grids, and the DJ deck turntable platter.
 9. **DJ Deck Queue Initial State**: The track playlist in the compact player (`<details class="queue">`) defaults to expanded (`open`) so visitors can immediately inspect available tracks. A `⤢ dj controller` button under the EQ opens the maximized controller (same as the title-bar maximize button).
 10. **Beat List-Only Policy**: Beats do not have individual detail pages (`single.php`). They are presented exclusively as showcase lists/cards on the homepage and the `/beats/` archive with inline metadata and direct `track-button` audio playback. Any direct navigation to a singular beat permalink is safely 301 redirected to `/beats/`.
 11. **Window Maximize/Restore Zoom Animation**: All windows (`.window`) animate smoothly on maximize (`winMaxIn` / `winPlayerMaxIn`) and restore/unmaximize (`winMaxOut` / `winPlayerMaxOut`), with smooth backdrop dim fading (`.desk-dim.is-active`).

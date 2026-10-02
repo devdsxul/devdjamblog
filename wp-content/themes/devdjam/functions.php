@@ -141,25 +141,6 @@ function dj_empty($text = 'nothing here yet', $gif = 'construction') {
     echo '<p>' . dj_text($text) . '</p></div>';
 }
 
-function dj_recent($type, $count = 5) {
-    return new WP_Query(array('post_type' => $type, 'post_status' => 'publish', 'has_password' => false,
-        'posts_per_page' => $count, 'no_found_rows' => true, 'ignore_sticky_posts' => true));
-}
-
-function dj_post_rows($query) {
-    echo '<ul class="post-rows">';
-    while ($query->have_posts()) {
-        $query->the_post();
-        $fresh = (time() - get_post_time('U', true)) < 7 * DAY_IN_SECONDS;
-        echo '<li><time datetime="' . esc_attr(get_the_date('c')) . '">' . esc_html(get_the_date('y.m.d')) . '</time>';
-        echo '<a href="' . esc_url(get_permalink()) . '">' . esc_html(get_the_title()) . '</a>';
-        if ($fresh) dj_gif('new', 'new-badge');
-        echo '</li>';
-    }
-    echo '</ul>';
-    wp_reset_postdata();
-}
-
 function dj_track_button($id, $label = 'play') {
     $title = get_the_title($id);
     echo '<button class="track-button" type="button" data-track-id="' . esc_attr((string) $id) . '" data-track-title="' . esc_attr($title) . '" aria-label="播放 ' . esc_attr($title) . '">';
@@ -169,10 +150,6 @@ function dj_track_button($id, $label = 'play') {
     echo '</span>';
     echo '<span class="track-btn-label">' . dj_text($label) . '</span>';
     echo '</button>';
-}
-
-function dj_beat_button($id, $label = 'play') {
-    dj_track_button($id, $label);
 }
 
 function devdjam_default_cover_url() {

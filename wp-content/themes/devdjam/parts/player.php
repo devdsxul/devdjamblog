@@ -82,7 +82,6 @@ $strip = static function ($n) {
     <div class="player-compact">
         <div class="platter-wrap">
             <div class="platter" data-platter aria-label="转盘：按住拖动可搓碟" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="1000" aria-valuenow="0">
-                <img class="platter-label" data-player-cover alt="" hidden>
             </div>
             <div class="platter-eye" aria-hidden="true">
                 <img class="gif" src="<?php echo $eye; ?>" alt="" width="44" height="44">

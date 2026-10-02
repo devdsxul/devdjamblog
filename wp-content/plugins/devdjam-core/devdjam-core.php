@@ -178,7 +178,7 @@ function devdjam_admin_home() {
             <?php endforeach; ?>
         </div>
         <h2>日常管理</h2>
-        <p>文章使用标准 WordPress 编辑器。发布 Beat 与音乐分享时，均可在「音轨资料」里直接选择或上传音频和封面；草稿不会进入公开曲库。</p>
+        <p>文章使用标准 WordPress 编辑器。发布 Beat 与音乐分享时，均可在「音轨资料」里选择或上传音频，在「特色图片 / 特色图像」面板设置封面；草稿不会进入公开曲库。</p>
         <p>「链接」和「关于」可在 <a href="<?php echo esc_url(admin_url('edit.php?post_type=page')); ?>">页面</a> 中编辑。删除内容可先放回收站，删除媒体文件则会影响引用它的播放器。</p>
         <p><a class="button" href="<?php echo esc_url(home_url('/')); ?>">查看网站 ↗</a> <a class="button" href="<?php echo esc_url(admin_url('upload.php')); ?>">打开媒体库</a></p>
         <?php if (devdjam_can_detect()) : $pending = devdjam_tracks_missing_meta(); ?>
@@ -233,25 +233,8 @@ function devdjam_beat_meta_html($post) {
     $audio_id = absint(get_post_meta($post->ID, '_dj_audio_id', true));
     $url = devdjam_valid_audio($audio_id) ? wp_get_attachment_url($audio_id) : '';
     $bpm = get_post_meta($post->ID, '_dj_bpm', true);
-    $thumb_id = get_post_thumbnail_id($post->ID);
-    $thumb_url = $thumb_id ? wp_get_attachment_image_url($thumb_id, 'medium') : '';
-    $default_cover = function_exists('devdjam_default_cover_url')
-        ? devdjam_default_cover_url()
-        : get_template_directory_uri() . '/assets/img/astro-cassette.png';
     wp_nonce_field('devdjam_beat_save', 'devdjam_beat_nonce');
     ?>
-    <div class="dj-cover-field">
-        <label><strong>封面图片</strong></label>
-        <input type="hidden" id="dj-cover-id" name="_thumbnail_id" value="<?php echo esc_attr((string) ($thumb_id ?: '')); ?>">
-        <div class="dj-cover-preview-box">
-            <img id="dj-cover-preview" src="<?php echo esc_url($thumb_url ?: $default_cover); ?>" alt="封面预览" data-default-src="<?php echo esc_url($default_cover); ?>">
-        </div>
-        <p>
-            <button type="button" class="button button-primary" id="dj-choose-cover">选择或上传封面</button>
-            <button type="button" class="button" id="dj-remove-cover" <?php disabled(!$thumb_id); ?>>恢复默认封面</button>
-        </p>
-        <p class="description" id="dj-cover-hint"><?php echo $thumb_id ? '已设定自定义封面。' : '未设置封面，当前展示默认复古磁带封面。'; ?></p>
-    </div>
     <div class="dj-audio-field">
         <label for="dj-audio-id"><strong>音频文件</strong></label>
         <input type="hidden" id="dj-audio-id" name="dj_audio_id" value="<?php echo esc_attr((string) $audio_id); ?>">
@@ -286,14 +269,6 @@ function devdjam_save_beat($post_id) {
     update_post_meta($post_id, '_dj_audio_id', $audio_id);
     update_post_meta($post_id, '_dj_bpm', $bpm);
     update_post_meta($post_id, '_dj_key', substr($key, 0, 40));
-    if (isset($_POST['_thumbnail_id'])) {
-        $thumb_id = absint($_POST['_thumbnail_id']);
-        if ($thumb_id > 0) {
-            set_post_thumbnail($post_id, $thumb_id);
-        } else {
-            delete_post_thumbnail($post_id);
-        }
-    }
     $post_type = get_post_type($post_id);
     if (!$audio_id && get_post_status($post_id) === 'publish' && $post_type === 'dj_beat') {
         remove_action('save_post_dj_beat', 'devdjam_save_beat');
