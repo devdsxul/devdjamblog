@@ -1838,13 +1838,29 @@ html[data-effects="off"] .marquee { text-overflow: ellipsis; }
     /* 语言切换器回到文档流；body 是 flex 容器，flex 子项带 z-index 仍会参与层叠，必须压到弹窗（150）与遮罩（120）之下 */
     .top-lang { position: static; align-self: flex-end; margin: 0 0 4px; z-index: 1; }
 
-    /* 横幅：字标在上，两排贴纸在下，不再左右挤压滚动 */
-    .site-banner { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-bottom: 8px; padding: 0 4px; }
-    .site-banner-link { order: 0; grid-column: auto; }
-    .banner-wing { order: 1; width: 100%; max-width: 100%; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 0; overflow: visible; }
-    .banner-wing .sticker .gif { max-height: 36px; max-width: 50px; }
-    .banner-stage { height: 88px; }
-    .banner-letters { font-size: clamp(30px, 10vw, 54px); gap: 2px; }
+    /* 横幅：字标居中，两侧各一簇贴纸，与桌面端左右翼同构；不再在字标下方排成两条工具栏。
+       贴纸统一放进 --stk 见方的格子，宽扁/瘦长的 GIF 都按比例收进格内，簇的尺寸可预期 */
+    .site-banner {
+        --stk: 44px;
+        --stk-cols: 3;
+        display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        align-items: center; gap: 6px; margin-bottom: 8px; padding: 0 2px;
+    }
+    .site-banner-link { order: 0; grid-column: 2; grid-row: 1; }
+    .banner-wing {
+        order: 0; display: grid; grid-template-columns: repeat(var(--stk-cols), var(--stk)); grid-auto-rows: var(--stk);
+        align-items: center; justify-items: center; gap: 2px 4px;
+        width: auto; max-width: none; padding: 0; overflow: visible;
+    }
+    .banner-wing-left { grid-column: 1; grid-row: 1; justify-self: end; }
+    .banner-wing-right { grid-column: 3; grid-row: 1; justify-self: start; }
+    .banner-wing .sticker { width: var(--stk); height: var(--stk); }
+    .banner-wing .sticker .gif { max-width: 100%; max-height: 100%; }
+    /* 错落：隔一个上提/下沉几像素，像随手贴上去而不是表格。用独立 translate，不覆盖每张贴纸自带的 rotate */
+    .banner-wing .sticker:nth-child(odd) { translate: 0 -3px; }
+    .banner-wing .sticker:nth-child(even) { translate: 0 3px; }
+    .banner-stage { width: auto; height: 88px; padding: 0 6px; }
+    .banner-letters { font-size: clamp(30px, 6.6vw, 46px); gap: 2px; }
     .star-top { width: 18px; height: 30px; left: 14%; top: 4px; }
     .star-bottom { width: 16px; height: 26px; right: 12%; bottom: 4px; }
 
@@ -1913,23 +1929,28 @@ html[data-effects="off"] .marquee { text-overflow: ellipsis; }
         padding: 4px 4px calc(52px + env(safe-area-inset-bottom, 0px)) 4px;
     }
 
-    /* 顶部横幅自适应缩放 */
+    /* 顶部横幅自适应缩放：两翼各 2 列 × 3 行，格子随视口缩放，字标同步收小，三段在 320px 也放得下 */
     .site-banner {
+        --stk: clamp(28px, calc(11vw - 6px), 40px);
+        --stk-cols: 2;
+        gap: 4px;
         margin-bottom: 6px;
+        padding: 0;
     }
     .banner-stage {
         height: 76px;
+        padding: 0 4px;
     }
     .banner-letters {
-        font-size: clamp(22px, 8.5vw, 36px);
+        font-size: clamp(22px, 8vw, 34px);
         gap: 1px;
     }
     .banner-wing {
-        gap: 4px;
+        gap: 3px 4px;
     }
-    .banner-wing .sticker .gif {
-        max-height: 32px;
-        max-width: 44px;
+    /* 大屏手机 / 横向窄窗：两侧有余量时改回 3 列 × 2 行，横幅更矮，外侧不留大片空白 */
+    @media (min-width: 500px) {
+        .site-banner { --stk-cols: 3; }
     }
     .top-lang {
         padding: 2px 5px;
