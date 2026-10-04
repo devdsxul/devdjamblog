@@ -270,6 +270,13 @@ body.is-playing .tray-led { filter: none; }
 }
 
 /* ---------- 顶部全站横幅 Banner (DEVDJAM - 透明背景 赛博哥特风格) ---------- */
+/* 装饰交互不显示移动端原生点按高亮，保留键盘焦点与贴纸拖拽。 */
+.site-banner, .sticker {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
 .site-banner {
     position: relative;
     width: 100%;
