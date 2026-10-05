@@ -86,9 +86,9 @@
     display: flex;
     flex-direction: column;
     box-shadow: 8px 8px 0 var(--line);
-    animation: winPlayerMaxIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: winMaxIn var(--window-motion-duration) ease-out both;
 }
-.window.win-player.is-max.is-unmax { animation: winPlayerMaxOut 0.15s ease both; }
+.window.win-player.is-max.is-unmax { animation: winMaxOut var(--window-motion-duration) ease-in both; }
 .window.win-player.is-max > .window-body { flex: 1; min-height: 0; overflow-y: auto; margin: 8px; }
 
 .ddj-label { font: 700 9px/1 var(--mono); letter-spacing: .6px; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
@@ -403,15 +403,13 @@ html[data-effects="off"] .player-pro .fx-on[aria-pressed="true"] { animation: no
     .ddj-mixer { grid-column: 1 / -1; grid-row: 2; }
 }
 @media (max-width: 720px) {
-    /* 打碟机弹窗改用通用的 winMaxIn/Out：winPlayerMaxIn 末帧带 translate(-50%,-50%)，
-       fill-mode: both 会盖过 transform: none，窗口会飞出视口 */
+    /* 窄屏控制台回到通用弹窗定位；缩放动效不覆盖 transform。 */
     .window.win-player.is-max {
-        --jog: min(56vw, 220px); left: 62px; right: 4px; width: auto; transform: none; animation-name: winMaxIn;
+        --jog: min(56vw, 220px); left: 62px; right: 4px; width: auto; transform: none;
         /* 登录后避开顶部的 WordPress 工具栏 */
         top: calc(2vh + var(--wp-admin--admin-bar--height, 0px));
         max-height: calc(96dvh - var(--wp-admin--admin-bar--height, 0px));
     }
-    .window.win-player.is-max.is-unmax { animation-name: winMaxOut; }
     .ddj-console { grid-template-columns: 1fr; }
     .ddj-mixer { grid-column: auto; grid-row: auto; }
 }
@@ -450,8 +448,6 @@ html[data-effects="off"] .player-pro .fx-on[aria-pressed="true"] { animation: no
         transform: translate(-50%, -50%) !important;
         box-shadow: 3px 3px 0 var(--line);
     }
-    /* 旧的缩放动画会覆盖 rotate；手机改为直接展开 / 收起。 */
-    .window.win-player.is-max, .window.win-player.is-max.is-unmax { animation: none; }
     .window.win-player.is-max > .window-body { margin: 6px; overflow: auto; overscroll-behavior: contain; }
     .window.win-player.is-max .player-pro { min-width: 760px; }
     .window.win-player.is-max .title-bar-controls button { min-width: 32px; min-height: 28px; }

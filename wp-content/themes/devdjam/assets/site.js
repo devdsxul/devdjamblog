@@ -1410,7 +1410,9 @@
   };
   const windowState = session.get();
   const dim = document.querySelector('[data-dim]');
-  let isUnmaxing = false;
+  let isWindowTransitioning = false;
+  const restoreTimers = new WeakMap();
+  const windowMotionDuration = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--window-motion-duration')) || 0;
   function applyWindows() {
     let anyMax = false;
     windows.forEach((win) => {
@@ -1426,9 +1428,11 @@
         ghost.remove();
       }
       const wasMin = win.classList.contains('is-min');
+      clearTimeout(restoreTimers.get(win));
+      win.classList.remove('is-restoring', 'is-minimizing');
       if (wasMin && mode === 'open') {
         win.classList.add('is-restoring');
-        setTimeout(() => win.classList.remove('is-restoring'), 240);
+        restoreTimers.set(win, setTimeout(() => win.classList.remove('is-restoring'), windowMotionDuration()));
       }
       win.classList.toggle('is-min', mode === 'min');
       win.classList.toggle('is-max', mode === 'max');
@@ -1444,26 +1448,45 @@
     document.documentElement.classList.toggle('has-max', anyMax);
   }
   function restoreMaximized(callback) {
-    if (isUnmaxing) return;
+    if (isWindowTransitioning) return;
     const maxWins = windows.filter((w) => w.classList.contains('is-max'));
     if (!maxWins.length) {
       if (callback) callback();
       return;
     }
-    isUnmaxing = true;
+    isWindowTransitioning = true;
     maxWins.forEach((w) => w.classList.add('is-unmax'));
     if (dim) dim.classList.remove('is-active');
     setTimeout(() => {
-      isUnmaxing = false;
+      isWindowTransitioning = false;
       Object.keys(windowState).forEach((id) => { if (windowState[id] === 'max') delete windowState[id]; });
       session.set(windowState);
       if (callback) callback();
       applyWindows();
-    }, 150);
+    }, windowMotionDuration());
   }
   dim?.addEventListener('click', () => restoreMaximized());
   document.addEventListener('keydown', (event) => { if (event.key === 'Escape') restoreMaximized(); });
   function setWindow(id, mode) {
+    if (isWindowTransitioning) return;
+    if (mode === 'min') {
+      const win = windows.find((item) => item.dataset.window === id);
+      if (!win) return;
+      isWindowTransitioning = true;
+      win.classList.remove('is-restoring');
+      win.classList.add('is-minimizing');
+      if (windowState[id] === 'max') {
+        win.classList.add('is-unmax');
+        dim?.classList.remove('is-active');
+      }
+      setTimeout(() => {
+        isWindowTransitioning = false;
+        windowState[id] = 'min';
+        session.set(windowState);
+        applyWindows();
+      }, windowMotionDuration());
+      return;
+    }
     if (mode === 'open' && windowState[id] === 'max') {
       restoreMaximized();
       return;
@@ -1474,7 +1497,7 @@
   }
   document.addEventListener('click', (event) => {
     const action = event.target.closest('[data-window-action]');
-    if (!action) return;
+    if (!action || isWindowTransitioning) return;
     const win = action.closest('.window[data-window]');
     if (!win) return;
     const id = win.dataset.window;
