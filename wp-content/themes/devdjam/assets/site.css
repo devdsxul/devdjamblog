@@ -541,7 +541,12 @@ body.is-playing .tray-led { filter: none; }
     overflow: hidden;
 }
 
-/* ---------- 窗口与平滑缩放动效 ---------- */
+/* ---------- 窗口与电子故障缩放动效 ---------- */
+:root { --window-motion-duration: 600ms; }
+html[data-effects="off"] { --window-motion-duration: 0ms; }
+@media (prefers-reduced-motion: reduce) {
+    :root { --window-motion-duration: 0ms; }
+}
 .window {
     position: relative;
     display: block;
@@ -559,76 +564,77 @@ body.is-playing .tray-led { filter: none; }
     min-height: 0 !important;
     flex: 0 0 auto !important;
     box-shadow: var(--hard-sm) !important;
-    animation: winMinCollapse 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .window.is-min > .window-body {
     display: none !important;
 }
+.window.is-minimizing {
+    transform-origin: top center;
+    animation: winMinCollapse var(--window-motion-duration) ease-in-out both;
+}
 .window.is-restoring {
-    animation: winMinRestore 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+    transform-origin: top center;
+    animation: winMinRestore var(--window-motion-duration) ease-out both;
 }
 
+/* 独立 scale / translate 不覆盖控制台的居中与手机 rotate 定位。 */
 @keyframes winMinCollapse {
-    0% {
-        opacity: 0.8;
-        transform: scale(0.98);
-    }
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
+    0% { opacity: 1; scale: 1; translate: 0; }
+    28% { opacity: .92; scale: 1 .94; translate: 0; }
+    31% { translate: -3px 0; }
+    34% { translate: 2px 0; }
+    38% { translate: 0; }
+    72% { opacity: .8; scale: .98 .45; }
+    100% { opacity: 0; scale: .96 .06; translate: 0; }
 }
-
 @keyframes winMinRestore {
-    0% {
-        opacity: 0.65;
-        transform: translateY(-8px) scale(0.98);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+    0% { opacity: 0; scale: .96 .08; translate: 0; }
+    38% { opacity: .85; scale: .99 .7; translate: 0; }
+    41% { translate: 3px 0; }
+    44% { translate: -2px 0; }
+    48% { translate: 0; }
+    100% { opacity: 1; scale: 1; translate: 0; }
 }
-
 @keyframes winMaxIn {
-    0% {
-        opacity: 0;
-        transform: scale(0.88) translateY(18px);
-    }
-    100% {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
+    0% { opacity: 0; scale: .9 .84; translate: 0 12px; }
+    30% { opacity: .82; scale: .96 .94; translate: 0 5px; }
+    33% { translate: -3px 5px; }
+    36% { translate: 2px 5px; }
+    40% { translate: 0 4px; }
+    72% { opacity: .96; scale: .995; }
+    100% { opacity: 1; scale: 1; translate: 0; }
 }
 @keyframes winMaxOut {
-    0% {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-    }
-    100% {
-        opacity: 0;
-        transform: scale(0.88) translateY(14px);
-    }
+    0% { opacity: 1; scale: 1; translate: 0; }
+    30% { opacity: .94; scale: .99; translate: 0; }
+    33% { translate: 3px 0; }
+    36% { translate: -2px 0; }
+    40% { translate: 0; }
+    72% { opacity: .65; scale: .95 .9; }
+    100% { opacity: 0; scale: .9 .84; translate: 0 12px; }
 }
-@keyframes winPlayerMaxIn {
-    0% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(0.84);
-    }
-    100% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-    }
+
+/* 淡扫描线只在切换时浮现，不拦截按钮，也不使用整屏亮闪。 */
+.window:is(.is-max, .is-restoring, .is-minimizing)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+    background: repeating-linear-gradient(0deg, transparent 0 3px, var(--line) 3px 4px);
+    opacity: 0;
+    animation: winScanlines var(--window-motion-duration) linear both;
 }
-@keyframes winPlayerMaxOut {
-    0% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-    }
-    100% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(0.84);
-    }
+.window.is-unmax::after { animation-name: winScanlinesOut; }
+@keyframes winScanlines {
+    0%, 100% { opacity: 0; }
+    32% { opacity: .14; }
+    65% { opacity: .04; }
+}
+@keyframes winScanlinesOut {
+    0%, 100% { opacity: 0; }
+    32% { opacity: .04; }
+    65% { opacity: .14; }
 }
 
 /* 最大化 = 独立弹出：居中浮在最上层，其他窗口原地保留（占位虚框）；登录后整体让出管理工具栏 */
@@ -641,11 +647,11 @@ body.is-playing .tray-led { filter: none; }
     z-index: 150;
     overflow: auto;
     box-shadow: 8px 8px 0 var(--line);
-    animation: winMaxIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: winMaxIn var(--window-motion-duration) ease-out both;
     transform-origin: center center;
 }
 .window.is-max.is-unmax {
-    animation: winMaxOut 0.15s ease both;
+    animation: winMaxOut var(--window-motion-duration) ease-in both;
 }
 .window.is-max > .title-bar { position: sticky; top: 0; z-index: 1; }
 .window.is-max > .sticker { display: none; }
@@ -659,7 +665,7 @@ body.is-playing .tray-led { filter: none; }
     background: repeating-conic-gradient(rgba(0, 0, 0, .6) 0 25%, transparent 0 50%) 0 0 / 2px 2px;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--window-motion-duration) ease;
 }
 .desk-dim.is-active {
     opacity: 1;
