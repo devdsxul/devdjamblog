@@ -542,7 +542,7 @@ body.is-playing .tray-led { filter: none; }
 }
 
 /* ---------- 窗口与电子故障缩放动效 ---------- */
-:root { --window-motion-duration: 600ms; }
+:root { --window-motion-duration: 300ms; }
 html[data-effects="off"] { --window-motion-duration: 0ms; }
 @media (prefers-reduced-motion: reduce) {
     :root { --window-motion-duration: 0ms; }
