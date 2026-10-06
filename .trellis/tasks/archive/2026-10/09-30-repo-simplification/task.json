@@ -24,6 +24,18 @@
   ],
   "parent": null,
   "relatedFiles": [],
-  "notes": "2026-10-02 用户批准发布与清理。35dbf08 已上线并核对正式入口/资源；归档不代表未执行的后台、真机、真实宿主人工验收通过。",
-  "meta": {}
+  "notes": "2026-10-02 用户批准发布与清理。35dbf08 已上线并核对正式入口/资源；归档不代表未执行的后台、真机、真实宿主人工验收通过。 2026-10-02 用户接受现状，关闭人工验收及两项既有hook问题的跟进，不再列为开放事项；原技术事实与验证证据不变。",
+  "meta": {
+    "followup_resolution": {
+      "status": "closed_by_user",
+      "resolution": "accepted_as_is",
+      "date": "2026-10-02",
+      "items": [
+        "manual_acceptance",
+        "utf8_truncation",
+        "argv_platform_detection"
+      ],
+      "reason": "用户要求直接标记为已解决，按接受现状关闭跟进；未追加人工验收或技术修复。"
+    }
+  }
 }
