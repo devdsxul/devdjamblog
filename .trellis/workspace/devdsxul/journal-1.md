@@ -1063,3 +1063,43 @@ Fixed 7 mobile layout defects and XSS vulnerability, added author display and i1
 - 真实后台选图保存、手机触摸/试听及三个平台真实宿主尚未人工验收，不将部署表面核对等同完整交互通过
 - 两项旧hook行为仍保留：极短UTF-8截断替换字符，以及路径祖先.claude影响部分argv平台回退
 - 后续Windows长SSH脚本经stdin传UTF-8 bytes/LF，避免命令行长度与text模式CRLF转换；全量恢复演练仍未执行
+
+
+## Session 24: 复古拼贴风格发布与会话接续
+<!-- trellis-session: v=2 fp=7debe5456ef2da1f -->
+
+**Date**: 2026-10-08
+**Task**: 复古拼贴风格发布与会话接续
+**Branch**: `main`
+
+### Summary
+
+读取 Claude 会话后接续复古拼贴任务；f7b895b 已合入并推送 main，主题 3.2.8 已增量发布，正式入口与线上布局核验通过，任务归档。
+
+### Main Changes
+
+- 从原隔离工作区提交透明页头、原版背景和天体素材；本次主题发布范围为三个现有文件加11个新素材
+- 按Git提交导出LF文件，验证旧文件备份、暂存文件和生产回读，最后切换缓存版本；无数据库内容改写或服务重启
+- 更新部署状态和私有运维凭证，归档10-07-retro-collage并修复上下文引用；原工作区和私有预览数据保留
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f7b895b` | feat: add retro collage backgrounds and banner artwork |
+| `fa65b13` | docs: record retro collage production release |
+
+### Testing
+
+- [OK] 新增：14个PHP/JS文件语法通过、两份PHP服务端语法通过；14个发布目标与三份备份内容核验一致
+- [OK] 新增：正式HTTPS首页无诊断参数返回200并引用3.2.8，CSS及11个素材的公开内容匹配；WordPress running、数据库healthy，发布后129行日志无PHP错误
+- [OK] 新增：Edge 320/390/768/1440px无整页溢出，透明页头、三主题CSS、动效关闭/系统减少动态/恢复、博客首页导航通过，无页面JS错误；桌面和手机截图已核对
+- [OK] 复用：原实现七屏宽、贴纸拖拽和窗口操作证据；新增归档上下文和文档链接校验通过
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 真机触控、真实音轨跨页连续播放、后台操作及完整备份恢复演练未验证，不能将本次上线检查等同这些验收
