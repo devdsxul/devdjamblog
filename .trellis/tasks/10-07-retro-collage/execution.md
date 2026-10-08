@@ -37,4 +37,14 @@
 - 接手时 main 与远端均为 `7d7db2b`，主检出干净；本任务改动完整保留在 `worktree-retro-collage-planning`，尚未提交。
 - 本次重新运行 `npm run check`：14 个 PHP / JS 文件通过；`git diff --check` 通过。复用上节的七屏宽、三主题、降动效及交互验证，不把它们记为本轮重跑。
 - 生产只读预检：三个现有目标文件与 `7d7db2b` 的 LF 字节一致，11 个新增素材尚不存在；正式 HTTPS 首页无缓存参数返回 200，引用 `3.2.7`，尚无拼贴层。WordPress 容器 running、数据库 healthy。
-- 发布限定为 `assets/site.css`、`index.php`、`functions.php` 和 11 个 `assets/img/camerons-world/` 素材；备份三个旧文件并校验后，先上素材，最后切换版本定义。无数据库、内容、音轨、容器重启或环境配置变更。实际结果待发布后补记。
+- 发布限定为 `assets/site.css`、`index.php`、`functions.php` 和 11 个 `assets/img/camerons-world/` 素材；备份三个旧文件并校验后，先上素材，最后切换版本定义。无数据库、内容、音轨、容器重启或环境配置变更。
+
+## 发布结果（2026-10-08）
+- 应用提交 `f7b895be4df18999e88bccbef4359f607c32f663` 已从任务分支快进合入 main 并推送；发布前核对远端 main 指向同一提交。北京时间 12:04 完成生产文件替换。
+- 从 Git 提交导出 LF 文件，暂存字节校验及两份 PHP 的服务端语法检查通过。三个旧文件归档后逐一核对内容；素材先发布，`functions.php` 最后切换缓存版本至 `3.2.8`。14 个生产目标回读全部一致。
+- 无缓存参数的正式首页 `https://xn--xmw.space/` 返回 200，引用 `3.2.8`，只存在一份拼贴层。公开 CSS 与 11 个新增素材均为 200，内容与提交一致。
+- 本次线上 Edge 验证：320 / 390 / 768 / 1440px 无整页横向溢出，页头透明，8 张动/静装饰图加载正常；Milk / Ink / Cherry 的 CSS 背景正确。三主题通过设置已有主题属性检查样式，未重测主题选择入口。
+- 实际点击 fx 贴纸后正确显示静态首帧；系统减少动态与恢复通过；博客 → 首页切换正常，无重复拼贴层、无页面 JavaScript 异常。桌面与 390px 截图已人工检查。
+- WordPress 容器 running、数据库 healthy；发布后检查 129 行日志，无 PHP Fatal / Parse / Warning / Notice 或 Uncaught Error / Exception。
+- 原始清单、备份位置及在线验证 JSON / 截图保存在主检出忽略的 `.runtime/release-f7b895b-retro-collage/`；服务器私有路径只记录在未跟踪的 `docs/PRODUCTION.md`。不将私有运维记录提交或打包。
+- 复用的本地证据和未验边界同上；本次未执行真实音轨连续播放、真机触控、后台写入或完整恢复演练。应用发布已完成，后续仅归档当前任务并记录日志。

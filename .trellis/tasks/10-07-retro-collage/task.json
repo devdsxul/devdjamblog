@@ -15,7 +15,7 @@
   "branch": "worktree-retro-collage-planning",
   "base_branch": "main",
   "worktree_path": null,
-  "commit": null,
+  "commit": "f7b895be4df18999e88bccbef4359f607c32f663",
   "pr_url": null,
   "subtasks": [],
   "children": [],
