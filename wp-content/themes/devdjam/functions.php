@@ -11,7 +11,7 @@ add_action('after_setup_theme', static function () {
     add_theme_support('automatic-feed-links');
 });
 
-const DEVDJAM_ASSET_VER = '3.2.7';
+const DEVDJAM_ASSET_VER = '3.2.8';
 
 // 音轨分析（拍速 / 调性）：前台打碟机与 devdjam-core 后台的自动识别共用，所以在 init 注册、前后台都可用
 add_action('init', static function () {

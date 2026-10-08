@@ -61,6 +61,18 @@ $latest = get_posts(array('post_type' => array('post', 'dj_music', 'dj_beat'), '
     </div>
 </div>
 <header class="site-banner" role="banner">
+    <div class="banner-collage" aria-hidden="true">
+        <?php
+        // Cameron’s World 原图：静态首帧用于关闭动效与减少动态模式。
+        foreach (array('moon' => array(72, 72), 'gold-star' => array(48, 48), 'bubble' => array(168, 160), 'comet' => array(106, 82)) as $name => $size) :
+            $collage_src = get_template_directory_uri() . '/assets/img/camerons-world/' . $name;
+        ?>
+            <span class="collage-orbit collage-<?php echo esc_attr($name); ?>">
+                <img class="collage-still" src="<?php echo esc_url($collage_src . '-still.png'); ?>" width="<?php echo (int) $size[0]; ?>" height="<?php echo (int) $size[1]; ?>" alt="">
+                <img class="collage-motion" src="<?php echo esc_url($collage_src . '.gif'); ?>" width="<?php echo (int) $size[0]; ?>" height="<?php echo (int) $size[1]; ?>" alt="">
+            </span>
+        <?php endforeach; ?>
+    </div>
     <div class="banner-wing banner-wing-left">
         <?php
         dj_sticker('dagger', 'spark', 'wiggle');

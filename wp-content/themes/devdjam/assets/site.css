@@ -1,10 +1,12 @@
-/* DEVDJAM v3 — 白底黑线的 jfashion 桌面，少量粉色点缀。基于本地打包的 98.css。 */
+/* DEVDJAM — Win98 窗口与 GeoCities 原图拼贴桌面。基于本地打包的 98.css。 */
 @font-face { font-family: "OldEnglish"; src: url("fonts/OldEnglishTextMT.ttf") format("truetype"); font-display: swap; }
 @font-face { font-family: "UnifrakturMaguntia"; src: url("fonts/UnifrakturMaguntia.ttf") format("truetype"); font-display: swap; }
 @font-face { font-family: "UnifrakturCook"; src: url("fonts/UnifrakturCook-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
 :root {
     --gothic: "OldEnglish", "Old English Text MT", "UnifrakturMaguntia", serif;
-    --bg: #ffffff;
+    --bg: #e0d6f5;
+    --desktop-tile: url("img/camerons-world/lavender-tile.png");
+    --pane-tile: url("img/camerons-world/clouds-tile.png");
     --win: #ffffff;
     --win-2: #fafafa;
     --line: #111111;
@@ -26,6 +28,8 @@
     --hard-sm: 2px 2px 0 var(--line);
 }
 html[data-theme="ink"] {
+    --desktop-tile: url("img/camerons-world/stars-tile.png");
+    --pane-tile: none;
     --bg: #111111; --win: #1a1a1a; --win-2: #141414; --line: #f2f2f2; --line-soft: #444444; --ink: #f2f2f2; --muted: #a8a8a8; --lcd-bg: #000000;
     --accent-soft: #2b1620; --accent-line: #6e2b4b;
     --bar-a: #4a2238; --bar-b: #1a1a1a; --bar-ink: #f2f2f2;
@@ -42,16 +46,15 @@ html[data-theme="cherry"] {
    锁高必须扣掉 --wp-admin--admin-bar--height，否则底部会被顶出视口（访客没有该变量，按 0 计） */
 html {
     background-color: var(--bg);
-    background-image: url("img/astro-bg.svg");
+    background-image: var(--desktop-tile);
     background-repeat: repeat;
-    background-size: 200px 200px;
+    background-size: 82px 146px;
     height: calc(100vh - var(--wp-admin--admin-bar--height, 0px));
     height: calc(100dvh - var(--wp-admin--admin-bar--height, 0px));
     overflow: hidden;
 }
 html[data-theme="ink"] {
-    background-color: var(--bg);
-    background-image: none;
+    background-size: 304px 234px;
 }
 html[data-gate] { overflow: hidden; }
 body {
@@ -1016,15 +1019,15 @@ html.has-max .sticker {
     margin-top: 4px;
 }
 
-/* 下方：两块区域（专辑与伴奏），统一框起来，中间保留分栏，空白区域融入 Neocities Astro 星象质感 */
+/* 下方：内容保持实底，空白区域使用原版云朵纹理。 */
 .home-bottom-pane {
     flex: 1;
     min-height: 0;
     padding: 0;
     background-color: var(--win);
-    background-image: url("img/astro-bg.svg");
+    background-image: var(--pane-tile);
     background-repeat: repeat;
-    background-size: 180px 180px;
+    background-size: 288px 216px;
     display: flex;
     flex-direction: column;
 }
@@ -2282,4 +2285,78 @@ html[data-effects="off"] .marquee { text-overflow: ellipsis; }
         max-width: 100%;
         height: auto;
     }
+}
+
+/* ---------- GeoCities 拼贴：原版星空、天体 GIF 与绸缎桌布 ---------- */
+.site-banner {
+    min-height: 122px;
+    padding: 14px 22px 16px;
+    margin-bottom: 10px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 12px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+.banner-wing {
+    order: 0;
+    grid-row: 1;
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 48px);
+    grid-auto-rows: 40px;
+    justify-items: center;
+    gap: 2px 8px;
+    width: auto;
+    max-width: 100%;
+    padding: 0;
+    overflow: visible;
+}
+.banner-wing .sticker { width: 48px; height: 40px; }
+.banner-wing .sticker .gif {
+    max-width: 54px;
+    max-height: 46px;
+    filter: drop-shadow(1px 1px 0 #e0bcff) drop-shadow(0 0 4px #7e499e);
+}
+.banner-wing .sticker:nth-child(odd) { translate: 0 -4px; }
+.banner-wing .sticker:nth-child(even) { translate: 0 4px; }
+.site-banner-link { grid-row: 1; position: relative; z-index: 1; }
+.banner-letters { filter: drop-shadow(0 0 8px #bc88d2); }
+.banner-collage { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.collage-orbit { position: absolute; display: block; }
+.collage-orbit img { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+.collage-moon { width: 64px; left: 1.5%; top: 12px; }
+.collage-gold-star { width: 38px; left: 26%; bottom: 7px; }
+.collage-bubble { width: 86px; right: 1%; bottom: 3px; }
+.collage-comet { width: 64px; right: 24%; top: 2px; }
+/* 默认静态：JS 初始化之后才显示 GIF，避免关闭动效时闪一下。 */
+.collage-orbit .collage-motion { display: none; }
+html[data-effects="on"] .collage-still { display: none; }
+html[data-effects="on"] .collage-motion { display: block; }
+@media (prefers-reduced-motion: reduce) {
+    html[data-effects="on"] .collage-still { display: block; }
+    html[data-effects="on"] .collage-motion { display: none; }
+}
+.home-entry-list { background: var(--win); }
+.home-music-blank-sub { padding: 3px 6px; background: var(--win); color: var(--ink); }
+.home-music-blank-tag { font: bold italic 15px/1.2 Georgia, "Times New Roman", serif; letter-spacing: 1px; }
+.dock-logo b { font-family: Georgia, "Times New Roman", serif; letter-spacing: 1px; }
+@media (min-width: 721px) and (max-width: 980px) {
+    .banner-wing { grid-template-columns: repeat(3, 32px); grid-auto-rows: 34px; gap: 3px; }
+    .banner-wing .sticker { width: 32px; height: 34px; }
+    .banner-wing .sticker .gif { max-width: 34px; max-height: 36px; }
+    .banner-stage { height: 88px; }
+    .collage-moon { width: 42px; }
+    .collage-bubble { width: 58px; }
+}
+@media (max-width: 720px) {
+    .site-banner { min-height: 0; padding: 10px 2px 12px; gap: 4px; margin-bottom: 8px; }
+    .banner-wing { grid-template-columns: repeat(var(--stk-cols), var(--stk)); grid-auto-rows: var(--stk); gap: 2px 3px; }
+    .banner-wing .sticker { width: var(--stk); height: var(--stk); }
+    .banner-wing .sticker .gif { max-width: 100%; max-height: 100%; }
+    .collage-moon { width: 24px; left: 2px; top: auto; bottom: 6px; }
+    .collage-gold-star { width: 21px; left: 20%; bottom: 7px; }
+    .collage-bubble { width: 32px; right: 1px; bottom: 5px; }
+    .collage-comet { display: none; }
 }

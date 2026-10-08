@@ -1,6 +1,6 @@
 # 视觉与素材来源
 
-站主提供的参考图及其裁片已于 2026-09-15 按要求全部移除，主题不再包含任何参考图衍生素材。
+2026-09-15 的旧参考图及其裁片已按要求移除。2026-10-07 新增下列 Cameron’s World 原图，用于站主明确要求的非商用个人站视觉改造。
 
 ## GifCities 动图
 
@@ -71,3 +71,22 @@ Win98 窗口、按钮、滑杆样式与像素字体 "Pixelated MS Sans Serif" �
 
 - 播放器控制 SVG 图标、`favicon.svg`。
 - 打碟机转盘/唱臂、左侧侧边栏、控制面板、进站页、星星拖尾等均为 CSS / JavaScript 实现，不含外部图片。
+
+
+## Cameron’s World 原图（2026-10-07）
+
+直接下载自 <https://www.cameronsworld.net/>，本地目录为 `wp-content/themes/devdjam/assets/img/camerons-world/`。未描摹或替换原图，没有热链、第三方脚本或音乐。以下相对来源均以 `https://www.cameronsworld.net/img/content/` 为前缀。
+
+| 本地文件 | 原始来源 | 原始尺寸 | 用途 |
+| --- | --- | --- | --- |
+| `lavender-tile.png` | `13/bg.png` | 41×73 | 默认/Cherry 桌布，2 倍平铺；透明页头共用 |
+| `stars-tile.png` | `1/bg.png` | 304×234 | Ink 桌布 |
+| `clouds-tile.png` | `14/bg.png` | 288×216 | 首页下方空白区域；内容列表保留实底 |
+| `moon.gif` | `1/7.gif` | 72×72 | 页头月球 |
+| `gold-star.gif` | `1/16.gif` | 48×48 | 页头金色星星 |
+| `bubble.gif` | `1/18.gif` | 168×160 | 页头气泡 |
+| `comet.gif` | `1/20.gif` | 106×82 | 桌面页头天体，手机隐藏 |
+
+每张 GIF 对应的 `*-still.png` 是 Pillow 提取的原图第一帧，仅用于现有动效开关关闭或系统减少动态偏好；不是另找素材替代。首次载入默认显示静态图，`html[data-effects="on"]` 才显示动图。
+
+来源声明：<https://www.cameronsworld.net/disclaimer.html> 说明图片多非原站所有，来自历史存档，原站表示非商业使用。这不是自由许可证或商业授权。站主明确选择在非商用个人站直接使用，保留来源记录；如未来改变用途，应重新核对权利。字体层次只使用现有字体及系统 Georgia / Times New Roman，没有新增字体文件。没有新增页面文案。
