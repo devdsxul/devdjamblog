@@ -1254,6 +1254,12 @@
     fetchPage(url).catch(() => {});
   }
   function render(page, url, { push, scrollY } = {}) {
+    // 先按旧访问 ID 结算时长；SlimStat 的 History 回调会清掉它，无法可靠补记上一页。
+    if (pageKey(contentURL) !== pageKey(url) && window.SlimStatParams?.id) {
+      try {
+        window.SlimStat?.send_to_server?.(`action=slimtrack&id=${encodeURIComponent(window.SlimStatParams.id)}`, true, { priority: 'high', immediate: true });
+      } catch { /* 统计不可用时仍正常切页。 */ }
+    }
     const currentMain = document.getElementById('site-content');
     const incoming = page.doc.getElementById('site-content').cloneNode(true);
     incoming.querySelectorAll('script').forEach((script) => script.remove());
@@ -1262,6 +1268,10 @@
     const canonical = page.doc.querySelector('link[rel="canonical"]');
     document.querySelector('link[rel="canonical"]')?.remove();
     if (canonical) document.head.append(canonical.cloneNode(true));
+    // SlimStat 自行监听 History API；切页只同步服务端签名的页面信息，不额外上报或执行脚本。
+    const analyticsParams = document.getElementById('wp_slimstat-js-extra');
+    const freshAnalyticsParams = page.doc.getElementById('wp_slimstat-js-extra');
+    if (analyticsParams && freshAnalyticsParams) analyticsParams.textContent = freshAnalyticsParams.textContent;
     const resolvedURL = new URL(page.url);
     if (url.hash) resolvedURL.hash = url.hash;
     if (push) history.pushState({ dj: true, scrollY: 0 }, '', resolvedURL.href);

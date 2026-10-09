@@ -96,6 +96,19 @@ music.example.com {
 
 `deploy/uploads.ini` 将单文件上限设为 256 MB，请求上限为 270 MB。如果反向代理也有限额，应与之匹配。网站没有做音频转码或自适应串流，建议为网页导出压缩试听版本。
 
+## 可选访问统计
+
+现役站接入免费版 [SlimStat Analytics](https://wordpress.org/plugins/wp-slimstat/)，固定版本 `5.5.0`。它使用现有 WordPress 数据库与后台，不需要额外容器或外部账号。新环境可在 WordPress 后台上传官方版本 ZIP 并启用，再在已加载 WordPress 的 CLI 上下文执行 `deploy/configure-analytics.php`。使用 WP-CLI 时，在 WordPress 根目录执行：
+
+```bash
+wp --context=admin plugin install wp-slimstat --version=5.5.0 --activate
+wp --context=admin eval-file /path/to/devdjamblog/deploy/configure-analytics.php
+```
+
+配置脚本保留插件密钥和已有记录，设置完整 IP、浏览器统计、管理员排除、90 天直接清理和管理员报表权限，并关闭地理位置查询及 token 报表接口。统计表为当前数据库前缀下的 `slim_stats`、`slim_events` 及各自归档表，随数据库一起备份。启用插件前备份数据库和 `.htaccess`；首次启用会建表并刷新固定链接规则。停用 SlimStat 可立即停止采集，保留数据；应用适配与缓存版本按本次文件备份回滚。
+
+主题切页前按旧访问 ID 结算停留时间，并同步 SlimStat 的页面参数；访问与点击由插件自身监听，预取 HTML 不执行统计。升级 SlimStat 前须复核导航、停留时长和这些配置项；特别是 `auto_purge_delete='no'` 在本版本才表示直接删除，`on` 表示归档。使用入口与统计边界见 [站主说明](OWNER-GUIDE.md#查看访问数据)。
+
 ## 数据在哪里
 
 - Compose 的 `database` 数据卷：MariaDB 数据。
