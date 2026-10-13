@@ -237,7 +237,17 @@ $read_time = $current_wc > 0 ? ceil($current_wc / 600) : 10;
 
                                 <!-- 章节正文 -->
                                 <div class="chapter-content prose-novel" id="novel-content-prose">
-                                    <?php echo wp_kses_post($content); ?>
+                                    <?php 
+                                    $raw_content = (string) $content;
+                                    if (!preg_match('/<p\b/i', $raw_content)) {
+                                        $display_html = function_exists('devdjam_format_markdown_to_html') 
+                                            ? devdjam_format_markdown_to_html($raw_content) 
+                                            : wpautop($raw_content);
+                                    } else {
+                                        $display_html = $raw_content;
+                                    }
+                                    echo wp_kses_post($display_html); 
+                                    ?>
                                 </div>
 
                                 <!-- 章节收尾与翻页导航 -->

@@ -3010,22 +3010,52 @@ html[data-effects="on"] .collage-motion { display: block; }
 }
 .novel-reader-body[data-novel-theme="paper"] {
     background-color: #f6f1e7;
-    color: #3a3024;
+    color: #382e25;
+}
+.novel-reader-body[data-novel-theme="paper"] .chapter-series { color: #9c4221; }
+.novel-reader-body[data-novel-theme="paper"] .chapter-info-bar,
+.novel-reader-body[data-novel-theme="paper"] .info-item,
+.novel-reader-body[data-novel-theme="paper"] .chapter-end-decor { color: #7c6f5e; }
+.novel-reader-body[data-novel-theme="paper"] blockquote {
+    background: rgba(0, 0, 0, 0.04);
+    border-left-color: #9c4221;
 }
 .novel-reader-body[data-novel-theme="mint"] {
     background-color: #e8f5e9;
-    color: #1f3820;
+    color: #173419;
+}
+.novel-reader-body[data-novel-theme="mint"] .chapter-series { color: #166534; }
+.novel-reader-body[data-novel-theme="mint"] .chapter-info-bar,
+.novel-reader-body[data-novel-theme="mint"] .info-item,
+.novel-reader-body[data-novel-theme="mint"] .chapter-end-decor { color: #45634b; }
+.novel-reader-body[data-novel-theme="mint"] blockquote {
+    background: rgba(0, 0, 0, 0.04);
+    border-left-color: #166534;
 }
 .novel-reader-body[data-novel-theme="white"] {
     background-color: #ffffff;
-    color: #111111;
+    color: #1a1a1a;
 }
 .novel-reader-body[data-novel-theme="night"] {
-    background-color: #1a1a24;
+    background-color: #16161e;
     color: #e2e4ef;
 }
 .novel-reader-body[data-novel-theme="night"] .chapter-headline {
     color: #f3f4f8;
+}
+.novel-reader-body[data-novel-theme="night"] .chapter-series { color: #f472b6; }
+.novel-reader-body[data-novel-theme="night"] .chapter-info-bar,
+.novel-reader-body[data-novel-theme="night"] .info-item,
+.novel-reader-body[data-novel-theme="night"] .chapter-end-decor { color: #9ca3af; }
+.novel-reader-body[data-novel-theme="night"] blockquote {
+    background: rgba(255, 255, 255, 0.06);
+    border-left-color: #f472b6;
+    color: #d1d5db;
+}
+.novel-reader-body[data-novel-theme="night"] .scroll-next-card {
+    background: #20202d;
+    border-color: #374151;
+    color: #f3f4f6;
 }
 
 /* 字体选择 */
@@ -3040,15 +3070,18 @@ html[data-effects="on"] .collage-motion { display: block; }
 }
 
 /* 字号选择 */
-.novel-reader-body[data-font-size="15"] .prose-novel p { font-size: 15px; }
-.novel-reader-body[data-font-size="18"] .prose-novel p { font-size: 18px; }
-.novel-reader-body[data-font-size="21"] .prose-novel p { font-size: 21px; }
-.novel-reader-body[data-font-size="25"] .prose-novel p { font-size: 25px; }
+.novel-reader-body[data-font-size="15"] .prose-novel { font-size: 15px; }
+.novel-reader-body[data-font-size="18"] .prose-novel { font-size: 18px; }
+.novel-reader-body[data-font-size="21"] .prose-novel { font-size: 21px; }
+.novel-reader-body[data-font-size="25"] .prose-novel { font-size: 25px; }
 
 /* 行距选择 */
-.novel-reader-body[data-novel-line="compact"] .prose-novel p { line-height: 1.65; margin-bottom: 0.9em; }
-.novel-reader-body[data-novel-line="normal"] .prose-novel p { line-height: 1.95; margin-bottom: 1.25em; }
-.novel-reader-body[data-novel-line="relaxed"] .prose-novel p { line-height: 2.25; margin-bottom: 1.55em; }
+.novel-reader-body[data-novel-line="compact"] .prose-novel { line-height: 1.65; }
+.novel-reader-body[data-novel-line="compact"] .prose-novel p { margin-bottom: 0.85em; }
+.novel-reader-body[data-novel-line="normal"] .prose-novel { line-height: 1.95; }
+.novel-reader-body[data-novel-line="normal"] .prose-novel p { margin-bottom: 1.25em; }
+.novel-reader-body[data-novel-line="relaxed"] .prose-novel { line-height: 2.3; }
+.novel-reader-body[data-novel-line="relaxed"] .prose-novel p { margin-bottom: 1.6em; }
 
 /* 版心宽度 */
 .novel-reader-body[data-novel-width="narrow"] .novel-container { max-width: 680px; }
@@ -3095,21 +3128,49 @@ html[data-effects="on"] .collage-motion { display: block; }
 }
 
 /* 中文标准小说段落排版 */
+.prose-novel {
+    font-size: 18px;
+    line-height: 1.95;
+    letter-spacing: 0.5px;
+    color: inherit;
+}
 .prose-novel p {
+    font-size: inherit;
+    line-height: inherit;
     text-indent: 2em;
     margin-top: 0;
+    margin-bottom: 1.25em;
     text-align: justify;
-    word-break: break-word;
-    letter-spacing: 0.4px;
+    text-justify: inter-ideograph;
+    word-break: break-all;
+    overflow-wrap: break-word;
+}
+.prose-novel strong {
+    font-weight: 700;
+    color: inherit;
+}
+.novel-scene-break {
+    text-align: center;
+    margin: 32px 0;
+    color: var(--muted);
+    font-family: var(--mono);
+    letter-spacing: 6px;
+    font-size: 12px;
+    user-select: none;
+    opacity: 0.8;
 }
 .prose-novel blockquote {
-    margin: 16px 2em;
-    padding: 8px 14px;
+    margin: 20px 1.5em;
+    padding: 10px 16px;
     border-left: 3px solid var(--accent);
     background: rgba(128, 128, 128, 0.08);
 }
 .prose-novel blockquote p {
     text-indent: 0;
+    margin-bottom: 0.5em;
+}
+.prose-novel blockquote p:last-child {
+    margin-bottom: 0;
 }
 
 /* 章节底栏 */
@@ -3211,6 +3272,7 @@ html[data-effects="on"] .collage-motion { display: block; }
     .novel-control-bar { flex-wrap: wrap; padding: 6px 8px; }
     .novel-bar-center { display: none; }
     .novel-reader-body { padding: 16px 12px 32px; }
+    .novel-reader-body[data-novel-width] .novel-container { max-width: 100%; }
     .chapter-headline { font-size: 19px; }
     .chapter-nav-actions { flex-direction: column; align-items: stretch; }
     .chapter-nav-actions .nav-btn { text-align: center; justify-content: center; }

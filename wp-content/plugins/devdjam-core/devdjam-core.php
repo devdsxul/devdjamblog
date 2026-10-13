@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DEVDJAM Core
  * Description: Music notes, beats, audio metadata and the DEVDJAM listening queue.
- * Version: 1.2.0
+ * Version: 1.2.1
  * Requires at least: 6.6
  * Requires PHP: 8.1
  * Author: DEVDJAM
@@ -428,7 +428,8 @@ function devdjam_format_markdown_to_html($text) {
     foreach ($lines as $line) {
         $trimmed = trim($line);
         if (!$found_body) {
-            if ($trimmed === '' || preg_match('/^#+\s+/u', $trimmed)) {
+            // 跳过篇首空白行、Markdown 标题行、与重复的章节题头
+            if ($trimmed === '' || preg_match('/^#+\s*/u', $trimmed) || preg_match('/^第\s*\d+\s*章/u', $trimmed)) {
                 continue;
             }
             $found_body = true;
@@ -441,12 +442,28 @@ function devdjam_format_markdown_to_html($text) {
     foreach ($paragraphs as $p) {
         $p = trim($p);
         if ($p === '') continue;
+
+        // 场景分隔线（如 ***, ---, ✦✦✦ 等）
+        if (preg_match('/^(\*{3,}|-{3,}|_{3,}|✦\s*✦\s*✦)$/u', $p)) {
+            $html_parts[] = '<div class="novel-scene-break" aria-hidden="true"><span>✦ ✦ ✦</span></div>';
+            continue;
+        }
+
+        // 引用块（以 > 开头）
         if (str_starts_with($p, '>')) {
             $quote = trim(preg_replace('/^>\s*/mu', '', $p));
             $html_parts[] = '<blockquote><p>' . nl2br(esc_html($quote)) . '</p></blockquote>';
-        } else {
-            $html_parts[] = '<p>' . nl2br(esc_html($p)) . '</p>';
+            continue;
         }
+
+        // 清洗段首多余的 #
+        $p = preg_replace('/^#+\s*/u', '', $p);
+
+        // Markdown 粗体 **文字** 转换
+        $escaped = esc_html($p);
+        $with_strong = preg_replace('/\*\*(.+?)\*\*/u', '<strong>$1</strong>', $escaped);
+
+        $html_parts[] = '<p>' . nl2br($with_strong) . '</p>';
     }
     return implode("\n\n", $html_parts);
 }
@@ -464,6 +481,12 @@ function devdjam_save_chapter($number, $title, $content, $word_count = 0, $book_
     $number = max(1, absint($number));
     $title = sanitize_text_field(trim($title));
     $book_name = sanitize_text_field($book_name ?: '我们是一个学习小组');
+
+    // 确保正文入库前已格式化为标准 HTML 段落
+    if (!preg_match('/<p\b/i', (string) $content)) {
+        $content = devdjam_format_markdown_to_html($content);
+    }
+
     if (!$word_count) {
         $word_count = devdjam_calculate_word_count($content);
     }
