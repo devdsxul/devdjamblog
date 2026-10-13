@@ -3,7 +3,7 @@ if (!defined('ABSPATH')) exit;
 $view = dj_view();
 $nav = dj_nav();
 $title = $view === '404' ? 'error' : (is_search() ? 'search' : $view);
-$title_icon = $view === '404' ? 'icon-lost' : (is_search() ? 'icon-find' : 'icon-folder');
+$title_icon = $view === '404' ? 'icon-lost' : (is_search() ? 'icon-find' : ($view === 'novel' ? 'icon-book' : 'icon-folder'));
 $latest = get_posts(array('post_type' => array('post', 'dj_music', 'dj_beat'), 'post_status' => 'publish', 'numberposts' => 1, 'fields' => 'ids'));
 ?><!doctype html>
 <html <?php language_attributes(); ?>>
@@ -184,6 +184,7 @@ $latest = get_posts(array('post_type' => array('post', 'dj_music', 'dj_beat'), '
                 <?php
                 if (is_404()) get_template_part('views/not-found');
                 elseif (is_front_page()) get_template_part('views/home');
+                elseif (is_singular('dj_chapter') || is_post_type_archive('dj_chapter')) get_template_part('views/novel');
                 elseif (is_singular()) get_template_part('views/single');
                 else get_template_part('views/archive');
                 ?>
@@ -193,6 +194,9 @@ $latest = get_posts(array('post_type' => array('post', 'dj_music', 'dj_beat'), '
     <aside class="col col-right">
         <?php dj_window_open('calendar', 'win-calendar', 'icon-calendar'); ?>
             <div class="calendar"><?php get_calendar(); ?></div>
+        <?php dj_window_close(); ?>
+        <?php dj_window_open('study group', 'win-study-group', 'icon-book'); ?>
+            <?php get_template_part('parts/study-group'); ?>
         <?php dj_window_close(); ?>
     </aside>
 </div>

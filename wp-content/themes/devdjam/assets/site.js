@@ -24,6 +24,7 @@
   const zh = {
     home: '首页', lang: '语言', fx: '动效', music: '音乐', beats: '节拍', blog: '杂谈', links: '链接', about: '关于', guestbook: '留言簿', author: '作者',
     'control panel': '控制面板', calendar: '日历', search: '搜索', error: '错误',
+    novel: '小说', 'study group': '学习小组', "we're a study group": '我们是一个学习小组', 'read our novel': '阅读小说',
     latest: '最新', 'open >>': '打开 >>', 'read >>': '阅读 >>', '<< back': '<< 返回', ok: '好', play: '播放', pause: '暂停', retry: '重试', go: '搜',
     'nothing here yet': '这里还什么都没有', 'no beats yet': '还没有节拍', 'no tape': '没有磁带', 'no entries yet': '还没有留言',
     stopped: '已停止', queue: '队列', empty: '空', vol: '音量', admin: '后台', 'now playing': '正在播放', paused: '已暂停',
@@ -1301,6 +1302,7 @@
     applyLanguage();
     syncButtons();
     if (view === 'beats' || incoming.querySelector('[data-track-id]')) void loadTracks();
+    initNovelReader();
   }
   function endNavigation(controller) {
     if (navigation === controller) {
@@ -1527,6 +1529,10 @@
     if (event.target.closest('[data-window-action]')) return;
     const bar = event.target.closest('.title-bar');
     if (!bar) return;
+    if (bar.closest('.novel-popup-window')) {
+      document.getElementById('novel-toggle-fullscreen')?.click();
+      return;
+    }
     const win = bar.closest('.window[data-window]');
     if (!win) return;
     const id = win.dataset.window;
@@ -1964,5 +1970,177 @@
   tick();
   setInterval(tick, 15000);
 
+  // ---------- 小说阅读器：阅读设置与滚动进度 ----------
+  const NOVEL_STORAGE_KEY = 'dj-novel-settings';
+  function getNovelSettings() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(NOVEL_STORAGE_KEY) || '{}');
+      return {
+        size: saved.size || '18',
+        font: saved.font || 'serif',
+        theme: saved.theme || 'win',
+        line: saved.line || 'normal',
+        width: saved.width || 'normal',
+      };
+    } catch {
+      return { size: '18', font: 'serif', theme: 'win', line: 'normal', width: 'normal' };
+    }
+  }
+
+  function saveNovelSettings(settings) {
+    try {
+      localStorage.setItem(NOVEL_STORAGE_KEY, JSON.stringify(settings));
+    } catch {}
+  }
+
+  function initNovelReader() {
+    const viewport = document.getElementById('novel-reader-viewport');
+    if (!viewport) return;
+    const settings = getNovelSettings();
+    viewport.dataset.fontSize = settings.size;
+    viewport.dataset.novelFont = settings.font;
+    viewport.dataset.novelTheme = settings.theme;
+    viewport.dataset.novelLine = settings.line;
+    viewport.dataset.novelWidth = settings.width;
+
+    // 同步设置面板激活按钮
+    document.querySelectorAll('[data-novel-setting]').forEach((btn) => {
+      const type = btn.dataset.novelSetting;
+      const val = btn.dataset.val;
+      if (settings[type] === val) {
+        btn.classList.add('is-active');
+      } else {
+        btn.classList.remove('is-active');
+      }
+    });
+
+    updateNovelScrollProgress();
+  }
+
+  function updateNovelScrollProgress() {
+    const container = document.getElementById('novel-container');
+    const progressBar = document.getElementById('novel-progress-bar');
+    const progressText = document.getElementById('novel-progress-text');
+    if (!container || !progressBar) return;
+
+    const viewport = document.getElementById('novel-reader-viewport');
+    let scrollPercent = 0;
+    if (viewport && viewport.scrollHeight > viewport.clientHeight) {
+      const maxScroll = viewport.scrollHeight - viewport.clientHeight;
+      scrollPercent = Math.min(100, Math.max(0, Math.round((viewport.scrollTop / maxScroll) * 100)));
+    } else {
+      const contentWrapper = document.getElementById('site-content');
+      if (contentWrapper && contentWrapper.scrollHeight > contentWrapper.clientHeight) {
+        const maxScroll = contentWrapper.scrollHeight - contentWrapper.clientHeight;
+        scrollPercent = Math.min(100, Math.max(0, Math.round((contentWrapper.scrollTop / maxScroll) * 100)));
+      } else {
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        if (maxScroll > 0) {
+          scrollPercent = Math.min(100, Math.max(0, Math.round((window.scrollY / maxScroll) * 100)));
+        }
+      }
+    }
+    progressBar.style.width = scrollPercent + '%';
+    if (progressText) progressText.textContent = `进度 ${scrollPercent}%`;
+  }
+
+  // 滚动进度监听（全局委托，#novel-reader-viewport、#site-content 或 window 滚动均响应）
+  window.addEventListener('scroll', updateNovelScrollProgress, { passive: true });
+  document.addEventListener('scroll', (e) => {
+    if (e.target && (e.target.id === 'site-content' || e.target.id === 'novel-reader-viewport')) {
+      updateNovelScrollProgress();
+    }
+  }, { capture: true, passive: true });
+
+  // 阅读器点击交互（设置切换、目录抽屉、面板开关、全屏铺满切换）
+  document.addEventListener('click', (event) => {
+    // 1. 设置项切换按钮
+    const settingBtn = event.target.closest('[data-novel-setting]');
+    if (settingBtn) {
+      const type = settingBtn.dataset.novelSetting;
+      const val = settingBtn.dataset.val;
+      const settings = getNovelSettings();
+      settings[type] = val;
+      saveNovelSettings(settings);
+      initNovelReader();
+      return;
+    }
+
+    // 2. 开关设置面板
+    const toggleSettings = event.target.closest('#novel-toggle-settings');
+    if (toggleSettings) {
+      const panel = document.getElementById('novel-settings-panel');
+      if (panel) {
+        const isHidden = panel.hasAttribute('hidden');
+        if (isHidden) panel.removeAttribute('hidden');
+        else panel.setAttribute('hidden', '');
+        toggleSettings.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+      }
+      return;
+    }
+    const closeSettings = event.target.closest('#novel-close-settings');
+    if (closeSettings) {
+      document.getElementById('novel-settings-panel')?.setAttribute('hidden', '');
+      return;
+    }
+
+    // 3. 点击外部关闭设置面板
+    const settingsPanel = document.getElementById('novel-settings-panel');
+    if (settingsPanel && !settingsPanel.hasAttribute('hidden')) {
+      if (!event.target.closest('#novel-settings-panel') && !event.target.closest('#novel-toggle-settings')) {
+        settingsPanel.setAttribute('hidden', '');
+      }
+    }
+
+    // 4. 开关章节目录抽屉
+    const toggleToc = event.target.closest('#novel-toggle-toc, #novel-open-toc-bottom');
+    if (toggleToc) {
+      document.getElementById('novel-toc-drawer')?.removeAttribute('hidden');
+      document.getElementById('novel-toc-overlay')?.removeAttribute('hidden');
+      return;
+    }
+    const closeToc = event.target.closest('#novel-close-toc, #novel-toc-overlay');
+    if (closeToc) {
+      document.getElementById('novel-toc-drawer')?.setAttribute('hidden', '');
+      document.getElementById('novel-toc-overlay')?.setAttribute('hidden', '');
+      return;
+    }
+
+    // 5. 切换视口铺满 / 还原窗口
+    const toggleFullscreen = event.target.closest('#novel-toggle-fullscreen');
+    if (toggleFullscreen) {
+      const popup = document.getElementById('novel-popup-window');
+      if (popup) {
+        const isEdge = popup.classList.toggle('is-edge-to-edge');
+        toggleFullscreen.setAttribute('aria-label', isEdge ? 'Restore / 还原窗口' : 'Maximize / 切换铺满视口');
+        toggleFullscreen.setAttribute('title', isEdge ? '还原窗口' : '切换全屏铺满');
+      }
+      return;
+    }
+  });
+
+  // ESC 键退出全屏弹窗或关闭浮层
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      const overlay = document.getElementById('novel-fullscreen-overlay');
+      if (overlay) {
+        const settingsPanel = document.getElementById('novel-settings-panel');
+        if (settingsPanel && !settingsPanel.hasAttribute('hidden')) {
+          settingsPanel.setAttribute('hidden', '');
+          return;
+        }
+        const tocDrawer = document.getElementById('novel-toc-drawer');
+        if (tocDrawer && !tocDrawer.hasAttribute('hidden')) {
+          tocDrawer.setAttribute('hidden', '');
+          document.getElementById('novel-toc-overlay')?.setAttribute('hidden', '');
+          return;
+        }
+        const closeBtn = document.querySelector('.novel-popup-window .title-btn-close') || document.querySelector('.novel-backdrop');
+        if (closeBtn) closeBtn.click();
+      }
+    }
+  });
+
+  initNovelReader();
   void loadTracks();
 })();

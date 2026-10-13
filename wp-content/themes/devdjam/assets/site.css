@@ -2360,3 +2360,860 @@ html[data-effects="on"] .collage-motion { display: block; }
     .collage-bubble { width: 32px; right: 1px; bottom: 5px; }
     .collage-comet { display: none; }
 }
+
+/* ---------- 小说微件：右栏红框区域 study group ---------- */
+.win-study-group {
+    flex: 1 1 0;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+}
+.win-study-group .window-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    overflow: hidden;
+}
+.study-group-box {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.study-group-link {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    text-decoration: none;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--win) 0%, var(--win-2) 100%);
+    padding: 10px 10px 8px;
+    position: relative;
+    transition: all 0.15s ease;
+    box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 var(--line);
+}
+.study-group-link:hover {
+    background: var(--win-2);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(131, 83, 168, 0.2), inset 1px 1px 0 #fff;
+}
+.study-group-badge-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.study-tag {
+    font-size: 9px;
+    font-family: var(--mono);
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 5px;
+    background: var(--ink);
+    color: var(--win);
+    border-radius: 2px;
+}
+.study-status-dot {
+    width: 6px;
+    height: 6px;
+    background: #10b981;
+    border-radius: 50%;
+    box-shadow: 0 0 4px #10b981;
+    display: inline-block;
+}
+.study-ch-badge {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--accent);
+    font-weight: 700;
+    margin-left: auto;
+}
+.study-group-typography {
+    margin: 4px 0 8px;
+}
+.study-group-big {
+    font-size: 19px;
+    font-weight: 900;
+    line-height: 1.15;
+    text-transform: uppercase;
+    letter-spacing: -0.2px;
+    color: var(--ink);
+}
+.study-group-link:hover .study-group-big {
+    color: var(--accent);
+}
+.study-group-small {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--accent);
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.study-group-small .study-arrow {
+    transition: transform 0.15s ease;
+}
+.study-group-link:hover .study-group-small .study-arrow {
+    transform: translateX(4px);
+}
+.study-group-divider {
+    height: 1px;
+    background: dashed var(--line);
+    border-bottom: 1px dashed var(--line);
+    margin: 6px 0;
+}
+.study-group-book-info {
+    margin-bottom: 8px;
+}
+.study-book-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink);
+}
+.study-chapter-snippet {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.snippet-label {
+    font-weight: 700;
+    color: var(--accent);
+    margin-right: 3px;
+}
+.study-group-action-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-top: auto;
+    padding-top: 6px;
+}
+.study-group-enter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background: var(--accent);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: var(--mono);
+    border: 1px solid var(--ink);
+    box-shadow: var(--hard-sm);
+    transition: all 0.1s ease;
+}
+.study-group-link:hover .study-group-enter-btn {
+    background: var(--accent-hover);
+    transform: scale(1.02);
+}
+.study-group-count {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: var(--mono);
+}
+
+/* ---------- 网页小说全屏弹窗与阅读系统 ---------- */
+.novel-fullscreen-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 850;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+    animation: novelFadeIn 0.18s ease-out;
+}
+@keyframes novelFadeIn {
+    from { opacity: 0; transform: scale(0.99); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* 半透明背景遮罩（点击返回桌面） */
+.novel-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1;
+    cursor: pointer;
+    text-decoration: none;
+    outline: none;
+}
+
+/* 弹出的 Win98 全屏小说阅读窗口 */
+.novel-popup-window {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 1360px;
+    height: 100%;
+    max-height: calc(100dvh - 32px);
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65), var(--hard);
+    border: 2px solid var(--line);
+    background: var(--win);
+    overflow: hidden;
+    transition: width 0.15s ease, height 0.15s ease, max-height 0.15s ease, max-width 0.15s ease;
+}
+
+/* 切换铺满全屏 */
+.novel-popup-window.is-edge-to-edge {
+    max-width: 100vw;
+    width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+/* 弹窗专用 Win98 标题栏 */
+.novel-popup-title-bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 6px;
+    background: linear-gradient(90deg, var(--bar-a), var(--bar-b));
+    color: var(--bar-ink);
+    border-bottom: 2px solid var(--line);
+    user-select: none;
+}
+.novel-popup-title-bar .title-bar-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.novel-popup-title-bar .novel-title-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.novel-popup-title-bar .series-name {
+    color: var(--bar-ink);
+}
+.novel-popup-title-bar .title-sep {
+    opacity: 0.6;
+}
+.novel-popup-title-bar .chapter-name {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+/* 标题栏按钮（最小化/铺满/关闭） */
+.novel-popup-title-bar .title-bar-controls {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+}
+.novel-popup-title-bar .title-bar-controls button,
+.novel-popup-title-bar .title-bar-controls a {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 18px;
+    padding: 0;
+    border: 1px solid var(--line);
+    background: var(--win);
+    color: var(--ink);
+    box-shadow: none;
+    text-decoration: none;
+    cursor: pointer;
+}
+.novel-popup-title-bar .title-bar-controls button[aria-label],
+.novel-popup-title-bar .title-bar-controls a[aria-label] {
+    background-image: none;
+}
+.novel-popup-title-bar .title-bar-controls button::before,
+.novel-popup-title-bar .title-bar-controls a::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: currentColor;
+    -webkit-mask: var(--glyph) no-repeat var(--glyph-at, center center);
+    mask: var(--glyph) no-repeat var(--glyph-at, center center);
+}
+.novel-popup-title-bar .title-btn-min {
+    --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='2'%3E%3Cpath d='M0 0h6v2H0z'/%3E%3C/svg%3E");
+    --glyph-at: center bottom 3px;
+}
+.novel-popup-title-bar .title-btn-max {
+    --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9'%3E%3Cpath fill-rule='evenodd' d='M9 0H0v9h9V0zM8 2H1v6h7V2z'/%3E%3C/svg%3E");
+    --glyph-at: center center;
+}
+.novel-popup-window.is-edge-to-edge .title-btn-max {
+    --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='9'%3E%3Cpath d='M2 0h6v2H2zM7 2h1v4H7zM2 2h1v1H2zM6 5h1v1H6zM0 3h6v2H0zM5 5h1v4H5zM0 5h1v4H0zM1 8h4v1H1z'/%3E%3C/svg%3E");
+    --glyph-at: center center;
+}
+.novel-popup-title-bar .title-btn-close {
+    --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='7'%3E%3Cpath fill-rule='evenodd' d='M0 0h2v1h1v1h2V1h1V0h2v1H7v1H6v1H5v1h1v1h1v1h1v1H6V6H5V5H3v1H2v1H0V6h1V5h1V4h1V3H2V2H1V1H0V0z'/%3E%3C/svg%3E");
+    --glyph-at: center center;
+}
+.novel-popup-title-bar .title-bar-controls button:hover,
+.novel-popup-title-bar .title-bar-controls a:hover {
+    background: var(--accent-2);
+    border-color: var(--line);
+    color: #111111;
+}
+.novel-popup-title-bar .title-bar-controls .title-btn-close:hover {
+    background: var(--accent);
+    color: #ffffff;
+    border-color: var(--line);
+}
+
+/* 窗口内部主体 */
+.novel-popup-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden;
+    position: relative;
+    background: var(--win);
+}
+
+.novel-reader-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 顶部吸顶控制栏与进度条 */
+.novel-control-bar {
+    flex-shrink: 0;
+    position: relative;
+    z-index: 30;
+    background: var(--win-2);
+    border-bottom: 1px solid var(--line);
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    box-shadow: var(--hard-sm);
+    margin-bottom: 0;
+}
+.novel-progress-strip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: rgba(0, 0, 0, 0.08);
+}
+.novel-progress-indicator {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.1s ease-out;
+}
+.novel-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+}
+.novel-badge {
+    background: var(--ink);
+    color: var(--win);
+    font-size: 9px;
+    font-family: var(--mono);
+    padding: 1px 4px;
+    font-weight: 700;
+}
+.novel-book-title-tag {
+    font-weight: 700;
+}
+.novel-current-tag {
+    color: var(--accent);
+    font-weight: 700;
+    font-family: var(--mono);
+}
+.novel-bar-center {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+}
+.novel-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.novel-btn {
+    padding: 2px 8px !important;
+    font-size: 11px !important;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+}
+
+/* 阅读设置面板 */
+.novel-settings-popup {
+    position: absolute;
+    top: 48px;
+    right: 10px;
+    width: 320px;
+    background: var(--win);
+    border: 2px outset #ffffff;
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.25);
+    z-index: 45;
+    padding: 0;
+}
+.settings-popup-header {
+    background: var(--accent);
+    color: #ffffff;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    font-family: var(--mono);
+}
+.settings-close-btn {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+}
+.settings-popup-body {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.setting-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.setting-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    font-family: var(--mono);
+    text-transform: uppercase;
+}
+.setting-options {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.btn-setting {
+    flex: 1;
+    padding: 3px 6px !important;
+    font-size: 11px !important;
+    text-align: center;
+}
+.btn-setting.is-active {
+    background: var(--accent) !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    box-shadow: inset 1px 1px 0 #000 !important;
+}
+
+/* 配色芯片 */
+.theme-palette {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+}
+.theme-chip {
+    padding: 6px 2px;
+    border: 1px solid var(--line);
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+    transition: transform 0.1s;
+}
+.theme-chip:hover {
+    transform: scale(1.05);
+}
+.theme-chip.is-active {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+.theme-chip-win { background: #dfdfdf; color: #111; }
+.theme-chip-paper { background: #f6f1e7; color: #3a3024; }
+.theme-chip-mint { background: #e8f5e9; color: #1f3820; }
+.theme-chip-white { background: #ffffff; color: #111; }
+.theme-chip-night { background: #1a1a24; color: #e2e4ef; }
+
+/* 目录抽屉 */
+.novel-toc-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 55;
+}
+.novel-toc-drawer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 340px;
+    max-width: 85%;
+    background: var(--win);
+    border-left: 2px solid var(--line);
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.35);
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+}
+.toc-header {
+    background: var(--win-2);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.toc-title b {
+    display: block;
+    font-size: 13px;
+    color: var(--ink);
+}
+.toc-sub {
+    font-size: 11px;
+    color: var(--muted);
+}
+.toc-close-btn {
+    background: var(--win);
+    border: 1px solid var(--line);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 6px;
+    line-height: 1.2;
+}
+.toc-stats {
+    padding: 6px 14px;
+    background: var(--win);
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    border-bottom: 1px dashed var(--line);
+}
+.toc-list-wrap {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 10px;
+}
+.toc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.toc-item {
+    border: 1px solid transparent;
+}
+.toc-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    text-decoration: none;
+    color: var(--ink);
+    font-size: 12px;
+    border-radius: 2px;
+    transition: background 0.12s;
+}
+.toc-link:hover {
+    background: var(--win-2);
+}
+.toc-item.is-current .toc-link {
+    background: var(--win-2);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-weight: 700;
+}
+.toc-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+}
+.toc-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.toc-words {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: var(--mono);
+}
+.toc-curr-badge {
+    font-size: 9px;
+    color: var(--accent);
+    font-weight: 700;
+}
+
+/* 小说主体阅读区域 */
+.novel-reader-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    padding: 24px 20px 48px;
+    border: none;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+/* 阅读主题变量 */
+.novel-reader-body[data-novel-theme="win"] {
+    background-color: var(--win);
+    color: var(--ink);
+}
+.novel-reader-body[data-novel-theme="paper"] {
+    background-color: #f6f1e7;
+    color: #3a3024;
+}
+.novel-reader-body[data-novel-theme="mint"] {
+    background-color: #e8f5e9;
+    color: #1f3820;
+}
+.novel-reader-body[data-novel-theme="white"] {
+    background-color: #ffffff;
+    color: #111111;
+}
+.novel-reader-body[data-novel-theme="night"] {
+    background-color: #1a1a24;
+    color: #e2e4ef;
+}
+.novel-reader-body[data-novel-theme="night"] .chapter-headline {
+    color: #f3f4f8;
+}
+
+/* 字体选择 */
+.novel-reader-body[data-novel-font="serif"] .prose-novel {
+    font-family: "Songti SC", "SimSun", "Noto Serif CJK SC", "Source Han Serif SC", STSong, Georgia, serif;
+}
+.novel-reader-body[data-novel-font="sans"] .prose-novel {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.novel-reader-body[data-novel-font="mono"] .prose-novel {
+    font-family: "FangSong", "STFangsong", "Courier New", monospace;
+}
+
+/* 字号选择 */
+.novel-reader-body[data-font-size="15"] .prose-novel p { font-size: 15px; }
+.novel-reader-body[data-font-size="18"] .prose-novel p { font-size: 18px; }
+.novel-reader-body[data-font-size="21"] .prose-novel p { font-size: 21px; }
+.novel-reader-body[data-font-size="25"] .prose-novel p { font-size: 25px; }
+
+/* 行距选择 */
+.novel-reader-body[data-novel-line="compact"] .prose-novel p { line-height: 1.65; margin-bottom: 0.9em; }
+.novel-reader-body[data-novel-line="normal"] .prose-novel p { line-height: 1.95; margin-bottom: 1.25em; }
+.novel-reader-body[data-novel-line="relaxed"] .prose-novel p { line-height: 2.25; margin-bottom: 1.55em; }
+
+/* 版心宽度 */
+.novel-reader-body[data-novel-width="narrow"] .novel-container { max-width: 680px; }
+.novel-reader-body[data-novel-width="normal"] .novel-container { max-width: 800px; }
+.novel-reader-body[data-novel-width="wide"] .novel-container { max-width: 960px; }
+
+.novel-container {
+    margin: 0 auto;
+    width: 100%;
+}
+.chapter-header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding-bottom: 18px;
+    border-bottom: 1px dashed rgba(128, 128, 128, 0.35);
+}
+.chapter-series {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: 1.5px;
+}
+.chapter-headline {
+    font-size: 23px;
+    font-weight: 700;
+    margin: 12px 0 14px;
+    line-height: 1.35;
+    letter-spacing: 0.5px;
+}
+.chapter-info-bar {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+}
+.info-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* 中文标准小说段落排版 */
+.prose-novel p {
+    text-indent: 2em;
+    margin-top: 0;
+    text-align: justify;
+    word-break: break-word;
+    letter-spacing: 0.4px;
+}
+.prose-novel blockquote {
+    margin: 16px 2em;
+    padding: 8px 14px;
+    border-left: 3px solid var(--accent);
+    background: rgba(128, 128, 128, 0.08);
+}
+.prose-novel blockquote p {
+    text-indent: 0;
+}
+
+/* 章节底栏 */
+.chapter-footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px dashed rgba(128, 128, 128, 0.35);
+}
+.chapter-end-decor {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+}
+.chapter-end-decor .decor-line {
+    flex: 1;
+    height: 1px;
+    background: rgba(128, 128, 128, 0.25);
+}
+.chapter-nav-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+.nav-btn {
+    text-decoration: none;
+    font-size: 12px !important;
+    padding: 6px 14px !important;
+}
+.nav-btn.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 连续滚动下一章卡片 */
+.novel-scroll-next-trigger {
+    margin: 20px 0;
+}
+.scroll-next-card {
+    background: var(--win-2);
+    border: 1px solid var(--line);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: var(--hard-sm);
+}
+.scroll-next-icon {
+    font-size: 14px;
+    color: var(--accent);
+    animation: bounceDown 1.5s infinite;
+}
+.scroll-next-text {
+    font-size: 12px;
+    font-weight: 700;
+}
+.scroll-next-link {
+    font-size: 12px;
+    color: #ffffff;
+    background: var(--accent);
+    padding: 4px 10px;
+    text-decoration: none;
+    font-weight: 700;
+    box-shadow: var(--hard-sm);
+}
+.scroll-next-link:hover {
+    background: var(--accent-hover);
+}
+
+@keyframes bounceDown {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(3px); }
+}
+
+@media (max-width: 768px) {
+    .novel-fullscreen-overlay {
+        padding: 0;
+    }
+    .novel-popup-window {
+        max-width: 100vw;
+        width: 100vw;
+        height: 100dvh;
+        max-height: 100dvh;
+        border: none;
+        box-shadow: none;
+    }
+    .novel-popup-title-bar .series-name,
+    .novel-popup-title-bar .title-sep {
+        display: none;
+    }
+    .novel-control-bar { flex-wrap: wrap; padding: 6px 8px; }
+    .novel-bar-center { display: none; }
+    .novel-reader-body { padding: 16px 12px 32px; }
+    .chapter-headline { font-size: 19px; }
+    .chapter-nav-actions { flex-direction: column; align-items: stretch; }
+    .chapter-nav-actions .nav-btn { text-align: center; justify-content: center; }
+    .scroll-next-card { flex-direction: column; text-align: center; }
+}
+

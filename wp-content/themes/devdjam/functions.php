@@ -11,7 +11,7 @@ add_action('after_setup_theme', static function () {
     add_theme_support('automatic-feed-links');
 });
 
-const DEVDJAM_ASSET_VER = '3.2.9';
+const DEVDJAM_ASSET_VER = '3.3.0';
 
 // 音轨分析（拍速 / 调性）：前台打碟机与 devdjam-core 后台的自动识别共用，所以在 init 注册、前后台都可用
 add_action('init', static function () {
@@ -74,6 +74,9 @@ function dj_url($view) {
     if ($view === 'home') {
         return home_url('/');
     }
+    if ($view === 'novel') {
+        return function_exists('devdjam_get_first_chapter_url') ? devdjam_get_first_chapter_url() : home_url('/novel/');
+    }
     if ($view === 'music' || $view === 'beats') {
         return get_post_type_archive_link($view === 'music' ? 'dj_music' : 'dj_beat') ?: home_url('/' . $view . '/');
     }
@@ -84,6 +87,7 @@ function dj_url($view) {
 function dj_view() {
     if (is_front_page()) return 'home';
     if (is_home()) return 'blog';
+    if (is_post_type_archive('dj_chapter') || is_singular('dj_chapter')) return 'novel';
     if (is_post_type_archive('dj_music') || is_singular('dj_music')) return 'music';
     if (is_post_type_archive('dj_beat') || is_singular('dj_beat')) return 'beats';
     if (is_page('links')) return 'links';
@@ -181,6 +185,13 @@ add_action('template_redirect', static function () {
     if (is_singular('dj_beat')) {
         wp_safe_redirect(get_post_type_archive_link('dj_beat') ?: home_url('/beats/'), 301);
         exit;
+    }
+    if (is_post_type_archive('dj_chapter')) {
+        $first_url = function_exists('devdjam_get_first_chapter_url') ? devdjam_get_first_chapter_url() : '';
+        if ($first_url && $first_url !== home_url('/novel/')) {
+            wp_safe_redirect($first_url, 302);
+            exit;
+        }
     }
 });
 
