@@ -4,10 +4,20 @@
 @font-face { font-family: "UnifrakturCook"; src: url("fonts/UnifrakturCook-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
 :root {
     --gothic: "OldEnglish", "Old English Text MT", "UnifrakturMaguntia", serif;
-    --bg: #e0d6f5;
-    --desktop-tile: url("img/camerons-world/lavender-tile.png");
+    --bg: #0a090c;
+    /* 桌面壁纸：铅黄 / 血腥 B 片 / 地下电影海报拼贴墙。颗粒与暗角已烘进图里 */
+    --desktop-image: url("img/poster-wall/giallo-wall.jpg");
+    /* 只叠一层压暗胶片，白窗口压得住，也不至于把海报糊成黑块 */
+    --desktop-scrim: linear-gradient(180deg, rgba(8, 6, 10, .30) 0%, rgba(8, 6, 10, .04) 45%, rgba(8, 6, 10, .38) 100%);
     --pane-tile: url("img/camerons-world/clouds-tile.png");
+    /* 窗口自己的海报拼贴版；没挂到的分区退回 transparent，露出桌面墙 */
+    --win-plate: none;
     --win: #ffffff;
+    /* --win 在窗口内会被改写成半透背景，用于前景文字时改用这个实色 */
+    --on-solid: #ffffff;
+    /* 按钮、表格这类文字密集的小控件：贴在窗口里的实底版本，按主题走 */
+    --pane-solid: rgb(255 255 255 / .93);
+    --pane-solid-2: rgb(255 255 255 / .94);
     --win-2: #fafafa;
     --line: #111111;
     --line-soft: #d0d0d0;
@@ -28,9 +38,12 @@
     --hard-sm: 2px 2px 0 var(--line);
 }
 html[data-theme="ink"] {
-    --desktop-tile: url("img/camerons-world/stars-tile.png");
+    --desktop-scrim: linear-gradient(180deg, rgba(0, 0, 0, .72) 0%, rgba(0, 0, 0, .58) 45%, rgba(0, 0, 0, .76) 100%);
     --pane-tile: none;
     --bg: #111111; --win: #1a1a1a; --win-2: #141414; --line: #f2f2f2; --line-soft: #444444; --ink: #f2f2f2; --muted: #a8a8a8; --lcd-bg: #000000;
+    --on-solid: #111111;
+    --pane-solid: rgb(26 26 26 / .95);
+    --pane-solid-2: rgb(26 26 26 / .96);
     --accent-soft: #2b1620; --accent-line: #6e2b4b;
     --bar-a: #4a2238; --bar-b: #1a1a1a; --bar-ink: #f2f2f2;
 }
@@ -46,15 +59,13 @@ html[data-theme="cherry"] {
    锁高必须扣掉 --wp-admin--admin-bar--height，否则底部会被顶出视口（访客没有该变量，按 0 计） */
 html {
     background-color: var(--bg);
-    background-image: var(--desktop-tile);
-    background-repeat: repeat;
-    background-size: 82px 146px;
+    background-image: var(--desktop-scrim), var(--desktop-image);
+    background-repeat: no-repeat, no-repeat;
+    background-position: center center, center center;
+    background-size: cover, cover;
     height: calc(100vh - var(--wp-admin--admin-bar--height, 0px));
     height: calc(100dvh - var(--wp-admin--admin-bar--height, 0px));
     overflow: hidden;
-}
-html[data-theme="ink"] {
-    background-size: 304px 234px;
 }
 html[data-gate] { overflow: hidden; }
 body {
@@ -104,7 +115,7 @@ input[type="submit"]:hover, input[type="reset"]:hover, input[type="button"]:hove
 .button:visited { color: var(--ink); }
 button:not(:disabled):active, .button:active,
 input[type="submit"]:not(:disabled):active, input[type="reset"]:not(:disabled):active, input[type="button"]:not(:disabled):active { transform: translate(2px, 2px); box-shadow: none; text-shadow: none; }
-.pagination > .current, button[aria-pressed="true"] { background: var(--line); color: var(--win); }
+.pagination > .current, button[aria-pressed="true"] { background: var(--line); color: var(--on-solid); }
 .pagination > .dots { border-color: transparent; background: none; box-shadow: none; }
 button:disabled, input[type="submit"]:disabled { opacity: .35; cursor: default; text-shadow: none; }
 /* 焦点：鼠标点击不出框，键盘聚焦统一为 1px 点线框（Win98 焦点矩形） */
@@ -554,11 +565,98 @@ html[data-effects="off"] { --window-motion-duration: 0ms; }
     position: relative;
     display: block;
     padding: 0;
-    background: var(--win);
+    /* 窗口内所有面板一律透明：白纱只在窗口这一层盖一次，
+       面板层层叠叠各盖一遍会把海报洗成白色（首页内容窗就是这样）。
+       文字色不走这里，改由 --on-solid 保持实色。 */
+    --win: transparent;
+    --win-2: transparent;
+    /* 次级文字要压得住海报：窗口内的灰比桌面上的灰深一档 */
+    --muted: #333333;
+    /* 一层纱 + 拼贴版：纱在上，海报均匀地透出来 */
+    background-color: transparent;
+    background-image:
+        linear-gradient(rgb(255 255 255 / .44), rgb(255 255 255 / .44)),
+        var(--win-plate);
+    background-size: cover, cover;
+    background-position: center, center;
     color: var(--ink);
     border: 1px solid var(--line);
     box-shadow: var(--hard);
 }
+
+/* 每个窗口挂自己的拼贴版 */
+.win-visitors    { --win-plate: url("img/poster-wall/win-visitors.jpg"); }
+.win-player      { --win-plate: url("img/poster-wall/win-player.jpg"); }
+.win-content     { --win-plate: url("img/poster-wall/win-content.jpg"); }
+.win-calendar    { --win-plate: url("img/poster-wall/win-calendar.jpg"); }
+.win-study-group { --win-plate: url("img/poster-wall/win-study-group.jpg"); }
+
+/* DJ 控制器是硬件，读数要实底；海报只留在它外侧的窗口角落 */
+.player-pro { --win: #ffffff; --win-2: #fafafa; }
+
+/* 文字密集的小控件与表格不吃海报透光：按钮、输入、日历格单独收实。
+   窗口留白、转盘区、窗口边缘仍然透海报。 */
+.window :is(button, .button, input, select, textarea) { --win: var(--pane-solid); }
+.window :is(.deck-controls, .queue, .calendar, .guest-entry, .browser-table) { --win: var(--pane-solid-2); }
+
+/* 海报透得狠了，字得自己立住：1px 硬描边（不模糊），把正文从画面上抬起来。
+   LCD 与按钮自带实底，不需要描边。 */
+.window :is(h1, h2, h3, h4, p, span, li, td, th, time, small, strong, em, label, a, summary) {
+    text-shadow: 1px 1px 0 rgb(255 255 255 / .85);
+}
+.window .lcd,
+.window .lcd *,
+.window button,
+.window .button { text-shadow: none; }
+html[data-theme="ink"] .window :is(h1, h2, h3, h4, p, span, li, td, th, time, small, strong, em, label, a, summary) {
+    text-shadow: 1px 1px 0 rgb(0 0 0 / .8);
+}
+
+/* 侧边栏、状态栏、移动端任务栏同样吃海报：它们是页面上最后几块纯白板 */
+.dock,
+.site-foot {
+    background: rgb(255 255 255 / .72);
+}
+html[data-theme="ink"] .dock,
+html[data-theme="ink"] .site-foot {
+    background: rgb(18 18 18 / .82);
+}
+
+/* 学习小组那张卡是整块文字压在画面上，给它一张自己的纸，别让字裸奔 */
+.study-group-link {
+    background: rgb(255 255 255 / .58);
+}
+html[data-theme="ink"] .study-group-link {
+    background: rgb(18 18 18 / .55);
+}
+
+/* 转盘区透海报，下面控件区收成纸面。叠在窗口那层 .68 的纱上，用像素停靠：
+   这个容器高度随曲目信息变化，百分比会漂 */
+.win-player .player {
+    background: linear-gradient(180deg,
+        rgb(255 255 255 / 0) 0,
+        rgb(255 255 255 / 0) 118px,
+        rgb(255 255 255 / .62) 152px,
+        rgb(255 255 255 / .62) 100%);
+}
+html[data-theme="ink"] .win-player .player {
+    background: linear-gradient(180deg,
+        rgb(18 18 18 / 0) 0,
+        rgb(18 18 18 / 0) 118px,
+        rgb(18 18 18 / .40) 152px,
+        rgb(18 18 18 / .40) 100%);
+}
+
+html[data-theme="ink"] .window {
+    /* 暗色主题：换成暗纱盖在海报上；次级文字反过来要提亮 */
+    --muted: #c8c8c8;
+    background-color: transparent;
+    background-image:
+        linear-gradient(rgb(18 18 18 / .70), rgb(18 18 18 / .70)),
+        var(--win-plate);
+    background-blend-mode: normal;
+}
+html[data-theme="ink"] .player-pro { --win: #1a1a1a; --win-2: #141414; }
 
 /* 窗口最小化：高度收缩至标题栏，隐藏主体内容，透出底层桌面 */
 .window.is-min {
@@ -711,7 +809,7 @@ html[data-effects="off"] { --window-motion-duration: 0ms; }
     --glyph-at: left 3px top 1px;
 }
 .title-bar-controls button:hover { background: var(--accent-2); border-color: var(--line); color: #111111; box-shadow: none; }
-.title-bar-controls button:not(:disabled):active { transform: none; background: var(--line); color: var(--win); }
+.title-bar-controls button:not(:disabled):active { transform: none; background: var(--line); color: var(--on-solid); }
 .window-body { margin: 8px; }
 
 /* 底部状态栏：扁平化的 Win98 status bar，给整页收口（≥601px；≤600px 由底部任务栏承担） */
@@ -1019,15 +1117,14 @@ html.has-max .sticker {
     margin-top: 4px;
 }
 
-/* 下方：内容保持实底，空白区域使用原版云朵纹理。 */
+/* 下方：内容保持实底，空白区域直接露出窗口海报（原来的云朵平铺会让那块死白） */
 .home-bottom-pane {
     flex: 1;
     min-height: 0;
     padding: 0;
     background-color: var(--win);
-    background-image: var(--pane-tile);
+    background-image: none;
     background-repeat: repeat;
-    background-size: 288px 216px;
     display: flex;
     flex-direction: column;
 }
@@ -1500,7 +1597,7 @@ html.has-max .sticker {
 }
 .track-button.is-playing {
     background: var(--line);
-    color: var(--win);
+    color: var(--on-solid);
 }
 .track-button.is-playing .track-btn-icon svg {
     fill: currentColor;
@@ -1550,7 +1647,7 @@ html.has-max .sticker {
 }
 .top-lang-btn:hover { color: var(--accent); border-color: var(--accent); }
 .top-lang-btn[aria-pressed="true"] {
-    background: var(--line); color: var(--win); border-color: var(--line);
+    background: var(--line); color: var(--on-solid); border-color: var(--line);
     box-shadow: none; transform: translate(1px, 1px);
 }
 .top-lang-sep { font-size: 10px; color: var(--muted); user-select: none; }
@@ -1566,8 +1663,8 @@ table > thead > tr > * { background: var(--win-2); color: var(--ink); box-shadow
 #wp-calendar th { padding: 2px 0; color: var(--muted); font-weight: 400; border-bottom: 1px dotted var(--line); background: transparent; }
 #wp-calendar td { padding: 2px 0; }
 #wp-calendar td a { font-weight: 700; color: var(--accent); }
-#wp-calendar #today { background: var(--line); color: var(--win); }
-#wp-calendar #today a { color: var(--win); text-decoration-color: var(--accent); }
+#wp-calendar #today { background: var(--line); color: var(--on-solid); }
+#wp-calendar #today a { color: var(--on-solid); text-decoration-color: var(--accent); }
 .wp-calendar-nav { display: flex; justify-content: space-between; padding-top: 3px; font-size: 10px; }
 
 /* 留言簿 */
@@ -1605,9 +1702,13 @@ table > thead > tr > * { background: var(--win-2); color: var(--ink); box-shadow
     background-image:
         repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.45) 0px, rgba(0, 0, 0, 0.45) 1px, transparent 1px, transparent 3px),
         radial-gradient(ellipse at 50% 50%, rgba(10, 10, 16, 0.4) 0%, rgba(5, 5, 8, 0.95) 80%),
+        /* 开屏门也压在海报墙上：整屏黑留白太素，垫一层很淡的墙面，字仍然咬得住 */
+        linear-gradient(180deg, rgba(6, 6, 10, 0.50) 0%, rgba(6, 6, 10, 0.74) 100%),
+        var(--desktop-image),
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Crect x='12' y='18' width='1' height='1' fill='%23fff' opacity='.9'/%3E%3Crect x='85' y='42' width='1' height='1' fill='%23fff' opacity='.8'/%3E%3Crect x='140' y='15' width='1' height='1' fill='%23fff' opacity='.9'/%3E%3Crect x='35' y='95' width='1' height='1' fill='%23fff' opacity='.8'/%3E%3Crect x='110' y='125' width='1' height='1' fill='%23fff' opacity='.9'/%3E%3Crect x='70' y='150' width='1' height='1' fill='%23fff' opacity='.7'/%3E%3Crect x='150' y='85' width='1' height='1' fill='%23fff' opacity='.85'/%3E%3Crect x='25' y='140' width='1' height='1' fill='%23fff' opacity='.75'/%3E%3Crect x='45' y='25' width='2' height='2' fill='%237fe9ff'/%3E%3Crect x='125' y='70' width='1' height='1' fill='%237fe9ff' opacity='.9'/%3E%3Crect x='90' y='105' width='2' height='2' fill='%237fe9ff'/%3E%3Crect x='15' y='65' width='1' height='1' fill='%237fe9ff' opacity='.8'/%3E%3Crect x='65' y='55' width='2' height='2' fill='%23ff5fd0'/%3E%3Crect x='135' y='135' width='2' height='2' fill='%23ff5fd0'/%3E%3Crect x='10' y='115' width='1' height='1' fill='%23ff5fd0' opacity='.85'/%3E%3Crect x='100' y='20' width='1' height='1' fill='%23ff5fd0' opacity='.9'/%3E%3Crect x='50' y='120' width='1' height='1' fill='%23ffe94a' opacity='.9'/%3E%3Crect x='145' y='45' width='1' height='1' fill='%23ffe94a' opacity='.85'/%3E%3Crect x='75' y='80' width='1' height='1' fill='%23ffe94a' opacity='.9'/%3E%3Cpath d='M30 38h1v3h-1zM29 39h3v1h-3z' fill='%23fff'/%3E%3Cpath d='M120 28h1v3h-1zM119 29h3v1h-3z' fill='%23ff5fd0'/%3E%3Cpath d='M60 138h1v3h-1zM59 139h3v1h-3z' fill='%237fe9ff'/%3E%3Cpath d='M105 75h1v3h-1zM104 76h3v1h-3z' fill='%23ffe94a'/%3E%3C/svg%3E");
-    background-repeat: repeat, no-repeat, repeat;
-    background-size: auto, cover, 160px 160px;
+    background-repeat: repeat, no-repeat, no-repeat, no-repeat, repeat;
+    background-position: 0 0, center center, center center, center center, 0 0;
+    background-size: auto, cover, cover, cover, 160px 160px;
     overflow: hidden;
 }
 html[data-gate] .enter {
@@ -2415,7 +2516,7 @@ html[data-effects="on"] .collage-motion { display: block; }
     letter-spacing: 1px;
     padding: 2px 5px;
     background: var(--ink);
-    color: var(--win);
+    color: var(--on-solid);
     border-radius: 2px;
 }
 .study-status-dot {
@@ -2748,7 +2849,7 @@ html[data-effects="on"] .collage-motion { display: block; }
 }
 .novel-badge {
     background: var(--ink);
-    color: var(--win);
+    color: var(--on-solid);
     font-size: 9px;
     font-family: var(--mono);
     padding: 1px 4px;

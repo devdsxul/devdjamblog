@@ -79,8 +79,8 @@ Win98 窗口、按钮、滑杆样式与像素字体 "Pixelated MS Sans Serif" �
 
 | 本地文件 | 原始来源 | 原始尺寸 | 用途 |
 | --- | --- | --- | --- |
-| `lavender-tile.png` | `13/bg.png` | 41×73 | 默认/Cherry 桌布，2 倍平铺；透明页头共用 |
-| `stars-tile.png` | `1/bg.png` | 304×234 | Ink 桌布 |
+| `lavender-tile.png` | `13/bg.png` | 41×73 | 已退役：原默认/Cherry 桌布，2026-10-18 起由海报墙取代，文件保留未引用 |
+| `stars-tile.png` | `1/bg.png` | 304×234 | 已退役：原 Ink 桌布，同上 |
 | `clouds-tile.png` | `14/bg.png` | 288×216 | 首页下方空白区域；内容列表保留实底 |
 | `moon.gif` | `1/7.gif` | 72×72 | 页头月球 |
 | `gold-star.gif` | `1/16.gif` | 48×48 | 页头金色星星 |
@@ -90,3 +90,14 @@ Win98 窗口、按钮、滑杆样式与像素字体 "Pixelated MS Sans Serif" �
 每张 GIF 对应的 `*-still.png` 是 Pillow 提取的原图第一帧，仅用于现有动效开关关闭或系统减少动态偏好；不是另找素材替代。首次载入默认显示静态图，`html[data-effects="on"]` 才显示动图。
 
 来源声明：<https://www.cameronsworld.net/disclaimer.html> 说明图片多非原站所有，来自历史存档，原站表示非商业使用。这不是自由许可证或商业授权。站主明确选择在非商用个人站直接使用，保留来源记录；如未来改变用途，应重新核对权利。字体层次只使用现有字体及系统 Georgia / Times New Roman，没有新增字体文件。没有新增页面文案。
+
+## 铅黄 / 血腥 B 片 / 地下电影海报墙（2026-10-18）
+
+桌面壁纸换成一面电影海报墙，取代原来的淡紫平铺瓦片。
+
+- **成品**：桌面 `giallo-wall.jpg`（2560×1440，JPEG q80，约 473 KB，同一张也垫在进站页星场下面）+ 5 张窗口拼贴版 `win-visitors.jpg` / `win-player.jpg` / `win-content.jpg` / `win-calendar.jpg` / `win-study-group.jpg`（480×640 至 960×640，各 37–63 KB）。合计约 690 KB。
+- **素材**：44 张海报（桌面）+ 11 张（窗口版，与桌面不重复），取自英文维基百科各片条目的信息框海报（`action=query&prop=pageimages&pilicense=any`；默认的免费图片过滤会让所有电影海报返回空）。原始文件多为 250×360 左右，未做矢量化或重绘。
+- **片单**：Argento / Fulci / Bava 一脉的铅黄片（Suspiria、Profondo Rosso、Tenebrae、Phenomena、Blood and Black Lace、L'aldilà、Zombi 2、Lo squartatore di New York、Quella villa accanto al cimitero 等），加上 Re-Animator、Street Trash、Basket Case、Brain Damage、Bad Taste、Tetsuo、Nekromantik、Santa Sangre 这类血腥 B 片与地下片。
+- **处理**：桌面是三档尺寸错落叠贴（±4°、8–22% 叠压、4px 硬投影、无网格），再压到 58% 饱和度、约 40% 亮度，冷色阴影配血色中间调，叠暗角、扫描线与胶片颗粒。窗口版每类 2–3 张（±6°），烘 28% 白纱 + 1.6px 柔化，让面板后透出的是色块而非可读的图；页面里再由 `--desktop-scrim`、`--win`、`--pane-solid` 分层控制明度。
+- **管线**：`dev/poster-collect/fetch.py` 拉海报池（池内 `*.jpg` 是工作文件，已 gitignore），`compose.py` 生成壁纸，`contact_sheet.py` 出联系表。
+- **权利声明**：这些是各片的宣传物料，版权归出品方／发行方，不适用自由许可。与上一节同理，仅作非商业个人站的背景纹理使用，保留完整片单与来源；如站点用途改变，需重新核对权利。

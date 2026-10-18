@@ -5,3 +5,7 @@ node_modules/
 dist/
 __pycache__/
 docs/PRODUCTION.md
+
+# 海报墙工作文件：由 dev/poster-collect/fetch.py 重新拉取
+dev/poster-collect/*.jpg
+
