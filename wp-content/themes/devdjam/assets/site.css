@@ -2652,9 +2652,19 @@ html[data-effects="on"] .collage-motion { display: block; }
     outline: none;
 }
 
-/* 阅读窗不挂拼贴、不叠白纱、正文不要描边——阅读时只有纸 */
+/* 阅读窗不挂拼贴、不叠白纱、正文不要描边——阅读时只有纸。
+   阅读主题 "win" 直接用 --win，所以这里必须把实底还回来，否则整个窗口透明。 */
 .window.novel-popup-window {
+    --win: #ffffff;
+    --win-2: #fafafa;
+    --muted: #6b6b6b;
+    background: var(--win);
     background-image: none;
+}
+html[data-theme="ink"] .window.novel-popup-window {
+    --win: #1a1a1a;
+    --win-2: #141414;
+    --muted: #a8a8a8;
 }
 .window.novel-popup-window :is(h1, h2, h3, h4, p, span, li, td, th, time, small, strong, em, label, a, summary) {
     text-shadow: none;
