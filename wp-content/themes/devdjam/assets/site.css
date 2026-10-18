@@ -2641,17 +2641,23 @@ html[data-effects="on"] .collage-motion { display: block; }
     to { opacity: 1; transform: scale(1); }
 }
 
-/* 半透明背景遮罩（点击返回桌面） */
+/* 背景遮罩（点击返回桌面）。阅读界面不吃海报：遮罩做实，桌面墙不透出来 */
 .novel-backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.65);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(5, 5, 9, 0.97);
     z-index: 1;
     cursor: pointer;
     text-decoration: none;
     outline: none;
+}
+
+/* 阅读窗不挂拼贴、不叠白纱、正文不要描边——阅读时只有纸 */
+.window.novel-popup-window {
+    background-image: none;
+}
+.window.novel-popup-window :is(h1, h2, h3, h4, p, span, li, td, th, time, small, strong, em, label, a, summary) {
+    text-shadow: none;
 }
 
 /* 弹出的 Win98 全屏小说阅读窗口 */
