@@ -27,9 +27,9 @@
     --accent-2: #ffd400;
     --accent-soft: #fff3f8;   /* 悬停 / 选中的淡底色 */
     --accent-line: #ffd0e2;   /* 悬停描边、浅色分隔 */
-    --bar-a: #ffd3e5;         /* 标题栏渐变起点（Win98 横向渐变结构） */
-    --bar-b: #ffffff;         /* 标题栏渐变终点 */
-    --bar-ink: #111111;       /* 标题栏文字 */
+    --bar-a: rgb(8 8 10 / .78); /* 烟黑半透明标题栏，露出底下的海报纹理 */
+    --bar-b: rgb(8 8 10 / .64);
+    --bar-ink: #f2f2f2;
     --lcd-bg: #111111;
     --lcd: #ffffff;
     --ui: "Pixelated MS Sans Serif", "SimSun", "Microsoft YaHei", Arial, sans-serif;
@@ -45,12 +45,10 @@ html[data-theme="ink"] {
     --pane-solid: rgb(26 26 26 / .95);
     --pane-solid-2: rgb(26 26 26 / .96);
     --accent-soft: #2b1620; --accent-line: #6e2b4b;
-    --bar-a: #4a2238; --bar-b: #1a1a1a; --bar-ink: #f2f2f2;
 }
 html[data-theme="cherry"] {
     --accent: #e60023; --accent-2: #ff9ecb;
     --accent-soft: #fff1f3; --accent-line: #ffc6cf;
-    --bar-a: #ffd0d8; --bar-b: #ffffff;
 }
 
 /* ---------- 基础 ---------- */
@@ -801,7 +799,7 @@ html.is-window-dragging, html.is-window-dragging * { cursor: grabbing !important
     opacity: 1;
     pointer-events: auto;
 }
-/* 浅色标题栏：保留 Win98 横向渐变结构，换成站点配色；与窗体之间用 1px 黑线分隔 */
+/* 烟黑标题栏：保留 Win98 横向层次，用浅色文字与细边按钮衔接海报底色。 */
 .title-bar {
     padding: 3px 3px 3px 4px;
     background: linear-gradient(90deg, var(--bar-a), var(--bar-b));
@@ -809,13 +807,16 @@ html.is-window-dragging, html.is-window-dragging * { cursor: grabbing !important
     border-bottom: 1px solid var(--line);
 }
 .title-bar-text { display: flex; align-items: center; gap: 5px; color: var(--bar-ink); text-transform: lowercase; }
+.window > .title-bar .title-bar-text,
+.window > .title-bar .title-bar-text * { text-shadow: 0 1px 0 rgb(0 0 0 / .65); }
 .title-icon { width: 16px; height: 16px; object-fit: contain; }
 .title-bar-controls { position: relative; z-index: 10; gap: 2px; }
-/* 控制按钮：白底黑框方块；图形沿用 98.css 的像素形状，但改为遮罩 + currentColor，三套配色与悬停态都清晰可见 */
-.title-bar-controls button {
+/* 控制按钮：半透细边方块；像素图形通过 currentColor 保持清晰。 */
+.title-bar-controls :is(button, a) {
     position: relative;
     min-width: 16px; min-height: 14px; padding: 0;
-    border: 1px solid var(--line); background: var(--win); color: var(--ink);
+    border: 1px solid rgb(255 255 255 / .32);
+    background: rgb(255 255 255 / .08); color: var(--bar-ink);
     box-shadow: none;
 }
 .title-bar-controls button[aria-label] { background-image: none; }
@@ -837,8 +838,8 @@ html.is-window-dragging, html.is-window-dragging * { cursor: grabbing !important
     --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='9'%3E%3Cpath d='M2 0h6v2H2zM7 2h1v4H7zM2 2h1v1H2zM6 5h1v1H6zM0 3h6v2H0zM5 5h1v4H5zM0 5h1v4H0zM1 8h4v1H1z'/%3E%3C/svg%3E");
     --glyph-at: left 3px top 1px;
 }
-.title-bar-controls button:hover { background: var(--accent-2); border-color: var(--line); color: #111111; box-shadow: none; }
-.title-bar-controls button:not(:disabled):active { transform: none; background: var(--line); color: var(--on-solid); }
+.title-bar-controls :is(button, a):hover { background: rgb(255 255 255 / .22); border-color: rgb(255 255 255 / .6); color: #ffffff; box-shadow: none; }
+.title-bar-controls :is(button, a):not(:disabled):active { transform: none; background: rgb(0 0 0 / .38); color: #ffffff; }
 .window-body { margin: 8px; }
 
 /* 底部状态栏：扁平化的 Win98 status bar，给整页收口（≥601px；≤600px 由底部任务栏承担） */
@@ -2764,7 +2765,7 @@ html[data-theme="ink"] .window.novel-popup-window {
     opacity: 0.6;
 }
 .novel-popup-title-bar .chapter-name {
-    color: var(--accent);
+    color: var(--bar-ink);
     font-weight: 700;
 }
 
@@ -2784,9 +2785,6 @@ html[data-theme="ink"] .window.novel-popup-window {
     width: 20px;
     height: 18px;
     padding: 0;
-    border: 1px solid var(--line);
-    background: var(--win);
-    color: var(--ink);
     box-shadow: none;
     text-decoration: none;
     cursor: pointer;
@@ -2821,16 +2819,10 @@ html[data-theme="ink"] .window.novel-popup-window {
     --glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='7'%3E%3Cpath fill-rule='evenodd' d='M0 0h2v1h1v1h2V1h1V0h2v1H7v1H6v1H5v1h1v1h1v1h1v1H6V6H5V5H3v1H2v1H0V6h1V5h1V4h1V3H2V2H1V1H0V0z'/%3E%3C/svg%3E");
     --glyph-at: center center;
 }
-.novel-popup-title-bar .title-bar-controls button:hover,
-.novel-popup-title-bar .title-bar-controls a:hover {
-    background: var(--accent-2);
-    border-color: var(--line);
-    color: #111111;
-}
 .novel-popup-title-bar .title-bar-controls .title-btn-close:hover {
-    background: var(--accent);
+    background: rgb(160 35 42 / .9);
     color: #ffffff;
-    border-color: var(--line);
+    border-color: rgb(255 255 255 / .6);
 }
 
 /* 窗口内部主体 */
