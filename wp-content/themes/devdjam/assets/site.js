@@ -1414,24 +1414,110 @@
   syncTheme();
   applyLanguage();
 
-  // ---------- 窗口管理：最小化（再点恢复）/ 最大化，状态保存在本次会话 ----------
+  // ---------- 窗口管理：自由拖动 / 最小化 / 最大化，状态保存在本次会话 ----------
   const windows = [...document.querySelectorAll('.window[data-window]')];
   const session = {
     get() { try { return JSON.parse(sessionStorage.getItem('dj-windows') || '{}'); } catch { return {}; } },
     set(value) { try { sessionStorage.setItem('dj-windows', JSON.stringify(value)); } catch { /* 可选 */ } },
   };
   const windowState = session.get();
+  const windowPositions = (() => {
+    try {
+      const value = JSON.parse(sessionStorage.getItem('dj-window-positions') || '{}');
+      return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    } catch { return {}; }
+  })();
+  const floatingWindows = new WeakMap();
+  const windowOrder = [...windows];
+  let windowDrag = null;
+  let lastWindowDrag = -Infinity;
   const dim = document.querySelector('[data-dim]');
   let isWindowTransitioning = false;
   const restoreTimers = new WeakMap();
   const windowMotionDuration = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--window-motion-duration')) || 0;
+  const windowPositionKey = (win) => win.dataset.window || win.id;
+  function saveWindowPositions() {
+    try { sessionStorage.setItem('dj-window-positions', JSON.stringify(windowPositions)); } catch { /* 可选 */ }
+  }
+  function raiseWindow(win) {
+    const index = windowOrder.indexOf(win);
+    if (index < 0) return;
+    windowOrder.splice(index, 1);
+    windowOrder.push(win);
+    // 普通窗口始终低于最大化遮罩，不让反复点击无限抬高层级。
+    windowOrder.forEach((item, i) => item.style.setProperty('--window-z', 10 + i));
+  }
+  function floatWindow(win) {
+    if (floatingWindows.has(win)) return floatingWindows.get(win);
+    const rect = win.getBoundingClientRect();
+    const wasMin = win.classList.contains('is-min');
+    if (wasMin) win.classList.remove('is-min');
+    const height = win.getBoundingClientRect().height;
+    if (wasMin) win.classList.add('is-min');
+    let slot = null;
+    if (win.dataset.window) {
+      slot = document.createElement('div');
+      slot.className = 'window-slot';
+      slot.setAttribute('aria-hidden', 'true');
+      slot.style.height = `${rect.height}px`;
+      slot.style.flex = getComputedStyle(win).flex;
+      win.before(slot);
+    }
+    const position = { x: rect.left, y: rect.top, slot };
+    floatingWindows.set(win, position);
+    win.style.setProperty('--window-width', `${rect.width}px`);
+    win.style.setProperty('--window-height', `${height}px`);
+    win.classList.add('is-floating');
+    // 只改变定位，不搬走 DOM：播放器、焦点和小说页面的切换生命周期保持连续。
+    moveWindow(win, rect.left, rect.top);
+    return position;
+  }
+  function moveWindow(win, x, y) {
+    const position = floatingWindows.get(win);
+    if (!position) return;
+    const admin = document.getElementById('wpadminbar')?.getBoundingClientRect();
+    const top = Math.max(4, admin?.bottom || 0);
+    const dock = document.querySelector('.dock');
+    const dockRect = dock?.getBoundingClientRect();
+    const bottom = dock && getComputedStyle(dock).position === 'fixed' && dockRect.top > innerHeight / 2
+      ? dockRect.top : innerHeight;
+    const width = win.offsetWidth;
+    const barHeight = win.querySelector(':scope > .title-bar')?.offsetHeight || 32;
+    position.x = Math.max(4, Math.min(innerWidth - width - 4, x));
+    position.y = Math.max(top, Math.min(bottom - barHeight - 4, y));
+    win.style.setProperty('--window-left', `${position.x}px`);
+    win.style.setProperty('--window-top', `${position.y}px`);
+    windowPositions[windowPositionKey(win)] = { x: position.x, y: position.y };
+  }
+  function resetWindowPosition(win) {
+    floatingWindows.get(win)?.slot?.remove();
+    floatingWindows.delete(win);
+    win.classList.remove('is-floating');
+    ['left', 'top', 'width', 'height'].forEach((key) => win.style.removeProperty(`--window-${key}`));
+    delete windowPositions[windowPositionKey(win)];
+    saveWindowPositions();
+  }
+  function initWindowDragging(root = document) {
+    root.querySelectorAll('.window[data-window], .novel-popup-window').forEach((win) => {
+      const bar = win.querySelector(':scope > .title-bar');
+      if (!bar) return;
+      bar.tabIndex = 0;
+      bar.title = 'Drag to move · Arrow keys to move · Home to reset / 拖动或方向键移动，Home 复位';
+      const position = windowPositions[windowPositionKey(win)];
+      if (!floatingWindows.has(win) && Number.isFinite(position?.x) && Number.isFinite(position?.y)) {
+        const { x, y } = position;
+        floatWindow(win);
+        moveWindow(win, x, y);
+      }
+    });
+  }
   function applyWindows() {
     let anyMax = false;
     windows.forEach((win) => {
       const mode = windowState[win.dataset.window] || 'open';
       // 弹出前先放一个同高的占位虚框，其他窗口不会跳位
       const ghost = win.previousElementSibling?.classList.contains('window-ghost') ? win.previousElementSibling : null;
-      if (mode === 'max' && !ghost) {
+      if (mode === 'max' && !ghost && !floatingWindows.has(win)) {
         const placeholder = document.createElement('div');
         placeholder.className = 'window-ghost';
         placeholder.style.height = `${win.offsetHeight}px`;
@@ -1449,6 +1535,8 @@
       win.classList.toggle('is-min', mode === 'min');
       win.classList.toggle('is-max', mode === 'max');
       win.classList.remove('is-unmax');
+      const position = floatingWindows.get(win);
+      if (position && mode !== 'max') moveWindow(win, position.x, position.y);
       if (mode === 'max') anyMax = true;
       win.querySelector('[data-window-action="min"]')?.setAttribute('aria-label', mode === 'min' ? 'Restore' : 'Minimize');
       win.querySelector('[data-window-action="max"]')?.setAttribute('aria-label', mode === 'max' ? 'Restore' : 'Maximize');
@@ -1526,7 +1614,7 @@
     setWindow(id, current === target ? 'open' : target);
   });
   document.addEventListener('dblclick', (event) => {
-    if (event.target.closest('[data-window-action]')) return;
+    if (event.target.closest('.title-bar-controls') || performance.now() - lastWindowDrag < 400) return;
     const bar = event.target.closest('.title-bar');
     if (!bar) return;
     if (bar.closest('.novel-popup-window')) {
@@ -1543,6 +1631,103 @@
       setWindow(id, 'min');
     }
   });
+  function prepareWindowMove(win) {
+    if (win.classList.contains('is-max')) {
+      delete windowState[win.dataset.window];
+      session.set(windowState);
+      applyWindows();
+    }
+    if (win.classList.contains('is-edge-to-edge')) {
+      // 铺满阅读窗的尺寸过渡先停下，拖动基准取还原后的真实尺寸。
+      win.classList.add('is-window-dragging');
+      document.getElementById('novel-toggle-fullscreen')?.click();
+      void win.offsetWidth;
+      win.classList.remove('is-window-dragging');
+    }
+    clearTimeout(restoreTimers.get(win));
+    win.classList.remove('is-restoring');
+    floatWindow(win);
+  }
+  function endWindowDrag(event) {
+    if (!windowDrag || (event?.pointerId !== undefined && event.pointerId !== windowDrag.id)) return;
+    const drag = windowDrag;
+    windowDrag = null;
+    drag.win.classList.remove('is-window-dragging');
+    document.documentElement.classList.remove('is-window-dragging');
+    if (drag.bar.hasPointerCapture(drag.id)) drag.bar.releasePointerCapture(drag.id);
+    if (drag.moved) {
+      lastWindowDrag = performance.now();
+      saveWindowPositions();
+    }
+  }
+  document.addEventListener('pointerdown', (event) => {
+    const win = event.target.closest('.window[data-window], .novel-popup-window');
+    if (!win || event.button !== 0 || event.isPrimary === false) return;
+    raiseWindow(win);
+    const bar = event.target.closest('.title-bar');
+    if (!bar || bar.parentElement !== win || event.target.closest('button, a, input, select, textarea')
+      || isWindowTransitioning || windowDrag) return;
+    const rect = win.getBoundingClientRect();
+    windowDrag = { win, bar, id: event.pointerId, x: event.clientX, y: event.clientY,
+      offsetX: event.clientX - rect.left, offsetY: event.clientY - rect.top,
+      ratio: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)), moved: false };
+    bar.setPointerCapture(event.pointerId);
+    bar.focus({ preventScroll: true });
+    event.preventDefault();
+  });
+  document.addEventListener('pointermove', (event) => {
+    const drag = windowDrag;
+    if (!drag || drag.id !== event.pointerId) return;
+    if (!drag.moved) {
+      if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 5) return;
+      const wasMax = drag.win.matches('.is-max, .is-edge-to-edge');
+      prepareWindowMove(drag.win);
+      if (wasMax) {
+        drag.offsetX = drag.ratio * drag.win.offsetWidth;
+        drag.offsetY = Math.max(0, Math.min(drag.offsetY, drag.bar.offsetHeight / 2));
+      }
+      drag.moved = true;
+      drag.win.classList.add('is-window-dragging');
+      document.documentElement.classList.add('is-window-dragging');
+    }
+    moveWindow(drag.win, event.clientX - drag.offsetX, event.clientY - drag.offsetY);
+    event.preventDefault();
+  }, { passive: false });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((type) => document.addEventListener(type, endWindowDrag));
+  window.addEventListener('blur', () => endWindowDrag());
+  window.addEventListener('resize', () => {
+    endWindowDrag();
+    document.querySelectorAll('.window.is-floating:not(.is-max):not(.is-edge-to-edge)').forEach((win) => {
+      const position = floatingWindows.get(win);
+      if (position) moveWindow(win, position.x, position.y);
+    });
+    saveWindowPositions();
+  });
+  document.addEventListener('focusin', (event) => {
+    const win = event.target.closest('.window[data-window]');
+    if (win) raiseWindow(win);
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') endWindowDrag();
+    const bar = event.target.closest('.title-bar');
+    if (!bar || event.target !== bar || isWindowTransitioning) return;
+    const win = bar.parentElement;
+    if (!win.matches('.window[data-window], .novel-popup-window')) return;
+    if (event.key === 'Home' && !win.matches('.is-max, .is-edge-to-edge')) {
+      event.preventDefault();
+      resetWindowPosition(win);
+      return;
+    }
+    const direction = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[event.key];
+    if (!direction || event.altKey || event.ctrlKey || event.metaKey) return;
+    event.preventDefault();
+    prepareWindowMove(win);
+    const position = floatingWindows.get(win);
+    const step = event.shiftKey ? 1 : 10;
+    moveWindow(win, position.x + direction[0] * step, position.y + direction[1] * step);
+    saveWindowPositions();
+  });
+  initWindowDragging();
   applyWindows();
 
   // ---------- 贴纸：点击有动效，并触发对应动作 ----------
@@ -1994,6 +2179,7 @@
   }
 
   function initNovelReader() {
+    initWindowDragging(document.getElementById('site-content') || document);
     const viewport = document.getElementById('novel-reader-viewport');
     if (!viewport) return;
     const settings = getNovelSettings();

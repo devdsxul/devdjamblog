@@ -758,6 +758,35 @@ html[data-theme="ink"] .player-pro { --win: #1a1a1a; --win-2: #141414; }
 .window.is-max > .sticker { display: none; }
 .window-ghost { border: 1px dashed var(--line-soft); }
 
+/* 拖动窗口越过三栏的裁剪边界；原位置留白，其他窗口不跟着跳动。 */
+.window-slot { visibility: hidden; min-width: 0; pointer-events: none; }
+.window[data-window]:not(.is-max) { z-index: var(--window-z, auto); }
+/* 阅读遮罩位于内容窗内部，始终高于其他桌面窗口及最大化遮罩。 */
+.window.win-content:has(.novel-fullscreen-overlay) { z-index: 850 !important; }
+.window.is-floating:not(.is-max):not(.is-edge-to-edge) {
+    position: fixed;
+    left: var(--window-left);
+    top: var(--window-top);
+    right: auto;
+    bottom: auto;
+    width: var(--window-width);
+    height: var(--window-height);
+    max-width: calc(100vw - 8px);
+    max-height: calc(100dvh - 8px - var(--wp-admin--admin-bar--height, 0px));
+    min-height: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+.window.is-floating:not(.is-max) > .window-body { min-height: 0; overflow: auto; }
+.window > .title-bar { cursor: grab; touch-action: none; user-select: none; flex-shrink: 0; }
+.window > .title-bar:focus-visible { outline: 1px dashed var(--bar-ink); outline-offset: -3px; }
+.window > .title-bar .title-bar-controls { cursor: default; }
+.window > .title-bar img { pointer-events: none; }
+html.is-window-dragging, html.is-window-dragging * { cursor: grabbing !important; user-select: none !important; }
+.window.is-window-dragging { transition: none; }
+
 /* 弹窗遮罩：Win98 "关机" 式 1px 像素网点，代替现代的高斯模糊 */
 .desk-dim {
     position: fixed;
