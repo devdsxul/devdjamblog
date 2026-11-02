@@ -1429,6 +1429,7 @@
   })();
   const floatingWindows = new WeakMap();
   const windowOrder = [...windows];
+  const mobileWindowLayout = matchMedia('(max-width: 768px), (pointer: coarse) and (max-height: 600px)');
   let windowDrag = null;
   let lastWindowDrag = -Infinity;
   const dim = document.querySelector('[data-dim]');
@@ -1489,20 +1490,27 @@
     win.style.setProperty('--window-top', `${position.y}px`);
     windowPositions[windowPositionKey(win)] = { x: position.x, y: position.y };
   }
-  function resetWindowPosition(win) {
+  function resetWindowPosition(win, { forget = true } = {}) {
     floatingWindows.get(win)?.slot?.remove();
     floatingWindows.delete(win);
     win.classList.remove('is-floating');
     ['left', 'top', 'width', 'height'].forEach((key) => win.style.removeProperty(`--window-${key}`));
-    delete windowPositions[windowPositionKey(win)];
-    saveWindowPositions();
+    if (forget) {
+      delete windowPositions[windowPositionKey(win)];
+      saveWindowPositions();
+    }
   }
   function initWindowDragging(root = document) {
     root.querySelectorAll('.window[data-window], .novel-popup-window').forEach((win) => {
       const bar = win.querySelector(':scope > .title-bar');
       if (!bar) return;
-      bar.tabIndex = 0;
-      bar.title = 'Drag to move · Arrow keys to move · Home to reset / 拖动或方向键移动，Home 复位';
+      bar.tabIndex = mobileWindowLayout.matches ? -1 : 0;
+      bar.title = mobileWindowLayout.matches ? '' : 'Drag to move · Arrow keys to move · Home to reset / 拖动或方向键移动，Home 复位';
+      if (mobileWindowLayout.matches) {
+        // 手机回到原布局，保留桌面坐标供切回宽屏时恢复。
+        resetWindowPosition(win, { forget: false });
+        return;
+      }
       const position = windowPositions[windowPositionKey(win)];
       if (!floatingWindows.has(win) && Number.isFinite(position?.x) && Number.isFinite(position?.y)) {
         const { x, y } = position;
@@ -1664,6 +1672,7 @@
     const win = event.target.closest('.window[data-window], .novel-popup-window');
     if (!win || event.button !== 0 || event.isPrimary === false) return;
     raiseWindow(win);
+    if (mobileWindowLayout.matches) return;
     const bar = event.target.closest('.title-bar');
     if (!bar || bar.parentElement !== win || event.target.closest('button, a, input, select, textarea')
       || isWindowTransitioning || windowDrag) return;
@@ -1697,11 +1706,16 @@
   window.addEventListener('blur', () => endWindowDrag());
   window.addEventListener('resize', () => {
     endWindowDrag();
+    initWindowDragging();
     document.querySelectorAll('.window.is-floating:not(.is-max):not(.is-edge-to-edge)').forEach((win) => {
       const position = floatingWindows.get(win);
       if (position) moveWindow(win, position.x, position.y);
     });
     saveWindowPositions();
+  });
+  mobileWindowLayout.addEventListener('change', () => {
+    endWindowDrag();
+    initWindowDragging();
   });
   document.addEventListener('focusin', (event) => {
     const win = event.target.closest('.window[data-window]');
@@ -1710,7 +1724,7 @@
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') endWindowDrag();
     const bar = event.target.closest('.title-bar');
-    if (!bar || event.target !== bar || isWindowTransitioning) return;
+    if (!bar || event.target !== bar || isWindowTransitioning || mobileWindowLayout.matches) return;
     const win = bar.parentElement;
     if (!win.matches('.window[data-window], .novel-popup-window')) return;
     if (event.key === 'Home' && !win.matches('.is-max, .is-edge-to-edge')) {

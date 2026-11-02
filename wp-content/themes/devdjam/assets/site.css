@@ -785,6 +785,10 @@ html[data-theme="ink"] .player-pro { --win: #1a1a1a; --win-2: #141414; }
 html.is-window-dragging, html.is-window-dragging * { cursor: grabbing !important; user-select: none !important; }
 .window.is-window-dragging { transition: none; }
 
+@media (max-width: 768px), (pointer: coarse) and (max-height: 600px) {
+    .window > .title-bar { cursor: default; touch-action: auto; }
+}
+
 /* 弹窗遮罩：Win98 "关机" 式 1px 像素网点，代替现代的高斯模糊 */
 .desk-dim {
     position: fixed;
