@@ -70,9 +70,14 @@ dist/                      可上传的主题、插件和服务器压缩包
 npm run check
 node dev/check-deck-input.mjs
 node dev/check-simplification.mjs
+node dev/check-state.mjs
 ```
 
 第二条是无需浏览器的打碟机输入回归：验证普通 / 旋转坐标下的旋钮、推子、搓碟、波形定位、选歌和 resize 收尾。它不替代手机真机的视觉、触摸与试听验收。第三条核对新旧文件枚举集合、嵌套 fixture 中的语法失败传播，以及封面/按钮的静态保留合同；不替代后台特色图片选图、保存和重开实测。
+
+第四条通过受控异步请求验证连续导航、预取超时、滚动恢复、异常存储和后台换音频的识别竞态；不访问网络或写入 WordPress 数据。
+
+导航改动还可运行 `python dev/check-navigation.py`：在 Edge 的本地拦截页面中验证前进/后退、锚点滚动及播放器 DOM 保留，不替代真实音频试听。
 
 文档改动只检查链接和事实；按影响范围选择验证，不自动重跑全套。
 

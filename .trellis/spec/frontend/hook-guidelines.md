@@ -106,6 +106,6 @@ Synchronizes UI state, seek bars, and MediaSession metadata with standard HTMLMe
 ## Best Practices & Pitfalls
 
 - **Passive Event Listeners**: Always use `{ passive: true }` for touch events to avoid scrolling jank.
-- **Abortable Requests**: Use `AbortController` when triggering new SPA navigations to cancel in-flight requests.
+- **Shared Page Requests**: Prefetch and navigation share one pending request per URL. Each request owns an `AbortController` and an 18-second timeout. New navigation invalidates the previous render token; only the current token may render or fall back to full navigation. Do not abort a shared request just because one navigation was superseded.
 - **Strict Fallbacks**: If `internalURL()` detects non-HTML assets, wp-admin paths, or external origins, always let the native browser navigation take over.
 - **Never Attach Listeners Inside Swapped Content**: Use top-level document event delegation so handlers persist across page swaps without memory leaks.

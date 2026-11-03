@@ -78,25 +78,24 @@
     detectStatus.textContent = '正在分析音频…';
     try {
       const found = await detect(url, () => job !== detectJob);
+      if (job !== detectJob) return;
       if (found.bpm && (!onlyEmpty || !bpmInput.value)) bpmInput.value = String(found.bpm);
       if (found.key && (!onlyEmpty || !keyInput.value)) keyInput.value = found.key;
       detectStatus.textContent = `识别结果：${describe(found.bpm, found.key)}。保存后生效，可以手动改。`;
     } catch (error) {
-      if (error.name === 'AbortError') return;   // 换了音频，旧结果作废
+      if (job !== detectJob || error.name === 'AbortError') return;   // 换了音频，旧结果作废
       detectStatus.textContent = `识别失败：${error.message}`;
+    } finally {
+      if (job === detectJob) detectButton.disabled = !audioPreview?.getAttribute('src');
     }
-    detectButton.disabled = !audioPreview?.getAttribute('src');
   }
 
   function audioChanged(url) {
     if (!analysis || !detectButton) return;
+    detectJob += 1;
     detectButton.disabled = !url;
-    if (!url) {
-      detectJob += 1;
-      detectStatus.textContent = '';
-    } else if (!bpmInput.value || !keyInput.value) {
-      detectInto(url, true);
-    }
+    detectStatus.textContent = '';
+    if (url && (!bpmInput.value || !keyInput.value)) detectInto(url, true);
   }
 
   if (analysis && detectButton && bpmInput && keyInput) {

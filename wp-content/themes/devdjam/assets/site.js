@@ -16,6 +16,18 @@
     get(key) { try { return localStorage.getItem(key); } catch { return null; } },
     set(key, value) { try { localStorage.setItem(key, value); } catch { /* 偏好可选 */ } },
   };
+  // 状态只接受对象；存储被禁用、JSON 损坏或旧值为 null/数组时均回到空状态。
+  function objectStore(key, area = 'sessionStorage') {
+    return {
+      get() {
+        try {
+          const value = JSON.parse(window[area].getItem(key));
+          return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+        } catch { return {}; }
+      },
+      set(value) { try { window[area].setItem(key, JSON.stringify(value)); } catch { /* 可选 */ } },
+    };
+  }
   const sparkColors = ['#7fe9ff', '#ff5fd0', '#ffe94a', '#7dff5a', '#b21ed6'];
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   let seeking = false;
@@ -73,15 +85,15 @@
   const mayStartAudio = () => !navigator.userActivation || navigator.userActivation.hasBeenActive;
 
   // 热点 / CUE 点按曲目存本机；键名加前缀，保证按写入顺序淘汰
+  const cueStorage = objectStore('dj-cues', 'localStorage');
   const cueStore = {
-    read() { try { return JSON.parse(localStorage.getItem('dj-cues') || '{}'); } catch { return {}; } },
-    get(id) { return this.read()[`t${id}`] || null; },
+    get(id) { return cueStorage.get()[`t${id}`] || null; },
     set(id, value) {
-      const all = this.read();
+      const all = cueStorage.get();
       delete all[`t${id}`];
       all[`t${id}`] = value;
       Object.keys(all).slice(0, -60).forEach((key) => delete all[key]);
-      try { localStorage.setItem('dj-cues', JSON.stringify(all)); } catch { /* 可选 */ }
+      cueStorage.set(all);
     },
   };
   engine.decks.forEach((d) => {
@@ -1231,11 +1243,14 @@
   }, { passive: true });
 
   const pageKey = (url) => url.origin + url.pathname + url.search;
-  function fetchPage(url, signal) {
+  function fetchPage(url) {
     const key = pageKey(url);
     if (pending.has(key)) return pending.get(key);
+    // 预取与点击共用请求，请求自行超时；切页只作废旧渲染，不取消其他访问者仍在等待的请求。
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 18000);
     const request = (async () => {
-      const response = await fetch(url.href, { credentials: 'same-origin', headers: { Accept: 'text/html' }, signal });
+      const response = await fetch(url.href, { credentials: 'same-origin', headers: { Accept: 'text/html' }, signal: controller.signal });
       if ((!response.ok && response.status !== 404) || !response.headers.get('content-type')?.includes('text/html')) throw new Error('Navigation failed');
       const html = await response.text();
       const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -1243,9 +1258,8 @@
       const page = { doc, url: new URL(response.url), at: Date.now() };
       pages.set(key, page);
       return page;
-    })();
+    })().finally(() => { clearTimeout(timeout); pending.delete(key); });
     pending.set(key, request);
-    request.catch(() => {}).finally(() => pending.delete(key));
     return request;
   }
   function prefetch(url) {
@@ -1254,7 +1268,7 @@
     if (pending.has(key) || (cached && Date.now() - cached.at < 60000)) return;
     fetchPage(url).catch(() => {});
   }
-  function render(page, url, { push, scrollY } = {}) {
+  function render(page, url, { push, scrollY, scrollTop = 0 } = {}) {
     // 先按旧访问 ID 结算时长；SlimStat 的 History 回调会清掉它，无法可靠补记上一页。
     if (pageKey(contentURL) !== pageKey(url) && window.SlimStatParams?.id) {
       try {
@@ -1293,58 +1307,53 @@
       if (titleIcon && freshIcon) titleIcon.src = freshIcon.src;
     }
     incoming.focus({ preventScroll: true });
-    incoming.scrollTop = 0;
-    const hashTarget = resolvedURL.hash ? document.getElementById(decodeURIComponent(resolvedURL.hash.slice(1))) : null;
-    if (hashTarget) {
-      hashTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
     live.textContent = `已打开 ${page.doc.title}`;
     applyLanguage();
     syncButtons();
     if (view === 'beats' || incoming.querySelector('[data-track-id]')) void loadTracks();
     initNovelReader();
+    incoming.scrollTop = scrollTop;
+    window.scrollTo({ top: scrollY ?? 0, behavior: 'instant' });
+    if (scrollY === undefined && resolvedURL.hash) {
+      let id = resolvedURL.hash.slice(1);
+      try { id = decodeURIComponent(id); } catch { /* 非法转义按原片段查找 */ }
+      // 跨页直接定位，避免旧的平滑滚动延续到下一次切页。
+      document.getElementById(id)?.scrollIntoView({ behavior: 'instant', block: 'start' });
+    }
   }
-  function endNavigation(controller) {
-    if (navigation === controller) {
+  function endNavigation(token) {
+    if (navigation === token) {
       document.getElementById('site-content')?.removeAttribute('aria-busy');
       navigation = null;
     }
   }
   async function navigate(url, { push = true, scrollY } = {}) {
-    navigation?.abort();
-    const controller = new AbortController();
-    navigation = controller;
+    const token = {};
+    navigation = token;
     if (push) history.replaceState({ ...history.state, dj: true, scrollY: window.scrollY }, '', location.href);
     const key = pageKey(url);
     const cached = pages.get(key);
-    if (cached) {
-      render(cached, url, { push, scrollY });
-      endNavigation(controller);
+    if (!cached) {
+      document.getElementById('site-content').setAttribute('aria-busy', 'true');
+      live.textContent = '正在打开页面…';
+    }
+    try {
+      const page = cached || await fetchPage(url);
+      if (navigation !== token) return;
+      render(page, url, { push, scrollY });
       // 缓存超过 60 秒则后台刷新正文
-      if (Date.now() - cached.at > 60000) {
+      if (cached && Date.now() - cached.at > 60000) {
         fetchPage(url).then((fresh) => {
-          if (contentURL.pathname === fresh.url.pathname && contentURL.search === fresh.url.search
+          if (!navigation && pageKey(contentURL) === pageKey(fresh.url)
             && fresh.doc.getElementById('site-content').innerHTML !== cached.doc.getElementById('site-content').innerHTML) {
-            render(fresh, url, { push: false, scrollY: window.scrollY });
+            render(fresh, contentURL, { push: false, scrollY: window.scrollY, scrollTop: document.getElementById('site-content').scrollTop });
           }
         }).catch(() => {});
       }
-      return;
-    }
-    let timedOut = false;
-    const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, 18000);
-    document.getElementById('site-content').setAttribute('aria-busy', 'true');
-    live.textContent = '正在打开页面…';
-    try {
-      const page = await fetchPage(url, controller.signal);
-      if (navigation !== controller) return;
-      render(page, url, { push, scrollY });
-    } catch (error) {
-      if (error.name === 'AbortError' && !timedOut) return;
-      location.assign(url.href);
+    } catch {
+      if (navigation === token) location.assign(url.href);
     } finally {
-      clearTimeout(timeout);
-      endNavigation(controller);
+      endNavigation(token);
     }
   }
   function internalURL(link) {
@@ -1375,7 +1384,6 @@
   window.addEventListener('popstate', (event) => {
     const url = new URL(location.href);
     if (url.pathname === contentURL.pathname && url.search === contentURL.search) {
-      navigation?.abort();
       endNavigation(navigation);
       window.scrollTo({ top: event.state?.scrollY || 0, behavior: 'instant' });
       return;
@@ -1416,17 +1424,10 @@
 
   // ---------- 窗口管理：自由拖动 / 最小化 / 最大化，状态保存在本次会话 ----------
   const windows = [...document.querySelectorAll('.window[data-window]')];
-  const session = {
-    get() { try { return JSON.parse(sessionStorage.getItem('dj-windows') || '{}'); } catch { return {}; } },
-    set(value) { try { sessionStorage.setItem('dj-windows', JSON.stringify(value)); } catch { /* 可选 */ } },
-  };
+  const session = objectStore('dj-windows');
   const windowState = session.get();
-  const windowPositions = (() => {
-    try {
-      const value = JSON.parse(sessionStorage.getItem('dj-window-positions') || '{}');
-      return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-    } catch { return {}; }
-  })();
+  const positionStore = objectStore('dj-window-positions');
+  const windowPositions = positionStore.get();
   const floatingWindows = new WeakMap();
   const windowOrder = [...windows];
   const mobileWindowLayout = matchMedia('(max-width: 768px), (pointer: coarse) and (max-height: 600px)');
@@ -1438,7 +1439,7 @@
   const windowMotionDuration = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--window-motion-duration')) || 0;
   const windowPositionKey = (win) => win.dataset.window || win.id;
   function saveWindowPositions() {
-    try { sessionStorage.setItem('dj-window-positions', JSON.stringify(windowPositions)); } catch { /* 可选 */ }
+    positionStore.set(windowPositions);
   }
   function raiseWindow(win) {
     const index = windowOrder.indexOf(win);
@@ -1633,11 +1634,7 @@
     if (!win) return;
     const id = win.dataset.window;
     const current = windowState[id] || 'open';
-    if (current === 'min') {
-      setWindow(id, 'open');
-    } else {
-      setWindow(id, 'min');
-    }
+    setWindow(id, current === 'min' ? 'open' : 'min');
   });
   function prepareWindowMove(win) {
     if (win.classList.contains('is-max')) {
@@ -1766,10 +1763,7 @@
   }
 
   // ---------- 贴纸拖拽支持：支持拖拽到任意位置，单击仍触发特效与动作 ----------
-  const stickerPositions = {
-    get() { try { return JSON.parse(sessionStorage.getItem('dj-sticker-pos') || '{}'); } catch { return {}; } },
-    set(val) { try { sessionStorage.setItem('dj-sticker-pos', JSON.stringify(val)); } catch {} },
-  };
+  const stickerPositions = objectStore('dj-sticker-pos');
 
   function detachSticker(stickerEl) {
     if (!stickerEl || stickerEl.parentElement === document.body) return;
@@ -2170,26 +2164,16 @@
   setInterval(tick, 15000);
 
   // ---------- 小说阅读器：阅读设置与滚动进度 ----------
-  const NOVEL_STORAGE_KEY = 'dj-novel-settings';
+  const novelSettings = objectStore('dj-novel-settings', 'localStorage');
   function getNovelSettings() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(NOVEL_STORAGE_KEY) || '{}');
-      return {
-        size: saved.size || '18',
-        font: saved.font || 'serif',
-        theme: saved.theme || 'win',
-        line: saved.line || 'normal',
-        width: saved.width || 'normal',
-      };
-    } catch {
-      return { size: '18', font: 'serif', theme: 'win', line: 'normal', width: 'normal' };
-    }
-  }
-
-  function saveNovelSettings(settings) {
-    try {
-      localStorage.setItem(NOVEL_STORAGE_KEY, JSON.stringify(settings));
-    } catch {}
+    const saved = novelSettings.get();
+    return {
+      size: saved.size || '18',
+      font: saved.font || 'serif',
+      theme: saved.theme || 'win',
+      line: saved.line || 'normal',
+      width: saved.width || 'normal',
+    };
   }
 
   function initNovelReader() {
@@ -2207,11 +2191,7 @@
     document.querySelectorAll('[data-novel-setting]').forEach((btn) => {
       const type = btn.dataset.novelSetting;
       const val = btn.dataset.val;
-      if (settings[type] === val) {
-        btn.classList.add('is-active');
-      } else {
-        btn.classList.remove('is-active');
-      }
+      btn.classList.toggle('is-active', settings[type] === val);
     });
 
     updateNovelScrollProgress();
@@ -2261,7 +2241,7 @@
       const val = settingBtn.dataset.val;
       const settings = getNovelSettings();
       settings[type] = val;
-      saveNovelSettings(settings);
+      novelSettings.set(settings);
       initNovelReader();
       return;
     }

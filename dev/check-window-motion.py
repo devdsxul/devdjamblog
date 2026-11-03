@@ -7,7 +7,9 @@ THEME = ROOT / 'wp-content/themes/devdjam'
 source = (THEME / 'assets/site.js').read_text(encoding='utf-8')
 start = source.index('  // ---------- 窗口管理：')
 end = source.index('  // ---------- 贴纸：', start)
-handlers = source[start:end]
+store_start = source.index('  function objectStore(')
+store_end = source.index('  const sparkColors', store_start)
+handlers = source[store_start:store_end] + source[start:end]
 
 
 def fixture():

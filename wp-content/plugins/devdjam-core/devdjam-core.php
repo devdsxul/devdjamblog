@@ -241,10 +241,13 @@ function devdjam_admin_assets($hook) {
     $analysis = devdjam_can_detect() ? array('devdjam-analysis') : array();
     if ($is_dj_screen && in_array($hook, array('post.php', 'post-new.php'), true)) {
         wp_enqueue_media();
-        wp_enqueue_script('devdjam-admin', plugins_url('admin.js', __FILE__), array_merge(array('media-views'), $analysis), '1.1.1', true);
+        $dependencies = array('media-views');
     } elseif ($is_home && $analysis) {
-        wp_enqueue_script('devdjam-admin', plugins_url('admin.js', __FILE__), array_merge(array('wp-api-fetch'), $analysis), '1.1.1', true);
+        $dependencies = array('wp-api-fetch');
+    } else {
+        return;
     }
+    wp_enqueue_script('devdjam-admin', plugins_url('admin.js', __FILE__), array_merge($dependencies, $analysis), '1.1.2', true);
 }
 add_action('admin_enqueue_scripts', 'devdjam_admin_assets');
 

@@ -82,6 +82,9 @@ Beat/content authoring uses authenticated WordPress operations. The public front
 - Navigating to a page checks `pages.get(pageKey(url))`.
 - If cached, renders instantly. If the cached entry is older than 60 seconds (`Date.now() - cached.at > 60000`), fetches fresh HTML in the background and re-renders if content changed.
 - If uncached, shows `aria-busy="true"` on `#site-content` while fetching, then stores in `pages`.
+- Pending page requests are shared and expire after 18 seconds, including prefetches. Navigation tokens prevent late results or failures from changing the current page. `node dev/check-state.mjs` covers these races.
+- New navigation resets the page scroll; cross-page history restores its saved `scrollY` before considering a hash. Background refresh preserves page and main-content scroll offsets.
+- Object-shaped preferences use `objectStore(key, area)` to guard storage access and reject `null`, arrays, primitives and malformed JSON. Existing keys and CUE retention limits stay unchanged.
 
 ### Continuous Audio Playback
 - Audio elements `#devdjam-audio` (Deck 1) / `#devdjam-audio-b` (Deck 2) and the player container live strictly outside `#site-content`.
