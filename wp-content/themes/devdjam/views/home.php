@@ -61,7 +61,7 @@ $featured = !empty($latest_posts) ? $latest_posts[0] : null;
     <!-- 下方：两块区域，左侧为专辑，右侧为 beats，统一框起来 -->
     <div class="home-bottom-pane">
         <div class="home-split">
-            <section class="home-pane home-pane-music" aria-label="music">
+            <section class="home-pane home-pane-music" <?php echo dj_attr('aria-label', "music"); ?>>
                 <?php
                 $recent_music = get_posts(array(
                     'post_type' => 'dj_music',
@@ -105,7 +105,7 @@ $featured = !empty($latest_posts) ? $latest_posts[0] : null;
                 <?php endif; ?>
             </section>
 
-            <section class="home-pane home-pane-beats" aria-label="beats">
+            <section class="home-pane home-pane-beats" <?php echo dj_attr('aria-label', "beats"); ?>>
                 <?php
                 $recent_beats = get_posts(array(
                     'post_type' => 'dj_beat',

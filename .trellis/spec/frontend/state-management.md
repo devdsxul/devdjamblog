@@ -73,10 +73,11 @@ Beat/content authoring uses authenticated WordPress operations. The public front
 ## State Synchronization Patterns
 
 ### Theme & Language Synchronization
-- When `lang` or `theme` changes, update `localStorage` immediately.
-- Reflect attributes on `document.documentElement` (`data-theme`, `data-lang`).
-- Query all `[data-i18n]` nodes and replace text content with localized dictionary matches.
-- Early FOUC inline script in `wp_head` mirrors this state before first paint.
+- `assets/i18n.js` owns `DEVDJAM.i18n` independently of the audio engine. Saved `zh|en` wins; missing/invalid storage uses the first browser language (`zh-*` → zh, otherwise en). Only explicit selection is persisted; storage errors retain the in-memory choice.
+- `setLanguage()` sets `html.lang` / `data-lang`, applies leaf text and allowed attributes, then dispatches `devdjam:language`. Dynamic renderers refresh labels without reloading tracks, replacing queue rows, reinitializing the reader, changing history or clearing visitor input.
+- `t(key, params)` interpolates complete phrases. Author content is always a parameter or an unmarked node. Do not assign author text as a translation key.
+- The head inline script owns valid saved themes and the entrance gate; the head language module is the sole owner of language resolution. Footer configuration merges into `DEVDJAM` with `Object.assign`.
+- Effects-off/system reduced motion freezes `img.gif` on the same node via a cached canvas frame. Restoring motion restores its source; the existing collage uses bundled still PNGs. No image nodes or drag identities are replaced.
 
 ### SPA View Swapping & Cache Invalidation
 - Navigating to a page checks `pages.get(pageKey(url))`.

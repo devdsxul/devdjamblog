@@ -11,7 +11,7 @@ add_action('after_setup_theme', static function () {
     add_theme_support('automatic-feed-links');
 });
 
-const DEVDJAM_ASSET_VER = '3.3.8';
+const DEVDJAM_ASSET_VER = '3.3.9';
 
 // 音轨分析（拍速 / 调性）：前台打碟机与 devdjam-core 后台的自动识别共用，所以在 init 注册、前后台都可用
 add_action('init', static function () {
@@ -27,7 +27,8 @@ add_action('wp_enqueue_scripts', static function () {
     // DSP 核心：同一文件既作 AudioWorklet 模块，也作非安全上下文（纯 HTTP）下 ScriptProcessor 回退用的普通脚本
     wp_enqueue_script('devdjam-dsp', $base . 'deck-worklet.js', array(), $ver, true);
     wp_enqueue_script('devdjam-audio', $base . 'audio-engine.js', array('devdjam-dsp', 'devdjam-analysis'), $ver, true);
-    wp_enqueue_script('devdjam', $base . 'site.js', array('devdjam-audio'), $ver, true);
+    wp_enqueue_script('devdjam-i18n', $base . 'i18n.js', array(), $ver, false);
+    wp_enqueue_script('devdjam', $base . 'site.js', array('devdjam-audio', 'devdjam-i18n'), $ver, true);
     wp_add_inline_script('devdjam-dsp', 'window.DEVDJAM = Object.assign(window.DEVDJAM || {}, ' . wp_json_encode(array(
         'tracksUrl' => rest_url('devdjam/v1/tracks'),
         'hitsUrl' => rest_url('devdjam/v1/hits'),
@@ -39,13 +40,29 @@ add_action('wp_enqueue_scripts', static function () {
 
 // 首屏前读取本地保存的语言与配色，避免闪烁。
 add_action('wp_head', static function () {
-    echo '<script>try{var l=localStorage.getItem("dj-lang"),t=localStorage.getItem("dj-theme"),d=document.documentElement;if(l)d.dataset.lang=l;if(t)d.dataset.theme=t;d.lang=l==="zh"?"zh-CN":"en";if(!sessionStorage.getItem("dj-entered"))d.dataset.gate="1";}catch(e){}</script>';
+    echo '<script>try{var t=localStorage.getItem("dj-theme"),d=document.documentElement;if(["milk","ink","cherry"].includes(t))d.dataset.theme=t;if(!sessionStorage.getItem("dj-entered"))d.dataset.gate="1";}catch(e){}</script>';
 }, 1);
 
 // 界面文案：英文原文作为键，JS 字典负责切换中文。
-function dj_text($key) {
-    return '<span data-i18n="' . esc_attr($key) . '">' . esc_html($key) . '</span>';
+function dj_text($key, $params = array()) {
+    return '<span data-i18n="' . esc_attr($key) . '"' . dj_i18n_params($params) . '>' . esc_html(dj_interpolate($key, $params)) . '</span>';
 }
+
+function dj_interpolate($key, $params) {
+    foreach ($params as $name => $value) $key = str_replace('{' . $name . '}', (string) $value, $key);
+    return $key;
+}
+
+function dj_i18n_params($params) {
+    return $params ? ' data-i18n-params="' . esc_attr(wp_json_encode($params)) . '"' : '';
+}
+
+function dj_attr($name, $key, $params = array()) {
+    if (!in_array($name, array('aria-label', 'aria-valuetext', 'title', 'placeholder', 'alt', 'value'), true)) return '';
+    return $name . '="' . esc_attr(dj_interpolate($key, $params)) . '" data-i18n-' . $name . '="' . esc_attr($key) . '"' . dj_i18n_params($params);
+}
+
+require_once __DIR__ . '/i18n.php';
 
 // GifCities 动图的原始尺寸，输出 width/height 避免布局抖动。
 function dj_gif($name, $class = '', $lazy = true) {
@@ -121,13 +138,13 @@ function dj_window_open($title, $class = '', $icon = '') {
     echo '<section class="window ' . esc_attr($class) . '" data-window="' . esc_attr($id) . '"><div class="title-bar"><div class="title-bar-text">';
     if ($icon) dj_gif($icon, 'title-icon', false);
     echo dj_text($title) . '</div><div class="title-bar-controls">'
-        . '<button type="button" aria-label="Minimize" data-window-action="min"></button>'
-        . '<button type="button" aria-label="Maximize" data-window-action="max"></button></div></div><div class="window-body">';
+        . '<button type="button" ' . dj_attr('aria-label', 'Minimize') . ' data-window-action="min"></button>'
+        . '<button type="button" ' . dj_attr('aria-label', 'Maximize') . ' data-window-action="max"></button></div></div><div class="window-body">';
 }
 
 // 可点击贴纸：data-sticker 是点击动作，data-anim 是动效名。
 function dj_sticker($gif, $action, $anim = 'pop', $class = '') {
-    echo '<button type="button" class="sticker ' . esc_attr($class) . '" data-sticker="' . esc_attr($action) . '" data-sticker-id="' . esc_attr($gif) . '" data-anim="' . esc_attr($anim) . '" aria-label="' . esc_attr($action) . '">';
+    echo '<button type="button" class="sticker ' . esc_attr($class) . '" data-sticker="' . esc_attr($action) . '" data-sticker-id="' . esc_attr($gif) . '" data-anim="' . esc_attr($anim) . '" ' . dj_attr('aria-label', $action) . '>';
     dj_gif($gif);
     echo '</button>';
 }
@@ -147,7 +164,7 @@ function dj_empty($text = 'nothing here yet', $gif = 'construction') {
 
 function dj_track_button($id, $label = 'play') {
     $title = get_the_title($id);
-    echo '<button class="track-button" type="button" data-track-id="' . esc_attr((string) $id) . '" data-track-title="' . esc_attr($title) . '" aria-label="播放 ' . esc_attr($title) . '">';
+    echo '<button class="track-button" type="button" data-track-id="' . esc_attr((string) $id) . '" data-track-title="' . esc_attr($title) . '" ' . dj_attr('aria-label', 'play {title}', array('title' => $title)) . '>';
     echo '<span class="track-btn-icon">';
     echo '<span data-play-icon>'; dj_icon('play'); echo '</span>';
     echo '<span data-pause-icon hidden>'; dj_icon('pause'); echo '</span>';

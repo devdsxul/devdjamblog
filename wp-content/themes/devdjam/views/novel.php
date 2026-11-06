@@ -20,7 +20,7 @@ if (!$current_chapter && !empty($chapters)) {
 }
 
 $current_num = $current_chapter ? $current_chapter['number'] : 1;
-$current_title = $current_chapter ? $current_chapter['title'] : '小说阅读';
+$current_title = $current_chapter ? $current_chapter['title'] : '';
 $current_wc = $current_chapter ? $current_chapter['word_count'] : 0;
 $current_date = $current_chapter ? $current_chapter['date'] : '';
 
@@ -42,24 +42,24 @@ $read_time = $current_wc > 0 ? ceil($current_wc / 600) : 10;
 ?>
 <div class="novel-fullscreen-overlay" id="novel-fullscreen-overlay">
     <!-- 背景半透明遮罩（点击可关闭全屏并返回桌面） -->
-    <a href="<?php echo esc_url(dj_url('home')); ?>" class="novel-backdrop" id="novel-backdrop" data-nav="home" aria-label="关闭全屏阅读并返回桌面" title="点击遮罩返回桌面"></a>
+    <a href="<?php echo esc_url(dj_url('home')); ?>" class="novel-backdrop" id="novel-backdrop" data-nav="home" <?php echo dj_attr('aria-label', "close reader"); ?> <?php echo dj_attr('title', "return to desktop"); ?>></a>
 
     <!-- 弹出的全屏小说阅读窗口（Win98 风格全屏窗口） -->
-    <section class="window novel-popup-window" id="novel-popup-window" role="dialog" aria-modal="true" aria-label="小说全屏阅读窗口">
+    <section class="window novel-popup-window" id="novel-popup-window" role="dialog" aria-modal="true" <?php echo dj_attr('aria-label', "fullscreen reader"); ?>>
         <!-- Win98 风格窗口标题栏 -->
         <div class="title-bar novel-popup-title-bar">
             <div class="title-bar-text">
                 <?php dj_gif('icon-book', 'title-icon', false); ?>
                 <span class="novel-title-text">
-                    <span class="series-name">we're a study group · 《我们是一个学习小组》</span>
+                    <span class="series-name"><?php echo dj_text("we're a study group"); ?> · 《我们是一个学习小组》</span>
                     <span class="title-sep">-</span>
                     <span class="chapter-name"><?php echo esc_html($current_title); ?></span>
                 </span>
             </div>
             <div class="title-bar-controls">
-                <a href="<?php echo esc_url(dj_url('home')); ?>" class="title-btn-min" data-nav="home" aria-label="Minimize / 返回桌面" title="最小化 / 返回桌面"></a>
-                <button type="button" class="title-btn-max" id="novel-toggle-fullscreen" aria-label="Maximize / 切换铺满视口" title="切换全屏铺满"></button>
-                <a href="<?php echo esc_url(dj_url('home')); ?>" class="title-btn-close" data-nav="home" aria-label="Close / 关闭全屏阅读" title="关闭并返回桌面"></a>
+                <a href="<?php echo esc_url(dj_url('home')); ?>" class="title-btn-min" data-nav="home" <?php echo dj_attr('aria-label', "return to desktop"); ?> <?php echo dj_attr('title', "return to desktop"); ?>></a>
+                <button type="button" class="title-btn-max" id="novel-toggle-fullscreen" <?php echo dj_attr('aria-label', "fill viewport"); ?> <?php echo dj_attr('title', "fill viewport"); ?>></button>
+                <a href="<?php echo esc_url(dj_url('home')); ?>" class="title-btn-close" data-nav="home" <?php echo dj_attr('aria-label', "close reader"); ?> <?php echo dj_attr('title', "close reader"); ?>></a>
             </div>
         </div>
 
@@ -73,35 +73,35 @@ $read_time = $current_wc > 0 ? ceil($current_wc / 600) : 10;
                     </div>
                     
                     <div class="novel-bar-left">
-                        <span class="novel-badge">FULLSCREEN READER</span>
+                        <span class="novel-badge"><?php echo dj_text("fullscreen reader"); ?></span>
                         <span class="novel-book-title-tag">《我们是一个学习小组》</span>
-                        <span class="novel-current-tag">第 <?php echo esc_html((string) $current_num); ?> 章</span>
+                        <span class="novel-current-tag"><?php echo dj_text('chapter {number}', array('number' => $current_num)); ?></span>
                     </div>
 
                     <div class="novel-bar-center">
-                        <span class="novel-read-progress-text" id="novel-progress-text">进度 0%</span>
+                        <span class="novel-read-progress-text" id="novel-progress-text"><?php echo dj_text('progress {percent}%', array('percent' => 0)); ?></span>
                     </div>
 
                     <div class="novel-bar-actions">
-                        <button type="button" class="button novel-btn" id="novel-toggle-toc" aria-expanded="false" aria-controls="novel-toc-drawer" title="章节目录">
+                        <button type="button" class="button novel-btn" id="novel-toggle-toc" aria-expanded="false" aria-controls="novel-toc-drawer" <?php echo dj_attr('title', "contents"); ?>>
                             <span class="btn-icon">☰</span>
-                            <span class="btn-lbl">目录</span>
+                            <span class="btn-lbl"><?php echo dj_text("contents"); ?></span>
                         </button>
-                        <button type="button" class="button novel-btn" id="novel-toggle-settings" aria-expanded="false" aria-controls="novel-settings-panel" title="阅读设置">
+                        <button type="button" class="button novel-btn" id="novel-toggle-settings" aria-expanded="false" aria-controls="novel-settings-panel" <?php echo dj_attr('title', "reading settings"); ?>>
                             <span class="btn-icon">⚙</span>
-                            <span class="btn-lbl">设置</span>
+                            <span class="btn-lbl"><?php echo dj_text("reading settings"); ?></span>
                         </button>
                         <?php if ($prev_chapter) : ?>
-                            <a href="<?php echo esc_url($prev_chapter['url']); ?>" class="button novel-btn" title="上一章">上一章</a>
+                            <a href="<?php echo esc_url($prev_chapter['url']); ?>" class="button novel-btn" <?php echo dj_attr('title', "previous chapter"); ?>><?php echo dj_text("previous chapter"); ?></a>
                         <?php else : ?>
-                            <button type="button" class="button novel-btn" disabled>上一章</button>
+                            <button type="button" class="button novel-btn" disabled><?php echo dj_text("previous chapter"); ?></button>
                         <?php endif; ?>
                         <?php if ($next_chapter) : ?>
-                            <a href="<?php echo esc_url($next_chapter['url']); ?>" class="button novel-btn button-primary" title="下一章">下一章</a>
+                            <a href="<?php echo esc_url($next_chapter['url']); ?>" class="button novel-btn button-primary" <?php echo dj_attr('title', "next chapter"); ?>><?php echo dj_text("next chapter"); ?></a>
                         <?php endif; ?>
-                        <a href="<?php echo esc_url(dj_url('home')); ?>" class="button novel-btn novel-exit-btn" data-nav="home" title="退出全屏阅读并返回桌面">
+                        <a href="<?php echo esc_url(dj_url('home')); ?>" class="button novel-btn novel-exit-btn" data-nav="home" <?php echo dj_attr('title', "return to desktop"); ?>>
                             <span class="btn-icon">✕</span>
-                            <span class="btn-lbl">返回桌面</span>
+                            <span class="btn-lbl"><?php echo dj_text("return to desktop"); ?></span>
                         </a>
                     </div>
                 </div>
@@ -109,70 +109,70 @@ $read_time = $current_wc > 0 ? ceil($current_wc / 600) : 10;
                 <!-- 阅读偏好设置面板（悬浮抽屉式，Win98 窗口风） -->
                 <div class="novel-settings-popup" id="novel-settings-panel" hidden>
                     <div class="settings-popup-header">
-                        <b>阅读设置 / SETTINGS</b>
-                        <button type="button" class="settings-close-btn" id="novel-close-settings" aria-label="关闭设置">×</button>
+                        <b><?php echo dj_text("reading settings"); ?></b>
+                        <button type="button" class="settings-close-btn" id="novel-close-settings" <?php echo dj_attr('aria-label', "close settings"); ?>>×</button>
                     </div>
                     <div class="settings-popup-body">
                         <!-- 字号调节 -->
                         <div class="setting-row">
-                            <span class="setting-label">字号大小</span>
-                            <div class="setting-options" role="group" aria-label="字号">
-                                <button type="button" class="button btn-setting" data-novel-setting="size" data-val="15">A- 小 (15)</button>
-                                <button type="button" class="button btn-setting is-active" data-novel-setting="size" data-val="18">A 标准 (18)</button>
-                                <button type="button" class="button btn-setting" data-novel-setting="size" data-val="21">A+ 大 (21)</button>
-                                <button type="button" class="button btn-setting" data-novel-setting="size" data-val="25">特大 (25)</button>
+                            <span class="setting-label"><?php echo dj_text("font size"); ?></span>
+                            <div class="setting-options" role="group" <?php echo dj_attr('aria-label', "font size"); ?>>
+                                <button type="button" class="button btn-setting" data-novel-setting="size" data-val="15"><?php echo dj_text("small (15)"); ?></button>
+                                <button type="button" class="button btn-setting is-active" data-novel-setting="size" data-val="18"><?php echo dj_text("standard (18)"); ?></button>
+                                <button type="button" class="button btn-setting" data-novel-setting="size" data-val="21"><?php echo dj_text("large (21)"); ?></button>
+                                <button type="button" class="button btn-setting" data-novel-setting="size" data-val="25"><?php echo dj_text("extra large (25)"); ?></button>
                             </div>
                         </div>
 
                         <!-- 字体选择 -->
                         <div class="setting-row">
-                            <span class="setting-label">字体选择</span>
-                            <div class="setting-options" role="group" aria-label="字体">
-                                <button type="button" class="button btn-setting is-active" data-novel-setting="font" data-val="serif">宋体 / 明朝</button>
-                                <button type="button" class="button btn-setting" data-novel-setting="font" data-val="sans">黑体 / 现代</button>
-                                <button type="button" class="button btn-setting" data-novel-setting="font" data-val="mono">仿宋 / 等宽</button>
+                            <span class="setting-label"><?php echo dj_text("font family"); ?></span>
+                            <div class="setting-options" role="group" <?php echo dj_attr('aria-label', "font family"); ?>>
+                                <button type="button" class="button btn-setting is-active" data-novel-setting="font" data-val="serif"><?php echo dj_text("serif"); ?></button>
+                                <button type="button" class="button btn-setting" data-novel-setting="font" data-val="sans"><?php echo dj_text("sans serif"); ?></button>
+                                <button type="button" class="button btn-setting" data-novel-setting="font" data-val="mono"><?php echo dj_text("monospace"); ?></button>
                             </div>
                         </div>
 
                         <!-- 阅读主题配色 -->
                         <div class="setting-row">
-                            <span class="setting-label">阅读配色</span>
-                            <div class="setting-options theme-palette" role="group" aria-label="主题配色">
-                                <button type="button" class="theme-chip theme-chip-win is-active" data-novel-setting="theme" data-val="win" title="复古灰（站点风格）">
-                                    <span>复古</span>
+                            <span class="setting-label"><?php echo dj_text("reading palette"); ?></span>
+                            <div class="setting-options theme-palette" role="group" <?php echo dj_attr('aria-label', "reading palette"); ?>>
+                                <button type="button" class="theme-chip theme-chip-win is-active" data-novel-setting="theme" data-val="win" <?php echo dj_attr('title', "retro grey"); ?>>
+                                    <span><?php echo dj_text("retro"); ?></span>
                                 </button>
-                                <button type="button" class="theme-chip theme-chip-paper" data-novel-setting="theme" data-val="paper" title="羊皮纸暖黄">
-                                    <span>纸张</span>
+                                <button type="button" class="theme-chip theme-chip-paper" data-novel-setting="theme" data-val="paper" <?php echo dj_attr('title', "warm paper"); ?>>
+                                    <span><?php echo dj_text("paper"); ?></span>
                                 </button>
-                                <button type="button" class="theme-chip theme-chip-mint" data-novel-setting="theme" data-val="mint" title="护眼柔绿">
-                                    <span>护眼</span>
+                                <button type="button" class="theme-chip theme-chip-mint" data-novel-setting="theme" data-val="mint" <?php echo dj_attr('title', "soft mint"); ?>>
+                                    <span><?php echo dj_text("mint"); ?></span>
                                 </button>
-                                <button type="button" class="theme-chip theme-chip-white" data-novel-setting="theme" data-val="white" title="纯净白底">
-                                    <span>纯白</span>
+                                <button type="button" class="theme-chip theme-chip-white" data-novel-setting="theme" data-val="white" <?php echo dj_attr('title', "plain white"); ?>>
+                                    <span><?php echo dj_text("white"); ?></span>
                                 </button>
-                                <button type="button" class="theme-chip theme-chip-night" data-novel-setting="theme" data-val="night" title="赛博夜间深色">
-                                    <span>夜间</span>
+                                <button type="button" class="theme-chip theme-chip-night" data-novel-setting="theme" data-val="night" <?php echo dj_attr('title', "night"); ?>>
+                                    <span><?php echo dj_text("night"); ?></span>
                                 </button>
                             </div>
                         </div>
 
                         <!-- 行距调节 -->
                         <div class="setting-row">
-                            <span class="setting-label">行间间距</span>
-                            <div class="setting-options" role="group" aria-label="行距">
-                                <button type="button" class="button btn-setting" data-novel-setting="line" data-val="compact">紧凑</button>
-                                <button type="button" class="button btn-setting is-active" data-novel-setting="line" data-val="normal">标准</button>
-                                <button type="button" class="button btn-setting" data-novel-setting="line" data-val="relaxed">宽松</button>
+                            <span class="setting-label"><?php echo dj_text("line spacing"); ?></span>
+                            <div class="setting-options" role="group" <?php echo dj_attr('aria-label', "line spacing"); ?>>
+                                <button type="button" class="button btn-setting" data-novel-setting="line" data-val="compact"><?php echo dj_text("compact"); ?></button>
+                                <button type="button" class="button btn-setting is-active" data-novel-setting="line" data-val="normal"><?php echo dj_text("standard"); ?></button>
+                                <button type="button" class="button btn-setting" data-novel-setting="line" data-val="relaxed"><?php echo dj_text("relaxed"); ?></button>
                             </div>
                         </div>
 
                         <!-- 版心宽度 -->
                         <div class="setting-row">
-                            <span class="setting-label">版心宽度</span>
-                            <div class="setting-options" role="group" aria-label="版心宽度">
-                                <button type="button" class="button btn-setting" data-novel-setting="width" data-val="narrow">专注 (680)</button>
-                                <button type="button" class="button btn-setting is-active" data-novel-setting="width" data-val="normal">标准 (800)</button>
-                                <button type="button" class="button btn-setting" data-novel-setting="width" data-val="wide">宽屏 (960)</button>
+                            <span class="setting-label"><?php echo dj_text("reading width"); ?></span>
+                            <div class="setting-options" role="group" <?php echo dj_attr('aria-label', "reading width"); ?>>
+                                <button type="button" class="button btn-setting" data-novel-setting="width" data-val="narrow"><?php echo dj_text("narrow (680)"); ?></button>
+                                <button type="button" class="button btn-setting is-active" data-novel-setting="width" data-val="normal"><?php echo dj_text("standard (800)"); ?></button>
+                                <button type="button" class="button btn-setting" data-novel-setting="width" data-val="wide"><?php echo dj_text("wide (960)"); ?></button>
                             </div>
                         </div>
                     </div>
@@ -180,17 +180,17 @@ $read_time = $current_wc > 0 ? ceil($current_wc / 600) : 10;
 
                 <!-- 章节目录抽屉（侧滑呼出） -->
                 <div class="novel-toc-overlay" id="novel-toc-overlay" hidden></div>
-                <aside class="novel-toc-drawer" id="novel-toc-drawer" aria-label="章节目录" hidden>
+                <aside class="novel-toc-drawer" id="novel-toc-drawer" <?php echo dj_attr('aria-label', "contents"); ?> hidden>
                     <div class="toc-header">
                         <div class="toc-title">
-                            <b>目录 / CONTENTS</b>
+                            <b><?php echo dj_text("contents"); ?></b>
                             <span class="toc-sub">《我们是一个学习小组》</span>
                         </div>
-                        <button type="button" class="toc-close-btn" id="novel-close-toc" aria-label="关闭目录">×</button>
+                        <button type="button" class="toc-close-btn" id="novel-close-toc" <?php echo dj_attr('aria-label', "close contents"); ?>>×</button>
                     </div>
                     <div class="toc-stats">
-                        <span>共 <?php echo esc_html((string) $chapter_count); ?> 章节</span>
-                        <span>· 连载中</span>
+                        <span><?php echo dj_text($chapter_count === 1 ? '{count} chapter' : '{count} chapters', array('count' => $chapter_count)); ?></span>
+                        <span><?php echo dj_text("serial in progress"); ?></span>
                     </div>
                     <div class="toc-list-wrap">
                         <ol class="toc-list">
@@ -199,11 +199,11 @@ $read_time = $current_wc > 0 ? ceil($current_wc / 600) : 10;
                             ?>
                                 <li class="toc-item <?php echo $is_curr ? 'is-current' : ''; ?>">
                                     <a href="<?php echo esc_url($ch['url']); ?>" class="toc-link">
-                                        <span class="toc-num">CH.<?php echo esc_html(str_pad((string) $ch['number'], 2, '0', STR_PAD_LEFT)); ?></span>
+                                        <span class="toc-num"><?php echo dj_text('chapter {number}', array('number' => $ch['number'])); ?></span>
                                         <span class="toc-name"><?php echo esc_html($ch['clean_title']); ?></span>
-                                        <span class="toc-words"><?php echo esc_html(number_format($ch['word_count'])); ?> 字</span>
+                                        <span class="toc-words"><?php echo dj_text('{count} characters', array('count' => number_format($ch['word_count']))); ?></span>
                                         <?php if ($is_curr) : ?>
-                                            <span class="toc-curr-badge">✦ 当前</span>
+                                            <span class="toc-curr-badge"><?php echo dj_text("current"); ?></span>
                                         <?php endif; ?>
                                     </a>
                                 </li>
@@ -223,14 +223,14 @@ $read_time = $current_wc > 0 ? ceil($current_wc / 600) : 10;
                                 <!-- 章节题头 -->
                                 <header class="chapter-header">
                                     <div class="chapter-meta-tag">
-                                        <span class="chapter-series">✦ 连载小说 · WE'RE A STUDY GROUP ✦</span>
+                                        <span class="chapter-series"><?php echo dj_text("serial novel"); ?></span>
                                     </div>
                                     <h1 class="chapter-headline"><?php echo esc_html($current_title); ?></h1>
                                     <div class="chapter-info-bar">
-                                        <span class="info-item"><i class="dot"></i>字数：<?php echo esc_html(number_format($current_wc)); ?> 字</span>
-                                        <span class="info-item"><i class="dot"></i>阅读时长：约 <?php echo esc_html((string) $read_time); ?> 分钟</span>
+                                        <span class="info-item"><i class="dot"></i><?php echo dj_text('{count} characters', array('count' => number_format($current_wc))); ?></span>
+                                        <span class="info-item"><i class="dot"></i><?php echo dj_text('about {minutes} min read', array('minutes' => $read_time)); ?></span>
                                         <?php if ($current_date) : ?>
-                                            <span class="info-item"><i class="dot"></i>发布时间：<?php echo esc_html($current_date); ?></span>
+                                            <span class="info-item"><i class="dot"></i><?php echo dj_text('published:'); ?> <?php echo esc_html($current_date); ?></span>
                                         <?php endif; ?>
                                     </div>
                                 </header>
@@ -254,29 +254,29 @@ $read_time = $current_wc > 0 ? ceil($current_wc / 600) : 10;
                                 <footer class="chapter-footer">
                                     <div class="chapter-end-decor" aria-hidden="true">
                                         <span class="decor-line"></span>
-                                        <span class="decor-text">✦ 本章完 · 《我们是一个学习小组》 ✦</span>
+                                        <span class="decor-text"><?php echo dj_text("end of chapter"); ?></span>
                                         <span class="decor-line"></span>
                                     </div>
 
                                     <div class="chapter-nav-actions">
                                         <?php if ($prev_chapter) : ?>
                                             <a href="<?php echo esc_url($prev_chapter['url']); ?>" class="button nav-btn prev-btn">
-                                                <span class="arrow">«</span> 上一章：<?php echo esc_html($prev_chapter['clean_title']); ?>
+                                                <span class="arrow">«</span> <?php echo dj_text('previous chapter'); ?>: <?php echo esc_html($prev_chapter['clean_title']); ?>
                                             </a>
                                         <?php else : ?>
-                                            <span class="button nav-btn is-disabled">已经是第一章</span>
+                                            <span class="button nav-btn is-disabled"><?php echo dj_text("first chapter reached"); ?></span>
                                         <?php endif; ?>
 
                                         <button type="button" class="button nav-btn toc-trigger-btn" id="novel-open-toc-bottom">
-                                            ☰ 查看完整目录
+                                            ☰ <?php echo dj_text('view all chapters'); ?>
                                         </button>
 
                                         <?php if ($next_chapter) : ?>
                                             <a href="<?php echo esc_url($next_chapter['url']); ?>" class="button button-primary nav-btn next-btn">
-                                                下一章：<?php echo esc_html($next_chapter['clean_title']); ?> <span class="arrow">»</span>
+                                                <?php echo dj_text('next chapter'); ?>: <?php echo esc_html($next_chapter['clean_title']); ?> <span class="arrow">»</span>
                                             </a>
                                         <?php else : ?>
-                                            <span class="button nav-btn is-disabled">敬请期待后续更新</span>
+                                            <span class="button nav-btn is-disabled"><?php echo dj_text("more chapters coming soon"); ?></span>
                                         <?php endif; ?>
                                     </div>
 
@@ -284,8 +284,8 @@ $read_time = $current_wc > 0 ? ceil($current_wc / 600) : 10;
                                         <div class="novel-scroll-next-trigger" data-next-url="<?php echo esc_url($next_chapter['url']); ?>" data-next-title="<?php echo esc_attr($next_chapter['title']); ?>" data-next-num="<?php echo esc_attr((string) $next_chapter['number']); ?>">
                                             <div class="scroll-next-card">
                                                 <span class="scroll-next-icon">▼</span>
-                                                <span class="scroll-next-text">继续向下滚动或点击直达第 <?php echo esc_html((string) $next_chapter['number']); ?> 章</span>
-                                                <a href="<?php echo esc_url($next_chapter['url']); ?>" class="scroll-next-link">立即进入下一章 »</a>
+                                                <span class="scroll-next-text"><?php echo dj_text('continue to chapter {number}', array('number' => $next_chapter['number'])); ?></span>
+                                                <a href="<?php echo esc_url($next_chapter['url']); ?>" class="scroll-next-link"><?php echo dj_text("next chapter"); ?></a>
                                             </div>
                                         </div>
                                     <?php endif; ?>
@@ -293,7 +293,7 @@ $read_time = $current_wc > 0 ? ceil($current_wc / 600) : 10;
                             </article>
                         <?php else : ?>
                             <div class="empty-novel">
-                                <p>目前还没有已发布的章节，站长正在导入中…</p>
+                                <p><?php echo dj_text("no published chapters yet"); ?></p>
                             </div>
                         <?php endif; ?>
                     </div>

@@ -10,9 +10,9 @@ colors:
   tertiary: "#ff3d8a"
   on-tertiary: "#111111"
   tertiary-hover: "#e02674"
-  background: "#ffffff"
+  background: "#0a090c"
   on-background: "#111111"
-  surface: "#ffffff"
+  surface: "#f7f4eb"
   on-surface: "#111111"
   surface-dim: "#fafafa"
   surface-bright: "#ffffff"
@@ -25,9 +25,9 @@ colors:
   on-accent-yellow: "#111111"
   lcd-background: "#111111"
   lcd-text: "#ffffff"
-  titlebar-start: "#ffd3e5"
-  titlebar-end: "#ffffff"
-  on-titlebar: "#111111"
+  titlebar-start: "rgba(8, 8, 10, 0.78)"
+  titlebar-end: "rgba(8, 8, 10, 0.64)"
+  on-titlebar: "#f2f2f2"
   accent-soft: "#fff3f8"
   accent-line: "#ffd0e2"
 typography:
@@ -113,7 +113,7 @@ components:
     rounded: "{rounded.none}"
     padding: 6px
   dock-item-active:
-    backgroundColor: "{colors.tertiary}"
+    backgroundColor: "{colors.primary}"
     textColor: "{colors.on-primary}"
     rounded: "{rounded.none}"
     padding: 6px
@@ -144,13 +144,15 @@ The visual identity is founded upon a crisp, monochrome high-contrast bedrock, e
 
 - **Primary (`#111111`)**: Deepest black ink (`{colors.primary}`). Used for window frames, title bar fills, hard drop-shadows, typography headers, and vinyl turntable records.
 - **Desktop Wallpaper (`assets/img/poster-wall/giallo-wall.jpg`)**: The desktop no longer sits on a flat white canvas. It is backed by a single 2560×1440 paste-up of giallo, gore-B and underground one-sheets — Argento and Fulci beside Re-Animator, Street Trash and Tetsuo — thrown down in overlapping bands at three sizes (±4°, 8–22% overlap, hard 4px paste shadows, no grid) and then graded into texture: 58% saturation, ~40% brightness, cold ink shadows with dried-blood midtones, plus vignette, scanlines and grain. `--desktop-scrim` presses it further (0.04–0.38 opacity in Milk and Cherry, 0.58–0.76 in Ink) so the opaque window panels stay the brightest thing on screen. The `html` fallback colour is `#0a090c`; the poster pool and its compositor live in `dev/poster-collect/`.
-- **Window Poster Plates (`assets/img/poster-wall/win-*.jpg`)**: Every window class carries its own small collage — two or three posters tilted ±6°, overlapped, with a 20% white veil and only a 0.7px defocus baked in — painted as `.window`'s `background-image` via `--win-plate`. `.window` then lays a **single** 44% white wash over it (Ink: 70% ink) and sets `--win` / `--win-2` to `transparent`, so inner panels never wash the poster a second time: every surface of the window reads at the same ≈28% poster strength instead of fading to white where panels nest. Buttons, inputs, calendars and the player's control stack take the near-opaque `--pane-solid`; the player adds a second gradient over its control half so the platter stays the most transparent area. Secondary text inside windows darkens to `#4a4a4a` (Ink `#c8c8c8`) so dates and BPM survive the artwork, and `.home-bottom-pane` drops its cloud tile — that tile used to turn the window's empty region solid white, which is exactly where the poster needs to show.
-- **Surface (`#ffffff`)**: Opaque window pane and card canvas (`{colors.surface}`). Maintains clean readability against the wallpaper texture.
+- **Window Poster Plates (`assets/img/poster-wall/win-*.jpg`)**: Each window keeps its collage under one 44% white wash (Ink: 70% ink). Its outer margins and unused regions reveal the posters. Reading surfaces — home text, list rows, prose, guestbook/form panels, calendar and study-group card — use opaque `--paper` / `--paper-raised`. Never apply a translucent wash to each nested span.
+- **Reading Paper**: Milk/Cherry use `#f7f4eb` / `#fffdf7`; Ink uses `#1a1a1a` / `#222222`. Body copy uses `--ink`, metadata uses `--muted`. Measure rendered contrast: body ≥7:1, metadata ≥4.5:1. Remove universal text-shadow outlines over posters.
+- **Surface (`#f7f4eb`)**: Opaque reading paper and card canvas (`{colors.surface}`), with raised panels at `#fffdf7`. Maintains clean readability against the wallpaper texture.
 - **Secondary (`#6b6b6b`)**: Muted pencil slate (`{colors.secondary}`). Reserved for secondary metadata, track timestamps, file sizes, and inactive window captions.
-- **Tertiary / Accent Pink (`#ff3d8a`)**: Radiant Harajuku hot pink (`{colors.tertiary}`). The primary interactive beacon—ignites active navigation badges, hover borders, vinyl pitch indicators, and animated sparkles.
+- **Tertiary / Accent Pink (`#ff3d8a`)**: Decorative pink (`{colors.tertiary}`) for hover borders, vinyl pitch indicators and sparkles. Selected navigation uses ink/paper inversion; text links use the separate readable accent.
 - **Accent Yellow (`#ffd400`)**: Cautionary cyber-gold (`{colors.accent-yellow}`). Employed for keyboard skip links, emergency audio cue markers, and high-priority notices.
 - **LCD Background (`#111111`) & Text (`#ffffff`)**: High-contrast monochrome terminal palette for DJ deck readouts, track telemetry, and fader displays.
-- **Title Bar Gradient (`--bar-a` → `--bar-b`, text `--bar-ink`)**: Window title bars are light, not black: a Win98-style horizontal gradient from a pastel pink tint (`#ffd3e5`) to white, black lowercase text, and a 1px `--line` rule under the bar. Ink theme uses `#4a2238` → `#1a1a1a` with light text; Cherry uses `#ffd0d8` → white.
+- **Title Bar Gradient (`--bar-a` → `--bar-b`, `--bar-ink`)**: Smoky near-black at 78% → 64% opacity with `#f2f2f2` captions. Window controls retain compact square glyphs and stable translation metadata; localized accessible names must not change their glyph shape.
+- **Readable Accents**: Separate decorative `--accent` from text `--accent-text`: Milk `#9e154e`, Ink `#ff91be`, Cherry `#ad0025`. Navigation/current settings use ink/paper inverse states. Filled hardware labels use readable accent with `--on-solid`.
 - **Accent Tints (`--accent-soft`, `--accent-line`)**: Pale pink hover backgrounds and borders (`#fff3f8` / `#ffd0e2` in Milk) shared by dock links, list rows and the tape library, redefined per theme instead of hard-coded.
 - **Theme Variations**: The design supports an alternate **Ink** dark mode (`html[data-theme="ink"]`, `#111111` canvas with `#f2f2f2` borders) and a **Cherry** mode (`html[data-theme="cherry"]`, ruby crimson accents).
 
@@ -163,7 +165,7 @@ Three distinct typographic voices construct DEVDJAM's world:
    - Purpose: Brand authority and subcultural reverence. Expresses the full-screen Neocities 1999 entry gate logo and the top header banner with 3D relief layering (`.char-back` and `.char-front`).
 2. **Pixelated System UI (`{typography.body-ui}` & `{typography.headline-window}`)**:
    - Fonts: `Pixelated MS Sans Serif`, `SimSun`, `Microsoft YaHei`, Arial, sans-serif.
-   - Purpose: Authentic operating system chrome. Drives window title bars, dock navigation items, post excerpts, and system menus. Rendered with sharp aliasing (`-webkit-font-smoothing: none`).
+   - Purpose: Authentic operating system chrome. Drives window title bars, dock navigation and system menus. Prose and excerpts use the 14px `--body` system font stack (Segoe UI / Microsoft YaHei / PingFang SC / Arial); the novel reader retains its own font and size preferences. Rendered with sharp aliasing (`-webkit-font-smoothing: none`).
 3. **Monospace Telemetry (`{typography.mono-track}`)**:
    - Fonts: `Courier New`, `SimSun`, monospace.
    - Purpose: Tactile hardware readouts and track details (BPM, Musical Key, durations, audio fader percentages, button labels).
@@ -176,6 +178,7 @@ The desktop environment is framed within a fixed 100vh viewport simulating a com
 - **Main Workspace (`#site-content`)**: Fluid multi-window flex layout with independently minimized and maximized Win98 windows (`.window`).
 - **Bottom Status Bar (`.site-foot`)**: A Win98 status bar closes the bottom of the desktop (≥601px): `© year DEVDJAM` | a marquee with the site tagline and the now-playing title | a CSS LED (grey stopped, pink playing) and clock. On ≤600px the fixed bottom taskbar is the frame instead. The viewport lock subtracts `--wp-admin--admin-bar--height`, so logged-in pages are never cut off at the bottom.
 - **DJ Deck Console (`.win-player`)**:
+  - Expanded hardware always uses a bright warm-paper chassis, including in Ink. Black LCD screens, vinyl platters and contrast-safe LED labels remain. The compact player follows the selected page theme.
   - Compact Mode: A single turntable platter and quick-play track queue embedded conveniently on the sidebar. It is the site-wide player (Deck 1) and supports scratching on the platter.
   - DDJ Controller Mode: When maximized, the top row is **waveform screen | compact tape library | BEAT FX**. The library and FX panels have equal 236px desktop widths; the waveform takes the remaining space. The library shows track titles, loaded-deck badges and 1/2 load buttons, and scrolls internally. Below is **Deck 1 | Mixer | Deck 2** (jogs, tempo, loop, SHIFT/CUE/PLAY, performance pads; isolator EQ, CFX, meters and faders).
 - **Entrance Gate (`.enter[data-enter]`)**: A full-screen immersive cyber-goth threshold featuring CRT scanlines, 3D chrome blackletter lettering, and a Win98 segmented loading bar before granting entrance.
@@ -188,7 +191,7 @@ True to 1990s desktop operating systems, elevation is created through directiona
 - **Hard Isometric Drop Shadow**: Solid `3px 3px 0 #111111` on windows and cards; `2px 2px 0 #111111` on buttons and chips (`--hard`, `--hard-sm`).
 - **Mechanical Tactile Depress**: Active interactive elements physically translate `(2px, 2px)` on pointer press with `box-shadow: none`, emulating the click of a physical spring-loaded microswitch.
 - **Sunken Well Inset**: Form inputs, textareas, and LCD meters feature an inset bevel shadow (`inset 2px 2px 0 #d0d0d0`), creating the sensation of recessed plastic cutouts.
-- **Window Shades**: Minimized windows collapse down cleanly to their title bar height with small hard shadows, leaving the underlying astro desktop wallpaper visible.
+- **Window Shades**: Minimized windows collapse down cleanly to their title bar height with small hard shadows, leaving the underlying poster wallpaper visible.
 - **Modal Backdrop**: Maximized windows dim the desk with a 2px pixel dither (Win98 "shut down" screen), never a blur.
 
 ## Shapes
@@ -200,7 +203,7 @@ True to 1990s desktop operating systems, elevation is created through directiona
 ## Components
 
 - **Windows 98 Window (`.window`, `dj_window_open`)**:
-  - Composition: 1px black outline, 3px solid drop shadow, light pink-to-white gradient title bar with pixelated icon and black lowercase caption, and flat white minimize (`-`) / maximize (`□`) buttons whose glyphs follow the caption color.
+  - Composition: 1px black outline, 3px solid drop shadow, smoky dark title bar with pixelated icon and light lowercase caption, and flat white minimize (`-`) / maximize (`□`) buttons whose glyphs follow the caption color.
   - Rule: Explicitly lacks a close (`×`) button to preserve window state in the desktop session. Double-clicking the title bar toggles window shade minimization.
 - **Retro Sticker Buttons (`button`, `.button`)**:
   - High-contrast white background, black monospace text, tactile drop shadow.
@@ -210,7 +213,7 @@ True to 1990s desktop operating systems, elevation is created through directiona
   - Features collision push-away physics so stickers glide away rather than stacking clumsily on top of one another. Positions persist across page changes via `sessionStorage`.
 - **Continuous Audio Player (DJ Turntable)**:
   - Powered by persistent `HTMLAudioElement`s plus a Web Audio engine (`audio-engine.js`). Casual listening streams through `<audio>`; the controller decodes tracks on demand for audible scratching, loops, hot cues and beat sync.
-  - Seamless SPA-style PJAX page transitions guarantee music keeps spinning without interruption while visitors read articles or browse beats.
+  - PJAX replaces only `#site-content`; the audio elements and engine stay in the persistent shell. DOM/engine identity checks are distinct from real listening-quality acceptance.
   - Pad LEDs, waveform and meter colors come from the neocities sparkle palette (pink `#ff5fd0`, cyan `#7fe9ff`, yellow `#ffe94a`, green `#7dff5a`, lavender `#c9a0ff`) on white hardware panels and black LCD screens.
 - **Honest Empty States (`dj_empty`)**:
   - No synthetic placeholder articles or fake follower counters. Empty sections render honest retro illustrations (e.g., cassette tape, construction shovel) and clear inviting copy.
@@ -222,7 +225,7 @@ True to 1990s desktop operating systems, elevation is created through directiona
 - **DO** use solid pixel drop shadows (`box-shadow: 2px 2px 0 #111111`) instead of blurry shadows.
 - **DO** preserve continuous audio playback across internal navigation links.
 - **DO** bundle all GIF stickers and font files locally in `assets/` to ensure offline resilience and zero remote tracking.
-- **DO** respect `prefers-reduced-motion` by disabling turntable spinning and sticker jitter animations.
+- **DO** respect `prefers-reduced-motion` by stopping decorative CSS animation and fixing GIFs to a cached static frame on the same image node.
 - **DO** pair `{colors.on-surface}` (`#111111`) on `{colors.surface}` (`#ffffff`) for maximum WCAG AA (18.8:1) accessibility.
 
 ### Don'ts
@@ -232,3 +235,13 @@ True to 1990s desktop operating systems, elevation is created through directiona
 - **DON'T** use rounded borders (e.g., `border-radius: 8px` or `12px`) on windows, cards, or buttons.
 - **DON'T** auto-play audio with unmuted sound before the visitor explicitly interacts with the entrance gate or player.
 - **DON'T** fabricate mock posts, fake stream counts, or placeholder tracks.
+
+## Language and Preferences
+
+Top-right controls expose EN / 中文 and Milk / Ink / Cherry. The motion switch is the existing cyber-eye sticker in the banner; there is no extra top-right motion button. The visitor count uses one visible “visitors” label in its title bar and a localized accessible name on the number.
+
+`assets/i18n.js` is independent of audio startup. A saved valid manual language wins; otherwise the first browser language selects Chinese for `zh-*`, English for other locales. `dj_text` marks leaf text; `dj_attr` marks allowed attributes; complete phrase parameters preserve author text. Switching language never rebuilds controls or resets forms, audio or reader settings.
+
+Brand/protocol exceptions: DEVDJAM, DDJ-98, Spotify, Instagram, TikTok, EN/中文 selector labels, oEmbed, JSON, XML, RSD. Physical DJ labels retained case-insensitively: BPM, EQ, CUE, SHIFT, BEAT SYNC, SYNC, MASTER, LOOP, IN, OUT, EXIT, TAP, TRIM, HI, MID, LOW, CFX, FX, BEAT FX, LVL, CH, L/R/M, Q, LPF/HPF, dB. Effect/sample names: ECHO, REVERB, FLANGER, PHASER, ROLL, TRANS; HORN, SIREN, LASER, RISER, BOOM, KICK, CLAP, STAB. Action descriptions and loading/empty/error UI translate; no whole player or calendar subtree is exempt.
+
+WordPress-authored titles/body/tagline, music metadata, chapter titles and the novel's fixed title remain author content. `i18n.php` decorates core calendar output, comment cookies/navigation and feed-link titles without changing locale, queries, forms or feed documents. Public core login/admin/error pages remain WordPress-owned.

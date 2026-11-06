@@ -65,7 +65,7 @@ $is_track_view = !is_search() && ($view === 'beats' || $view === 'music');
         <?php endwhile; ?>
         </div>
     <?php endif; ?>
-    <nav class="pagination" aria-label="内容分页"><?php echo wp_kses_post((string) paginate_links(array('prev_text' => '<<', 'next_text' => '>>'))); ?></nav>
+    <nav class="pagination" <?php echo dj_attr('aria-label', "content pages"); ?>><?php echo wp_kses_post((string) paginate_links(array('prev_text' => '<<', 'next_text' => '>>'))); ?></nav>
 <?php else : ?>
     <?php dj_empty($view === 'beats' ? 'no beats yet' : ($view === 'music' ? 'no music yet' : 'nothing here yet'), $view === 'beats' ? 'cassette' : ($view === 'music' ? 'cd' : 'boombox')); ?>
 <?php endif; ?>

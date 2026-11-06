@@ -46,7 +46,7 @@
 .lcd-title { font-size: 11px; font-weight: 700; overflow-wrap: anywhere; }
 .lcd-status { display: block; font-size: 9px; opacity: .8; }
 .lcd-meta { display: flex; justify-content: space-between; gap: 4px; font-size: 9px; color: var(--accent-2); }
-.lcd-live { padding: 0 3px; background: var(--accent); color: #fff; font-weight: 700; }
+.lcd-live { padding: 0 3px; background: var(--accent-text); color: var(--on-solid); font-weight: 700; }
 .seek-slider { margin: 4px 0 0; }
 .seek-slider:disabled { opacity: .4; }
 .player-time { display: flex; justify-content: space-between; font: 9px var(--mono); color: var(--muted); }
@@ -97,7 +97,7 @@
     font: 700 9px var(--mono); letter-spacing: .5px; text-transform: uppercase;
     align-self: auto; user-select: none; -webkit-user-select: none;
 }
-.player-pro .ddj-btn.is-lit { background: var(--accent); color: #ffffff; border-color: var(--line); }
+.player-pro .ddj-btn.is-lit { background: var(--accent-text); color: var(--on-solid); border-color: var(--line); }
 .player-pro .ddj-btn.is-armed { background: var(--led-yellow); color: #111111; border-color: var(--line); }
 .player-pro .ddj-btn.is-blink { animation: ddj-blink 1s steps(1) infinite; }
 .player-pro .is-down, .player-pro .ddj-btn.is-down { transform: translate(2px, 2px); box-shadow: none; }
@@ -127,12 +127,12 @@
 .scr-deck + .scr-deck { padding-top: 3px; border-top: 1px dashed #3a3a3a; }
 .scr-info { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; }
 .scr-num { flex: none; width: 14px; height: 14px; display: grid; place-items: center; background: #f2f2f2; color: #111111; font-weight: 700; }
-[data-scr="2"] > .scr-info .scr-num { background: var(--accent); color: #ffffff; }
+[data-scr="2"] > .scr-info .scr-num { background: var(--accent-text); color: var(--on-solid); }
 .scr-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
 .scr-flag { flex: none; padding: 0 3px; border: 1px solid #555555; color: #b8b8b8; font-size: 9px; line-height: 12px; text-transform: uppercase; }
 .scr-flag.is-sync { background: var(--led-cyan); border-color: var(--led-cyan); color: #111111; }
 .scr-flag.is-master { background: var(--led-yellow); border-color: var(--led-yellow); color: #111111; }
-.scr-flag.is-loop { background: var(--accent); border-color: var(--accent); color: #ffffff; }
+.scr-flag.is-loop { background: var(--accent-text); border-color: var(--accent-text); color: var(--on-solid); }
 .scr-flag.is-busy { color: var(--led-yellow); border-color: var(--led-yellow); }
 .scr-val { flex: none; color: #bdbdbd; }
 .scr-val b { color: #ffffff; }
@@ -152,7 +152,7 @@
 .fx-row { display: flex; align-items: center; gap: 4px; }
 .fx-row .knob-cell { margin-left: auto; }
 .fx-ch .ddj-btn { min-width: 28px; }
-.player-pro .fx-on[aria-pressed="true"] { background: var(--accent); color: #ffffff; animation: ddj-blink var(--beat, 1s) steps(1) infinite; }
+.player-pro .fx-on[aria-pressed="true"] { background: var(--accent-text); color: var(--on-solid); animation: ddj-blink var(--beat, 1s) steps(1) infinite; }
 
 /* 控制台机箱：与内容区一致的点阵底 */
 .ddj-console {
@@ -228,7 +228,7 @@
 .player-pro .transport .cue, .player-pro .transport .play { flex: 1; min-height: 34px; font-size: 11px; }
 .player-pro .transport .shift.is-lit { background: var(--line); color: var(--on-solid); }
 .player-pro .transport .cue.is-lit { background: var(--led-yellow); color: #111111; }
-.player-pro .transport .play.is-lit { background: var(--accent); color: #ffffff; }
+.player-pro .transport .play.is-lit { background: var(--accent-text); color: var(--on-solid); }
 .transport .play .icon { width: 11px; height: 11px; }
 
 /* 打击垫随面板高度拉伸，填满 Deck 下半部分 */
@@ -383,7 +383,7 @@
 .player-pro .lib-load { min-width: 24px; min-height: 22px; padding: 0 3px; font-size: 9px; margin-left: 3px; }
 .lib-deck { display: inline-block; margin-right: 2px; padding: 0 3px; font: 700 9px var(--mono); border: 1px solid var(--line); }
 .lib-deck.d1 { background: #111111; color: #ffffff; }
-.lib-deck.d2 { background: var(--accent); color: #ffffff; }
+.lib-deck.d2 { background: var(--accent-text); color: var(--on-solid); }
 .browser-empty { text-align: center; color: var(--muted); }
 
 html[data-effects="off"] .player-pro .is-blink,
@@ -418,6 +418,8 @@ html[data-effects="off"] .player-pro .fx-on[aria-pressed="true"] { animation: no
     .ddj-browser { height: 180px; }
     .play-button { min-width: 44px; min-height: 40px; }
     .deck-controls button { min-height: 36px; }
+    /* EQ 滑块超出细轨道，展开按钮留足间距和触摸面积。 */
+    .player-open { margin-top: 12px; min-height: 44px; }
     input[type="range"].seek-slider::-webkit-slider-thumb { width: 18px; height: 24px; }
     .player-pro .pad { height: 42px; min-height: 42px; }
     .player-pro .ddj-btn { min-height: 30px; }

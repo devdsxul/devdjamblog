@@ -45,7 +45,7 @@ function router() {
   const context = vm.createContext({
     window, history, location, URL, AbortController,
     document: {
-      querySelector: (selector) => selector === '.navigation-status' ? {} : null,
+      querySelector: (selector) => selector === '.navigation-status' ? { dataset: {}, setAttribute() {} } : null,
       querySelectorAll: () => [], addEventListener() {},
       getElementById: (id) => id === 'site-content' ? main : id === 'target' ? { scrollIntoView: () => anchors.push(id) } : null,
     },
@@ -62,6 +62,7 @@ function router() {
       } });
       return job.promise;
     },
+    t: (key, params = {}) => key.replace(/\{(\w+)\}/g, (match, name) => params[name] ?? match),
     applyLanguage() {}, syncButtons() {}, initNovelReader() {}, loadTracks() {},
   });
   vm.runInContext(section(site, '  const pages = new Map();', '  // ---------- 控制面板'), context);

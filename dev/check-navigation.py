@@ -23,8 +23,10 @@ with sync_playwright() as p:
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.route('**/*', lambda route: route.fulfill(content_type='text/html', body=html(route.request.url)))
         page.goto('http://router.test/a')
+        page.add_script_tag(content=(ROOT / 'wp-content/themes/devdjam/assets/i18n.js').read_text(encoding='utf-8'))
         page.add_script_tag(content='''(() => {
-          function applyLanguage() {} function syncButtons() {} function initNovelReader() {} function loadTracks() {}
+          const {t, apply: applyLanguage} = window.DEVDJAM.i18n;
+          function syncButtons() {} function initNovelReader() {} function loadTracks() {}
           window.originalAudio = document.getElementById('persistent');
         ''' + router + '''
           window.routerGo = path => navigate(new URL(path, location.href));

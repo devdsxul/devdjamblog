@@ -60,7 +60,9 @@ dj_window_close(array(
 
 | Helper | Purpose | Example |
 |---|---|---|
-| `dj_text($key)` | i18n text node with `data-i18n` for client-side translation | `dj_text('now playing')` |
+| `dj_text($key, $params = array())` | Escaped leaf text with `data-i18n` and optional JSON parameters | `dj_text('chapter {number}', array('number' => 1))` |
+| `dj_attr($name, $key, $params = array())` | Escaped translated attribute; allowed names are aria-label, aria-valuetext, title, placeholder, alt, value | `dj_attr('aria-label', 'play')` |
+| `dj_calendar()` | Core calendar with numeric date/month/weekday metadata for frontend localization | `dj_calendar()` |
 | `dj_gif($name, $class, $lazy)` | Renders local GifCities animated sticker with intrinsic width/height | `dj_gif('boombox', 'hero-badge')` |
 | `dj_sticker($gif, $action, $anim, $class)` | Clickable and draggable sticker button (`data-sticker-id`) supporting free repositioning across the desktop | `dj_sticker('headphones', 'mute', 'wiggle')` |
 | `dj_empty($text, $gif)` | Honest empty state illustration & copy (no fake placeholder rows) | `dj_empty('no beats yet', 'construction')` |
@@ -81,10 +83,10 @@ dj_window_close(array(
 
 1. **98.css Foundation**: Windows, buttons, input fields, and checkboxes use standard classes from `98.css` (`.window`, `.title-bar`, `.button`, etc.).
 2. **Theme Scoping**: Color schemes (`milk`, `ink`, `cherry`) are applied via `[data-theme="..."]` on `<html>`. Theme styles override CSS custom properties:
-   - `--theme-bg`: background surface color
-   - `--theme-border`: window bezel and dividing lines
-   - `--theme-accent`: accent highlight color (pink in Milk, red in Cherry, neon in Ink)
-3. **No Focus Dotted Boxes**: Outline focuses that break the retro aesthetic are neutralized; buttons use tactile inset shadows instead.
+   - `--paper` / `--paper-raised`: opaque reading surfaces; `--win` can be transparent inside poster windows.
+   - `--line` / `--line-soft`: borders; `--ink` / `--muted`: text.
+   - `--accent`: decorative highlight; `--accent-text`: readable accent text and filled controls, paired with `--on-solid`.
+3. **Keyboard Focus**: `:focus-visible` uses a dotted outline. Hidden mobile navigation labels still require translated `aria-label` on the link.
 4. **Layout Continuity**: The desktop sidebar (`.dock`) is fixed on the left; the top panel (`.panel`) is sticky; the main content flows inside `#site-content`.
 5. **Banner Sticker Distribution**: Interactive desktop stickers are centered around the top banner wings (`.banner-wing-left` and `.banner-wing-right`), keeping the core windows clean and unencumbered while allowing free drag & drop anywhere on the desk.
 6. **Dock Social Navigation & Foot Placement**: `.dock-foot` is pinned to the bottom via `margin-top: auto`. External social redirects (Spotify, Instagram, TikTok) are housed below the primary nav separated by `.dock-divider`.
@@ -106,11 +108,11 @@ dj_window_close(array(
 15. **Site Desktop Background + Window Poster Plates (Giallo Paste-Up)**: Two layers, both driven by CSS variables.
     - **Desktop**: one local 2560×1440 JPEG, `assets/img/poster-wall/giallo-wall.jpg`, exposed as `--desktop-image`, with `--desktop-scrim` as a vertical press-down film. `html` paints `var(--desktop-scrim), var(--desktop-image)` with `no-repeat` + `cover` + `center center` — cropped, never tiled. Do not reintroduce `repeat`, a fixed pixel `background-size`, or the retired `--desktop-tile` lavender/stars tiles.
     - **Windows**: `.window` paints `--win-plate` (per class: `.win-visitors`, `.win-player`, `.win-content`, `.win-calendar`, `.win-study-group`, each `url("img/poster-wall/win-*.jpg")`, default `none`) with `cover`, and never paints a solid white of its own — the body wash lives in the panels, so plate and panels are not washed twice.
-    - **Translucency**: `.window` paints the plate under one 44% white wash (Ink: 70% ink) and sets `--win` / `--win-2` to `transparent`, so nothing inside can wash the poster twice — a nested panel that backgrounds itself with `--win` is transparent by definition. This single-layer rule is load-bearing: per-panel alpha compounds, and a two- or three-deep home list used to fade back to pure white. Foreground text must never use `--win`; use `--on-solid` (`#fff` Milk, `#111` Ink). Secondary text inside windows uses `--muted: #4a4a4a` (Ink `#c8c8c8`) so dates and BPM stay above 7:1 over the artwork. Dense control surfaces take `--pane-solid` / `--pane-solid-2` instead, so labels sit on near-opaque panels.
+    - **Translucency and paper**: `.window` paints one 44% white wash (Ink: 70% ink), with transparent internal `--win` defaults. Semantic reading blocks explicitly restore opaque `--paper`; controls use `--pane-solid`. This prevents alpha compounding while keeping text off the artwork. Foreground inverse text uses `--on-solid`, never transparent `--win`.
     - **Empty regions**: `.home-bottom-pane` deliberately has no background tile — the cloud texture previously made the window's empty area solid white, so the poster now shows there directly. Do not restore the tile.
-    - **Exceptions**: `.player-pro` (maximized DJ controller) restores solid `--win` — it is hardware, not paper. `.win-player .player` adds a pixel-stopped vertical gradient (transparent over the platter, opaque below 152px) because its height changes with track metadata and percentage stops drift.
+    - **Exceptions**: `.player-pro` (maximized DJ controller) restores bright warm-paper tokens in all page themes, including Ink; its LCD and platters stay dark. `.win-player .player` adds a pixel-stopped vertical gradient (transparent over the platter, opaque below 152px) because its height changes with track metadata and percentage stops drift.
     - `.site-banner` and `.banner-stage` remain transparent and share the desktop background; do not restore the previous Astro texture or add separate header trim. Regenerate assets with `dev/poster-collect/fetch.py` + `compose.py` instead of hand-editing the JPEGs. See the Collage Decoration Contract below for GIF, layout and motion requirements.
-16. **Homepage Blank Area (Poster, No Cloud Tile)**: `.home-bottom-pane` carries no background image; the window's empty region shows the poster plate through the single window wash. The retired `--pane-tile` cloud texture (`assets/img/camerons-world/clouds-tile.png`) is no longer applied here — it made the blank area solid white, which hid the poster exactly where the design needs it. `.home-entry-list`, individual entries and the subtitle inherit the transparent `--win`, so they sit on the same poster. Existing empty-state copy and CD decoration remain unchanged; the visual update adds no wording.
+16. **Reading Paper and Poster Space**: `.home-bottom-pane` has no background tile. The hero text, list rows, prose, guestbook/form panels and study-group card use opaque `--paper`; margins and unused window regions reveal the poster. Never add per-span backdrops or compound semi-transparent washes. UI/body/telemetry use `--ui` / `--body` / `--mono`; reader font preferences remain independent.
 17. **Window Minimization & Shade Behavior**: When minimized (`.window.is-min`, `.win-content.is-min`), windows strictly collapse to their title bar height (`height: auto !important; max-height: none !important; min-height: 0 !important; flex: 0 0 auto !important; box-shadow: var(--hard-sm) !important;`) and hide `.window-body` (`display: none !important;`). Minimized windows in flex containers (e.g. `.win-content` in `.col-main`) must release all fixed height constraints so the underlying desktop poster wall is fully revealed beneath the collapsed bar. Minimizing and restoring feature smooth scale and translateY transitions (`winMinCollapse` and `winMinRestore` with `.is-restoring`). Double-clicking `.title-bar` (excluding action buttons) toggles minimize/restore matching classic Win98/WindowShade behavior.
 18. **Mobile Responsive Layout & Windows 98 Taskbar Adaptation (`<= 600px`)**:
     - **Bottom Fixed Taskbar**: On mobile screens (`<= 600px`), navigation bar (`.dock`) detaches from the desktop left sidebar and becomes a fixed bottom Windows 98 taskbar (`position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;`).
@@ -162,3 +164,9 @@ dj_window_close(array(
 - Local Cameron’s World image provenance and sizes live in `docs/ASSETS.md`. `.collage-still` uses the original GIF first-frame PNG by default; `html[data-effects="on"]` displays `.collage-motion` instead. `prefers-reduced-motion: reduce` must select the still even if the attribute has not updated yet. Hiding CSS animation alone does not stop a GIF.
 - When changing `.banner-wing` from flex to grid, reset inherited `order` and explicitly keep both wings and `.site-banner-link` in grid row 1. The ≤980px legacy `order: 2` otherwise creates an unintended second row.
 - Verify 320/390/768/980/1440px, all three themes, manual effects off, system reduce and restoration. Wait for the media-query change event before asserting the updated `data-effects` attribute.
+
+## Translation Markup
+
+Use `data-i18n` only on text leaves; wrappers holding icons/controls or author text cannot be translated via `textContent`. Attribute allowlist: aria-label, aria-valuetext, title, placeholder, alt, value (input submit/button only). Parameters use escaped JSON; all dynamic text is written with `textContent`/`setAttribute`, never HTML injection. Use `node dev/check-i18n.mjs` plus the real DOM marker check. Brand and hardware exceptions are listed in `DESIGN.md`.
+
+The top preference strip has language and palette buttons only. Motion remains on the banner's `data-sticker="fx"` cyber-eye. The visitor body shows the counter and update date; its title bar provides the sole visible visitors heading.

@@ -32,34 +32,14 @@
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   let seeking = false;
 
-  // ---------- 界面文案中英切换：英文原文作键 ----------
-  const zh = {
-    home: '首页', lang: '语言', fx: '动效', music: '音乐', beats: '节拍', blog: '杂谈', links: '链接', about: '关于', guestbook: '留言簿', author: '作者',
-    'control panel': '控制面板', calendar: '日历', search: '搜索', error: '错误',
-    novel: '小说', 'study group': '学习小组', "we're a study group": '我们是一个学习小组', 'read our novel': '阅读小说',
-    latest: '最新', 'open >>': '打开 >>', 'read >>': '阅读 >>', '<< back': '<< 返回', ok: '好', play: '播放', pause: '暂停', retry: '重试', go: '搜',
-    'nothing here yet': '这里还什么都没有', 'no beats yet': '还没有节拍', 'no tape': '没有磁带', 'no entries yet': '还没有留言',
-    stopped: '已停止', queue: '队列', empty: '空', vol: '音量', admin: '后台', 'now playing': '正在播放', paused: '已暂停',
-    playing: '播放中', loading: '加载中', ready: '就绪', buffering: '缓冲中', end: '结束', 'queue offline': '曲库离线',
-    'not available': '不可用', 'tap play again': '再点一次播放', "can't play this file": '无法播放这个文件',
-    language: '语言', theme: '配色', effects: '动效', on: '开', off: '关', milk: '牛奶', ink: '墨', cherry: '樱桃',
-    'dj deck': '打碟机', cue: '起点', loop: '循环', shuffle: '随机', pitch: '变速', low: '低', mid: '中', hi: '高',
-    visitors: '访客', 'last updated': '最近更新', rss: '订阅', muted: '已静音', unmuted: '取消静音',
-    'sign the guestbook': '写下留言', name: '名字', email: '邮箱', message: '留言', send: '发送', 'awaiting approval': '等待审核', 'login required': '需要登录',
-    'dj controller': '打碟控制台', 'thanks for visiting': '谢谢来访', title: '曲名', 'double-click row to load': '双击整行装载',
-  };
-  let lang = storage.get('dj-lang') === 'zh' ? 'zh' : 'en';
-  const t = (key) => (lang === 'zh' && zh[key]) || key;
-  function applyLanguage() {
-    document.documentElement.dataset.lang = lang;
-    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
-    document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
-    document.querySelectorAll('[data-lang-select]').forEach((select) => { select.value = lang; });
-    document.querySelectorAll('button[data-set-lang]').forEach((btn) => {
-      btn.setAttribute('aria-pressed', String(btn.dataset.setLang === lang));
-    });
-    const submit = document.getElementById('submit');
-    if (submit) submit.value = t('send');
+  // 翻译在头部独立初始化，不依赖音频。动态状态只刷新标签，不重建控件。
+  const t = (key, params) => config.i18n.t(key, params);
+  const applyLanguage = () => config.i18n.apply();
+  function translatedAttribute(el, name, key, params = {}) {
+    if (!el) return;
+    el.setAttribute(`data-i18n-${name}`, key);
+    el.setAttribute('data-i18n-params', JSON.stringify(params));
+    el.setAttribute(name, t(key, params));
   }
   const time = (seconds) => {
     if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
@@ -72,7 +52,11 @@
       return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
     } catch { return ''; }
   };
-  function message(key) { status.dataset.i18n = key; status.textContent = t(key); }
+  function message(key, params = {}) {
+    status.dataset.i18n = key;
+    status.setAttribute('data-i18n-params', JSON.stringify(params));
+    status.textContent = t(key, params);
+  }
 
   // ---------- 音频引擎：Deck 1 = 全站常驻播放器，Deck 2 只在放大的控制台里装载 ----------
   const engine = config.createEngine({ elements: [audio, audioB], workletUrl: config.workletUrl });
@@ -126,8 +110,8 @@
   [1, 2].forEach((n) => {
     ['trim', 'hi', 'mid', 'low', 'cfx'].forEach((key) => defineParam(`ch${n}.${key}`, {
       min: -1, max: 1, def: 0, bipolar: true, apply: (v) => engine.set(`ch${n}.${key}`, v),
-      text: key === 'cfx' ? (v) => (Math.abs(v) < 0.03 ? 'off' : `${v < 0 ? 'LPF' : 'HPF'} ${Math.round(Math.abs(v) * 100)}%`)
-        : key === 'trim' ? (v) => signed(12 * v, 1, 'dB') : (v) => (v <= -0.99 ? 'kill' : signed(v < 0 ? 26 * v : 6 * v, 1, 'dB')),
+      text: key === 'cfx' ? (v) => (Math.abs(v) < 0.03 ? t('off') : `${v < 0 ? 'LPF' : 'HPF'} ${Math.round(Math.abs(v) * 100)}%`)
+        : key === 'trim' ? (v) => signed(12 * v, 1, 'dB') : (v) => (v <= -0.99 ? t('kill') : signed(v < 0 ? 26 * v : 6 * v, 1, 'dB')),
     }));
     defineParam(`ch${n}.fader`, { min: 0, max: 1, def: 1, apply: (v) => engine.set(`ch${n}.fader`, v) });
     defineParam(`d${n}.tempo`, { min: -10, max: 10, def: 0, step: 0.1, bipolar: true, apply: (v) => engine.decks[n - 1].setTempo(v), text: (v) => signed(v, 1, '%') });
@@ -137,10 +121,10 @@
   // 原生滑条（紧凑播放器）绑定到参数
   function bindInput(input, id) {
     if (!input) return;
-    const view = (v) => { input.value = String(v); };
+    const view = (v) => { input.value = String(v); input.setAttribute('aria-valuetext', params.get(id).text(v)); };
     params.get(id).views.add(view);
     view(params.get(id).value);
-    input.addEventListener('input', () => setParam(id, input.value, { from: view }));
+    input.addEventListener('input', () => setParam(id, input.value));
   }
   bindInput($('[data-volume]'), 'master');
   bindInput($('[data-pitch]'), 'd1.tempo');
@@ -374,7 +358,7 @@
     $('[data-pause-icon]').hidden = !playing;
     const toggle = $('[data-player-action="toggle"]');
     toggle.disabled = !hasTrack;
-    toggle.setAttribute('aria-label', playing ? '暂停' : '播放');
+    translatedAttribute(toggle, 'aria-label', playing ? 'pause' : 'play');
     $('[data-player-action="cue"]').disabled = !hasTrack;
     $('[data-player-action="prev"]').disabled = state.tracks.length < 2;
     $('[data-player-action="next"]').disabled = state.tracks.length < 2;
@@ -398,7 +382,7 @@
         label.textContent = t(actionKey);
       }
       const title = button.dataset.trackTitle || '';
-      button.setAttribute('aria-label', `${t(isTrackPlaying ? 'pause' : 'play')} ${title}`);
+      translatedAttribute(button, 'aria-label', isTrackPlaying ? 'pause {title}' : 'play {title}', { title });
     });
     if ('mediaSession' in navigator) navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
     broadcast();
@@ -438,8 +422,9 @@
         const button = document.createElement('button');
         button.type = 'button';
         button.dataset.trackId = String(track.id);
+        button.dataset.trackTitle = track.title;
         button.textContent = `${String(index + 1).padStart(2, '0')}. ${track.title}`;
-        button.setAttribute('aria-label', `播放 ${track.title}`);
+        translatedAttribute(button, 'aria-label', 'play {title}', { title: track.title });
         item.append(button);
         queue.append(item);
       });
@@ -587,7 +572,8 @@
   deckA.on('status', (kind) => {
     if (kind === 'playing') {
       const track = activeTrack();
-      message([track?.bpm ? `${track.bpm} bpm` : '', track?.key || ''].filter(Boolean).join(' / ') || 'playing');
+      const details = [track?.bpm ? `${track.bpm} bpm` : '', track?.key || ''].filter(Boolean).join(' / ');
+      message(details ? 'playing · {details}' : 'playing', { details });
       state.error = null;
       retry.hidden = true;
     } else if (kind === 'buffering' && deckA.isPlaying) message('buffering');
@@ -667,19 +653,19 @@
         label = String.fromCharCode(65 + i);
         lit = at != null;
         dim = !lit;
-        aria = lit ? `Hot cue ${label} ${time(at)}` : `Hot cue ${label}: empty`;
+        aria = t('Hot cue {label}: {position}', { label, position: lit ? time(at) : t('empty') });
       } else if (u.mode === 'loop') {
         label = LOOP_LABELS[i];
         lit = d.loop.active && d.loop.beats === LOOP_BEATS[i];
-        aria = `Beat loop ${label}`;
+        aria = t('Beat loop {beats}', { beats: label });
       } else if (u.mode === 'jump') {
         const j = JUMPS[i];
         label = j < 0 ? `◀${-j}` : `${j}▶`;
-        aria = `Beat jump ${j}`;
+        aria = t('Beat jump {beats}', { beats: j });
       } else {
         label = SAMPLE_NAMES[i];
         lit = !!engine.sampler?.active(i);
-        aria = `Sampler ${label}`;
+        aria = t('Sampler {name}', { name: label });
       }
       const span = pad.firstElementChild;
       if (span.textContent !== label) span.textContent = label;
@@ -721,7 +707,7 @@
     const d = u.deck;
     const f = u.fields;
     const phase = { empty: 'empty', stream: 'stream', analyzing: 'loading', ready: '', error: 'stream only' }[d.phase] ?? '';
-    setText(u, 'mode', f.mode, phase);
+    setText(u, 'mode', f.mode, t(phase));
     f.mode.hidden = !phase;
     f.mode.classList.toggle('is-busy', d.phase === 'analyzing');
     f.sync.hidden = !d.sync;
@@ -930,9 +916,10 @@
         btn.dataset.loadDeck = String(n);
         const word = document.createElement('span');
         word.className = 'lib-load-word';
-        word.textContent = 'load '; // 按钮是弹性容器，普通空格会被当作行尾空白吞掉
+        word.dataset.i18n = 'load';
+        word.textContent = t('load'); // 按钮是弹性容器，普通空格会被当作行尾空白吞掉
         btn.append(word, String(n));
-        btn.setAttribute('aria-label', `Load ${track.title} to deck ${n}`);
+        translatedAttribute(btn, 'aria-label', 'load {title} to deck {n}', { title: track.title, n });
         load.append(btn);
       });
       libList.append(row);
@@ -1087,7 +1074,7 @@
     else {
       g.fillStyle = '#8a8a8a';
       g.font = `${10 * ratio}px "Courier New", monospace`;
-      g.fillText(d.phase === 'analyzing' ? 'ANALYZING...' : 'STREAM', 8 * ratio, h / 2 + 4 * ratio);
+      g.fillText(t(d.phase === 'analyzing' ? 'analyzing…' : 'stream'), 8 * ratio, h / 2 + 4 * ratio);
     }
     const marker = (sec, color, label, bottom = false) => {
       const x = xAt(sec);
@@ -1307,7 +1294,9 @@
       if (titleIcon && freshIcon) titleIcon.src = freshIcon.src;
     }
     incoming.focus({ preventScroll: true });
-    live.textContent = `已打开 ${page.doc.title}`;
+    live.dataset.i18n = 'opened {title}';
+    live.setAttribute('data-i18n-params', JSON.stringify({ title: page.doc.title }));
+    live.textContent = t('opened {title}', { title: page.doc.title });
     applyLanguage();
     syncButtons();
     if (view === 'beats' || incoming.querySelector('[data-track-id]')) void loadTracks();
@@ -1335,7 +1324,8 @@
     const cached = pages.get(key);
     if (!cached) {
       document.getElementById('site-content').setAttribute('aria-busy', 'true');
-      live.textContent = '正在打开页面…';
+      live.dataset.i18n = 'opening page…';
+    live.textContent = t('opening page…');
     }
     try {
       const page = cached || await fetchPage(url);
@@ -1400,22 +1390,7 @@
     const theme = document.documentElement.dataset.theme || 'milk';
     document.querySelectorAll('button[data-theme]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.theme === theme)));
   }
-  document.addEventListener('change', (event) => {
-    if (!event.target.matches('[data-lang-select]')) return;
-    lang = event.target.value === 'zh' ? 'zh' : 'en';
-    storage.set('dj-lang', lang);
-    applyLanguage();
-    renderTrack();
-  });
   document.addEventListener('click', (event) => {
-    const langButton = event.target.closest('button[data-set-lang]');
-    if (langButton) {
-      lang = langButton.dataset.setLang === 'zh' ? 'zh' : 'en';
-      storage.set('dj-lang', lang);
-      applyLanguage();
-      renderTrack();
-      return;
-    }
     const themeButton = event.target.closest('button[data-theme]');
     if (themeButton) setTheme(themeButton.dataset.theme);
   });
@@ -1506,7 +1481,7 @@
       const bar = win.querySelector(':scope > .title-bar');
       if (!bar) return;
       bar.tabIndex = mobileWindowLayout.matches ? -1 : 0;
-      bar.title = mobileWindowLayout.matches ? '' : 'Drag to move · Arrow keys to move · Home to reset / 拖动或方向键移动，Home 复位';
+      translatedAttribute(bar, 'title', mobileWindowLayout.matches ? '' : 'Drag or use arrow keys to move; Home to reset');
       if (mobileWindowLayout.matches) {
         // 手机回到原布局，保留桌面坐标供切回宽屏时恢复。
         resetWindowPosition(win, { forget: false });
@@ -1547,8 +1522,8 @@
       const position = floatingWindows.get(win);
       if (position && mode !== 'max') moveWindow(win, position.x, position.y);
       if (mode === 'max') anyMax = true;
-      win.querySelector('[data-window-action="min"]')?.setAttribute('aria-label', mode === 'min' ? 'Restore' : 'Minimize');
-      win.querySelector('[data-window-action="max"]')?.setAttribute('aria-label', mode === 'max' ? 'Restore' : 'Maximize');
+      translatedAttribute(win.querySelector('[data-window-action="min"]'), 'aria-label', mode === 'min' ? 'Restore' : 'Minimize');
+      translatedAttribute(win.querySelector('[data-window-action="max"]'), 'aria-label', mode === 'max' ? 'Restore' : 'Maximize');
     });
     if (dim) {
       dim.hidden = false;
@@ -2062,18 +2037,44 @@
   }
 
   // ---------- 动效开关 ----------
-  const motion = document.querySelector('[data-motion-toggle]');
+  const motion = document.querySelector('[data-sticker="fx"]');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   let effects = storage.get('devdjam-effects') !== 'off';
+  const decorationFrames = new WeakMap();
+  function syncDecorations() {
+    const enabled = effects && !reducedMotion.matches;
+    document.querySelectorAll('img.gif').forEach((img) => {
+      let frame = decorationFrames.get(img);
+      if (enabled) {
+        if (frame && img.getAttribute('src') !== frame.source) img.src = frame.source;
+        return;
+      }
+      if (!img.complete || !img.naturalWidth || !/\.gif(?:[?#]|$)/i.test(img.getAttribute('src') || '')) return;
+      if (!frame) {
+        const source = img.getAttribute('src');
+        try {
+          // 将当前装饰帧固定在原 img 上，保留尺寸/焦点/拖拽节点；不写文件。
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          frame = { source, still: canvas.toDataURL('image/png') };
+          decorationFrames.set(img, frame);
+        } catch { return; }
+      }
+      img.src = frame.still;
+    });
+  }
+  document.addEventListener('load', (event) => {
+    if (event.target.matches?.('img.gif')) syncDecorations();
+  }, true);
   function syncMotion() {
     const enabled = effects && !reducedMotion.matches;
     document.documentElement.dataset.effects = enabled ? 'on' : 'off';
+    syncDecorations();
     if (motion) {
       motion.setAttribute('aria-pressed', String(!enabled));
-      motion.setAttribute('aria-label', '减少装饰动效');
+      translatedAttribute(motion, 'aria-label', 'reduce decorative motion');
       motion.disabled = reducedMotion.matches;
-      const label = motion.querySelector('[data-i18n]');
-      if (label) { label.dataset.i18n = enabled ? 'on' : 'off'; label.textContent = t(label.dataset.i18n); }
     }
   }
   function toggleEffects() {
@@ -2081,7 +2082,6 @@
     storage.set('devdjam-effects', effects ? 'on' : 'off');
     syncMotion();
   }
-  motion?.addEventListener('click', toggleEffects);
   reducedMotion.addEventListener('change', syncMotion);
   syncMotion();
 
@@ -2221,7 +2221,11 @@
       }
     }
     progressBar.style.width = scrollPercent + '%';
-    if (progressText) progressText.textContent = `进度 ${scrollPercent}%`;
+    if (progressText) {
+      progressText.dataset.i18n = 'progress {percent}%';
+      progressText.setAttribute('data-i18n-params', JSON.stringify({ percent: scrollPercent }));
+      progressText.textContent = t('progress {percent}%', { percent: scrollPercent });
+    }
   }
 
   // 滚动进度监听（全局委托，#novel-reader-viewport、#site-content 或 window 滚动均响应）
@@ -2292,8 +2296,8 @@
       const popup = document.getElementById('novel-popup-window');
       if (popup) {
         const isEdge = popup.classList.toggle('is-edge-to-edge');
-        toggleFullscreen.setAttribute('aria-label', isEdge ? 'Restore / 还原窗口' : 'Maximize / 切换铺满视口');
-        toggleFullscreen.setAttribute('title', isEdge ? '还原窗口' : '切换全屏铺满');
+        translatedAttribute(toggleFullscreen, 'aria-label', isEdge ? 'restore reader' : 'fill viewport');
+        translatedAttribute(toggleFullscreen, 'title', isEdge ? 'restore reader' : 'fill viewport');
       }
       return;
     }
@@ -2321,6 +2325,16 @@
     }
   });
 
+  document.addEventListener('devdjam:language', () => {
+    // 保持所有节点、焦点、滚动位置和音频对象，仅更新显示状态。
+    params.forEach((p) => p.views.forEach((view) => view(p.value)));
+    syncButtons();
+    ui.forEach(renderDeck);
+    renderSelection(false);
+    syncMotion();
+    updateNovelScrollProgress();
+    wake();
+  });
   initNovelReader();
   void loadTracks();
 })();

@@ -15,37 +15,14 @@ DEVDJAM operates across two hook systems:
 ## WordPress Action & Filter Hooks
 
 ### 1. Theme Setup & Assets Enqueue
-```php
-// functions.php
-add_action('after_setup_theme', static function () {
-    add_theme_support('title-tag');
-    add_theme_support('post-thumbnails');
-    add_theme_support('responsive-embeds');
-    add_theme_support('html5', array('search-form', 'gallery', 'caption', 'style', 'script'));
-});
 
-add_action('wp_enqueue_scripts', static function () {
-    $base = get_template_directory_uri() . '/assets/';
-    wp_enqueue_style('devdjam-98', $base . '98/98.css', array(), '0.1.20');
-    wp_enqueue_style('devdjam', $base . 'site.css', array('devdjam-98'), '3.0.0');
-    wp_enqueue_script('devdjam', $base . 'site.js', array(), '3.0.0', true);
-    // Inject runtime config before site.js executes
-    wp_add_inline_script('devdjam', 'window.DEVDJAM = ' . wp_json_encode(array(
-        'tracksUrl' => rest_url('devdjam/v1/tracks'),
-        'hitsUrl' => rest_url('devdjam/v1/hits'),
-        'homeUrl' => home_url('/'),
-        'siteName' => get_bloginfo('name'),
-    )) . ';', 'before');
-});
-```
+`functions.php` enqueues 98.css → site.css → deck.css; scripts register shared analysis/DSP/audio assets as before. `assets/i18n.js` loads in the head independently; footer `site.js` depends on both `devdjam-audio` and `devdjam-i18n`. Runtime configuration uses `Object.assign(window.DEVDJAM || {}, config)` so it cannot erase `DEVDJAM.i18n`.
 
-### 2. Early FOUC Prevention Hook (`wp_head`)
-Runs at priority 1 to synchronously read `localStorage` values (`dj-lang`, `dj-theme`, `dj-entered`) before the DOM renders, preventing visual flickering.
-```php
-add_action('wp_head', static function () {
-    echo '<script>try{var l=localStorage.getItem("dj-lang"),t=localStorage.getItem("dj-theme"),d=document.documentElement;if(l)d.dataset.lang=l;if(t)d.dataset.theme=t;d.lang=l==="zh"?"zh-CN":"en";if(!sessionStorage.getItem("dj-entered"))d.dataset.gate="1";}catch(e){}</script>';
-}, 1);
-```
+### 2. Early Preferences and Localized Core Output
+
+The priority-1 head inline script validates saved `milk|ink|cherry` and reads `dj-entered`. The head i18n module alone resolves language, then applies markup on DOMContentLoaded. `devdjam:language` updates dynamic UI without rebuilding it.
+
+`i18n.php` wraps core `get_calendar()` with numeric date/month/weekday attributes. Caption matching follows the current WP locale template; link/query generation stays in WordPress. `comment_form_field_cookies` replaces only the final label, preserving input state. Feed-link args standardize the interface suffix; the client preserves site/author names. Do not replace global gettext or switch the WordPress locale for a browser preference.
 
 ### 3. Unified Post Type Query Hook (`pre_get_posts`)
 Ensures searches and tag archives query across posts, music, and beats simultaneously:

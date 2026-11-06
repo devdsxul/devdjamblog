@@ -8,7 +8,7 @@ $commenter = wp_get_current_commenter();
     <fieldset class="panel"><legend><?php echo dj_text('guestbook'); ?> (<?php echo esc_html((string) get_comments_number()); ?>)</legend>
         <?php if (have_comments()) : ?>
             <ol class="guest-list"><?php wp_list_comments(array('callback' => 'dj_comment', 'style' => 'ol')); ?></ol>
-            <?php the_comments_navigation(array('prev_text' => '<<', 'next_text' => '>>')); ?>
+            <?php the_comments_navigation(array('prev_text' => dj_text('previous page'), 'next_text' => dj_text('next page'), 'screen_reader_text' => dj_text('comment pages'), 'aria_label' => 'comment pages')); ?>
         <?php else : ?>
             <p class="guest-none"><?php echo dj_text('no entries yet'); ?></p>
         <?php endif; ?>
@@ -19,6 +19,7 @@ $commenter = wp_get_current_commenter();
                 'comment_notes_before' => '', 'comment_notes_after' => '', 'logged_in_as' => '',
                 'cancel_reply_before' => '', 'cancel_reply_after' => '',
                 'class_container' => 'guest-form', 'label_submit' => 'send',
+                'submit_button' => '<input name="%1$s" type="submit" id="%2$s" class="%3$s" value="%4$s" data-i18n-value="send" />',
                 'must_log_in' => '<p>' . dj_text('login required') . '</p>',
                 'fields' => array(
                     'author' => '<p class="field"><label for="author">' . dj_text('name') . '</label><input id="author" name="author" type="text" value="' . esc_attr($commenter['comment_author']) . '" maxlength="60" required></p>',

@@ -2,15 +2,21 @@
 
 A small corner on the internet for underground music, clouds, beats, and random thoughts.
 
-自托管的 WordPress 音乐博客：白底黑线的 Win98 窗口 + 少量粉色点缀（jfashion 味），GifCities 动图做贴纸。栏目有音乐分享、Beats、杂谈、链接、关于、留言簿；站内切换栏目时打碟机持续播放。文章、音乐分享和曲库初始为空。
+自托管的 WordPress 音乐博客：cult 电影海报墙、烟黑 Win98 标题栏、实底纸条和 GifCities 贴纸，保留 Neocities 个人站的拼贴感。栏目有音乐分享、Beats、杂谈、链接、关于、留言簿；站内切换栏目时打碟机持续播放。新安装的文章、音乐分享和曲库为空。
 
 ## 本地预览
 
-本机安装 Node.js 后，在本目录执行（当前验证环境为 Node 25.2.0；语法检查器的原生递归枚举要求 Node 18.17+，使用 20.x 时要求 20.1+；未验证旧版 Node 或预览工具在这些最低版本上的兼容性）：
+本次预览使用本机已有 Node 24 启动（WordPress 7.1 / PHP 8.3）。当前系统默认 Node 26 与 Playground 的 `fs-ext` 预编译包不匹配；无需升级依赖或改全局 Node。新环境先安装项目依赖，再使用兼容的 Node 版本运行：
 
 ```powershell
 npm ci
 npm run dev
+```
+
+本机已有依赖时，可直接运行：
+
+```powershell
+& "$env:USERPROFILE/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe" dev/server.mjs
 ```
 
 - 网站：<http://127.0.0.1:8787/>
@@ -36,7 +42,7 @@ npm run dev
 - **Beats**：填写标题，选择音频、封面，可选填 BPM、调性和介绍，发布后自动进入曲库。BPM 和调性空着时，选好音频会自动识别；控制室首页可以一键补齐所有缺失的曲目。
 - **页面**：编辑「链接」与「关于」的正文。
 - **留言簿**：访客留言走 WordPress 原生评论，在「评论」菜单审核或删除。
-- 前台「控制面板」可切换中/英文界面、三套配色和动效开关；窗口的 _ □ 可最小化/最大化；桌面左侧是主导航，窄手机屏改为底部任务栏；进站先经过一个点击进入的 loading 页。
+- 顶部偏好按钮提供 EN / 中文、Milk / Ink / Cherry；动效由横幅眼球贴纸控制。首访跟随浏览器首选语言（`zh-*` 使用中文，其余英文），之后优先采用手动保存的选择；只翻译界面，不翻译正文、曲名或章节名。窗口的 _ □ 可最小化/最大化；桌面左侧是主导航，窄手机屏改为底部任务栏。
 - 打碟机窗口放大后是一台仿 Pioneer DDJ 的双盘控制台：有声搓碟、热点 / 循环 / 跳拍 / 采样打击垫、BEAT SYNC、三段隔离 EQ、滤波、BEAT FX 和 Crossfader。给 Beat 填 BPM 能让拍网格更准。顶部按「波形｜紧凑曲库｜BEAT FX」排列；手机大控制台自动横向显示，竖握时界面旋转 90°，小播放器不变。
 
 详细操作见 [站主使用说明](docs/OWNER-GUIDE.md)。
@@ -71,6 +77,7 @@ npm run check
 node dev/check-deck-input.mjs
 node dev/check-simplification.mjs
 node dev/check-state.mjs
+node dev/check-i18n.mjs
 ```
 
 第二条是无需浏览器的打碟机输入回归：验证普通 / 旋转坐标下的旋钮、推子、搓碟、波形定位、选歌和 resize 收尾。它不替代手机真机的视觉、触摸与试听验收。第三条核对新旧文件枚举集合、嵌套 fixture 中的语法失败传播，以及封面/按钮的静态保留合同；不替代后台特色图片选图、保存和重开实测。
@@ -80,6 +87,8 @@ node dev/check-state.mjs
 导航改动还可运行 `python dev/check-navigation.py`：在 Edge 的本地拦截页面中验证前进/后退、锚点滚动及播放器 DOM 保留，不替代真实音频试听。
 
 文档改动只检查链接和事实；按影响范围选择验证，不自动重跑全套。
+
+前台双语/样式改动使用 `python dev/check-ui-i18n.py` 与 `python dev/check-ui-state.py`，要求 8787 已有本机种子内容。它们拦截外域和非 GET 请求，不提交评论或写入预览数据库；后者使用浏览器拦截的曲库与静音 WAV 验证动态状态。截图与数值保存在 `.runtime/cult-ui/after/`。窗口动效另用 `python dev/check-window-motion.py`；这些均不替代真机触摸或真实音频试听。
 
 需要并获准进行完整浏览器验收时，使用独立的 `8788` 测试站。需要 Python、`dev/requirements.txt` 的依赖，以及 Microsoft Edge：
 

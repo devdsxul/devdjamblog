@@ -10,6 +10,9 @@ end = source.index('  // ---------- 贴纸：', start)
 store_start = source.index('  function objectStore(')
 store_end = source.index('  const sparkColors', store_start)
 handlers = source[store_start:store_end] + source[start:end]
+helper_start = source.index('  function translatedAttribute(')
+helper_end = source.index('\n  }', helper_start) + 4
+helpers = 'const {t} = window.DEVDJAM.i18n;\n' + source[helper_start:helper_end]
 
 
 def fixture():
@@ -46,14 +49,25 @@ with sync_playwright() as p:
         page.goto('http://window.test/')
         for file in ['assets/98/98.css', 'assets/site.css', 'assets/deck.css']:
             page.add_style_tag(content=(THEME / file).read_text(encoding='utf-8'))
-        page.add_script_tag(content='(() => {\n' + handlers + '\n})();')
+        page.add_script_tag(content=(THEME / 'assets/i18n.js').read_text(encoding='utf-8'))
+        page.add_script_tag(content='(() => {\n' + helpers + handlers + '\n})();')
         for name in ['content', 'player']:
             win = page.locator(f'[data-window="{name}"]')
             click(page, name, 'max')
             assert win.evaluate('(el) => getComputedStyle(el).animationDuration') == '0.3s'
-            page.wait_for_timeout(110)
-            assert float(win.evaluate('(el) => getComputedStyle(el, "::after").opacity')) > 0
-            page.wait_for_timeout(250)
+            # Sample the real pseudo-element animation at a fixed timeline position;
+            # wall-clock sleeps can miss a 300ms effect on a busy test host.
+            scan_opacity = win.evaluate('''(el) => {
+              const scan = el.getAnimations({subtree:true}).find(a => a.animationName === 'winScanlines');
+              if (!scan) return null;
+              const previous = scan.currentTime;
+              scan.pause(); scan.currentTime = 96;
+              const opacity = Number(getComputedStyle(el, '::after').opacity);
+              scan.currentTime = previous; scan.play();
+              return opacity;
+            }''')
+            assert scan_opacity is not None and scan_opacity > 0, scan_opacity
+            page.wait_for_timeout(350)
             if name == 'player' and touch:
                 bounds = win.bounding_box()
                 assert bounds['x'] >= -1 and bounds['y'] >= -1, bounds
@@ -61,22 +75,28 @@ with sync_playwright() as p:
                 assert bounds['y'] + bounds['height'] <= height + 1, bounds
                 rotated = win.evaluate('(el) => getComputedStyle(el).getPropertyValue("--deck-rotated").trim()')
                 assert rotated == ('1' if width < height else '0')
-            click(page, name, 'max')
-            page.wait_for_timeout(100)
-            assert win.evaluate('(el) => el.matches(".is-max.is-unmax")')
-            # Rapid input must not overwrite state halfway through the exit.
-            click(page, name, 'min')
+            # Observe transition state and send rapid input in one browser turn;
+            # protocol latency must not turn the rapid click into a later valid click.
+            assert win.evaluate('''(el) => {
+              el.querySelector('[data-window-action="max"]').click();
+              const exiting = el.matches('.is-max.is-unmax');
+              el.querySelector('[data-window-action="min"]').click();
+              return exiting;
+            }''')
             settled(page, name, 'open')
             assert page.locator('.window-ghost').count() == 0
             assert not page.locator('[data-dim]').evaluate('(el) => el.classList.contains("is-active")')
-            click(page, name, 'min')
-            page.wait_for_timeout(100)
-            assert win.evaluate('(el) => el.classList.contains("is-minimizing") && !el.classList.contains("is-min")')
-            assert win.locator('.window-body').evaluate('(el) => getComputedStyle(el).display') != 'none'
+            assert win.evaluate('''(el) => {
+              el.querySelector('[data-window-action="min"]').click();
+              return el.classList.contains('is-minimizing') && !el.classList.contains('is-min')
+                && getComputedStyle(el.querySelector('.window-body')).display !== 'none';
+            }''')
             settled(page, name, 'min')
             assert win.locator('.window-body').evaluate('(el) => getComputedStyle(el).display') == 'none'
-            click(page, name, 'min')
-            assert win.evaluate('(el) => el.classList.contains("is-restoring")')
+            assert win.evaluate('''(el) => {
+              el.querySelector('[data-window-action="min"]').click();
+              return el.classList.contains('is-restoring');
+            }''')
             settled(page, name, 'open')
             click(page, name, 'max')
             page.wait_for_timeout(350)

@@ -16,12 +16,16 @@ $latest = get_posts(array('post_type' => array('post', 'dj_music', 'dj_beat'), '
 </head>
 <body <?php body_class('dj-site'); ?>>
 <?php wp_body_open(); ?>
-<a class="skip-link" href="#site-content">skip to content</a>
-<div class="top-lang" role="group" aria-label="Language">
+<a class="skip-link" href="#site-content"><?php echo dj_text('skip to content'); ?></a>
+<div class="top-lang" role="group" <?php echo dj_attr('aria-label', "preferences"); ?>>
     <?php dj_gif('icon-globe', 'top-lang-icon', false); ?>
-    <button type="button" class="top-lang-btn" data-set-lang="en" aria-label="English">EN</button>
+    <button type="button" class="top-lang-btn" data-set-lang="en" <?php echo dj_attr('aria-label', "English"); ?>>EN</button>
     <span class="top-lang-sep" aria-hidden="true">/</span>
-    <button type="button" class="top-lang-btn" data-set-lang="zh" aria-label="中文">中文</button>
+    <button type="button" class="top-lang-btn" data-set-lang="zh" <?php echo dj_attr('aria-label', "Chinese"); ?>>中文</button>
+    <span class="top-lang-sep" aria-hidden="true">|</span>
+    <?php foreach (array('milk', 'ink', 'cherry') as $palette) : ?>
+        <button type="button" class="top-lang-btn theme-swatch" data-theme="<?php echo esc_attr($palette); ?>" <?php echo dj_attr('title', $palette); ?>><?php echo dj_text($palette); ?></button>
+    <?php endforeach; ?>
 </div>
 <div class="enter" data-enter>
     <div class="enter-stage">
@@ -33,10 +37,10 @@ $latest = get_posts(array('post_type' => array('post', 'dj_music', 'dj_beat'), '
         </div>
 
         <div class="enter-typography">
-            <div class="enter-lead">you are now</div>
+            <div class="enter-lead"><?php echo dj_text('you are now'); ?></div>
             <div class="enter-action-line">
-                <button type="button" class="enter-trigger" data-enter-trigger aria-label="entering">
-                    <span class="enter-letters">
+                <button type="button" class="enter-trigger" data-enter-trigger <?php echo dj_attr('aria-label', "enter site"); ?>>
+                    <span class="enter-letters" aria-hidden="true">
                         <span class="gothic-char" style="--char-i: 0;"><span class="char-back">e</span><span class="char-front">e</span></span>
                         <span class="gothic-char" style="--char-i: 1;"><span class="char-back">n</span><span class="char-front">n</span></span>
                         <span class="gothic-char" style="--char-i: 2;"><span class="char-back">t</span><span class="char-front">t</span></span>
@@ -48,7 +52,7 @@ $latest = get_posts(array('post_type' => array('post', 'dj_music', 'dj_beat'), '
                     </span>
                 </button>
             </div>
-            <div class="enter-sub">devdjam's world</div>
+            <div class="enter-sub"><?php echo dj_text('devdjam’s world'); ?></div>
         </div>
 
         <!-- Iconic Neocities Sparkling Glitter Line -->
@@ -125,11 +129,11 @@ $latest = get_posts(array('post_type' => array('post', 'dj_music', 'dj_beat'), '
     </div>
 </header>
 <div class="desk-layout">
-<nav class="dock" aria-label="主导航">
-    <a class="dock-logo" href="<?php echo esc_url(dj_url('home')); ?>"><?php dj_gif('icon-win', '', false); ?><b>DEVDJAM</b></a>
+<nav class="dock" <?php echo dj_attr('aria-label', "main navigation"); ?>>
+    <a class="dock-logo" href="<?php echo esc_url(dj_url('home')); ?>" aria-label="DEVDJAM"><?php dj_gif('icon-win', '', false); ?><b>DEVDJAM</b></a>
     <div class="dock-nav">
         <?php foreach ($nav as $key => $icon) : ?>
-            <a href="<?php echo esc_url(dj_url($key)); ?>" data-nav="<?php echo esc_attr($key); ?>" <?php echo $view === $key ? 'aria-current="page"' : ''; ?>><?php dj_gif($icon, '', false); echo dj_text($key); ?></a>
+            <a href="<?php echo esc_url(dj_url($key)); ?>" data-nav="<?php echo esc_attr($key); ?>" <?php echo dj_attr('aria-label', $key); ?> <?php echo $view === $key ? 'aria-current="page"' : ''; ?>><?php dj_gif($icon, '', false); echo dj_text($key); ?></a>
         <?php endforeach; ?>
         <div class="dock-divider" aria-hidden="true"></div>
         <div class="dock-social">
@@ -154,7 +158,7 @@ $latest = get_posts(array('post_type' => array('post', 'dj_music', 'dj_beat'), '
         </div>
     </div>
     <div class="dock-foot">
-        <a href="<?php echo esc_url(admin_url('admin.php?page=devdjam')); ?>" data-full-navigation><?php dj_gif('icon-key', '', false); echo dj_text('admin'); ?></a>
+        <a href="<?php echo esc_url(admin_url('admin.php?page=devdjam')); ?>" data-full-navigation <?php echo dj_attr('aria-label', 'admin'); ?>><?php dj_gif('icon-key', '', false); echo dj_text('admin'); ?></a>
         <span class="dock-now"><?php dj_gif('led', 'tray-led', false); ?><span data-tray-title>stopped</span></span>
         <span class="dock-clock" data-clock>--:--</span>
     </div>
@@ -164,8 +168,7 @@ $latest = get_posts(array('post_type' => array('post', 'dj_music', 'dj_beat'), '
         <?php dj_window_open('visitors', 'win-visitors', 'icon-note'); ?>
             <div class="visitors-box">
                 <div class="visitors-row">
-                    <span><?php echo dj_text('visitors'); ?>:</span>
-                    <b class="odometer" data-hits>------</b>
+                    <b class="odometer" data-hits <?php echo dj_attr('aria-label', 'visitors'); ?>>------</b>
                 </div>
                 <?php if ($latest) : ?>
                     <div class="visitors-row visitors-sub">
@@ -193,7 +196,7 @@ $latest = get_posts(array('post_type' => array('post', 'dj_music', 'dj_beat'), '
     </div>
     <aside class="col col-right">
         <?php dj_window_open('calendar', 'win-calendar', 'icon-calendar'); ?>
-            <div class="calendar"><?php get_calendar(); ?></div>
+            <div class="calendar"><?php dj_calendar(); ?></div>
         <?php dj_window_close(); ?>
         <?php dj_window_open('study group', 'win-study-group', 'icon-book'); ?>
             <?php get_template_part('parts/study-group'); ?>

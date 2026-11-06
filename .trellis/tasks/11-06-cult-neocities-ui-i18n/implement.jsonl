@@ -1,0 +1,6 @@
+{"file":".trellis/spec/frontend/index.md","reason":"前端规范入口与主题/插件边界"}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"窗口、控制台、移动布局、装饰与可访问性契约"}
+{"file":".trellis/spec/frontend/state-management.md","reason":"偏好存储、PJAX、音频常驻对象与状态兼容"}
+{"file":".trellis/spec/frontend/hook-guidelines.md","reason":"WordPress 和客户端生命周期挂载"}
+{"file":".trellis/spec/frontend/type-safety.md","reason":"转义、插值和输入边界"}
+{"file":".trellis/tasks/11-06-cult-neocities-ui-i18n/research/resume-audit.md","reason":"已核验入口、原基线缺口与规划状态"}

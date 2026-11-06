@@ -23,6 +23,13 @@ npm run check
 # 2. Deck pointer regression (no browser; required when changing controller input)
 node dev/check-deck-input.mjs
 
+# Translation key/parameter contract; real local UI/DOM and state checks
+node dev/check-i18n.mjs
+python dev/check-ui-i18n.py
+python dev/check-ui-state.py
+# The latter two require the seeded 8787 preview, intercept writes/external requests,
+# and write screenshots/reports only to .runtime/cult-ui/after/.
+
 # 3. Local development environment verification
 npm run dev
 # Boots WordPress Playground (PHP 8.3 + SQLite + WP 7.1) at http://127.0.0.1:8787/
@@ -77,7 +84,7 @@ python dev/qa.py
 ## Visual & Design Constraints
 
 ### 1. Windows 98 Retro Aesthetic
-- **Window Controls (R14)**: Windows MUST have only Minimize (`-`) and Maximize (`□`) buttons. No Close button (`×`) is allowed.
+- **Window Controls (R14)**: Standard desktop windows have Minimize (`-`) and Maximize (`□`); the dedicated novel reader keeps its existing close/return controls. Glyph selectors must use stable `data-window-action`/`data-i18n-aria-label`, never depend only on translated English accessible names.
 - **Maximized Modal Behavior (R20)**: Maximized windows pop out into a centered floating modal with a backdrop (`[data-dim]`). The original location is held by `.window-ghost`. Dismissible via Esc, backdrop click, or clicking Maximize again.
 - **Honest Empty States (R5)**: First-time runs and empty archives must display an honest placeholder via `dj_empty()`. Never generate fake posts, dummy tracks, or fake counter numbers.
 
@@ -85,6 +92,9 @@ python dev/qa.py
 - **Self-Contained Bundling (R9)**: All GIF stickers and 98 assets must be bundled locally under `assets/`. Never reference external CDNs, `gifcities.org`, or `sadgrl.online` in production markup.
 - **GIF Uniqueness (R19)**: Every animated GIF must only appear once in a distinct semantic role (navigation icon, title icon, or sticker) across the entire site.
 - **Cumulative Layout Shift (CLS)**: Always specify `width` and `height` on images and stickers (handled automatically by `dj_gif()`).
+- **Reduced Motion**: Verify both CSS animation and GIF source freezing/restoration. Disabling CSS animation alone does not stop GIF playback.
+- **Translation coverage**: Check text and allowed attributes, complete phrase parameters, PJAX/late state updates, missing/invalid/blocked storage and missing audio dependencies. `data-i18n` must be a leaf. Keep a narrow explicit list of brand/hardware exceptions, not whole excluded player/calendar regions.
+- **Contrast evidence**: Measure computed foreground against the actual opaque surface (body ≥7:1, metadata ≥4.5:1), across Milk/Ink/Cherry. Photo/gradient text requires separate visual or pixel evidence; do not report skipped samples as passing. Use real author-content selectors such as `.prose-novel`, not retired class names.
 
 ### 3. Mobile Responsiveness & Touch Ergonomics
 - **Viewport Bounds Containment**: At viewports 320px, 390px, 768px, and 1440px, all navigation items in `.dock a` must satisfy `left >= -1 and right <= width + 1`, and `document.documentElement.scrollWidth <= width`. Nav links must not be horizontally scrolled off-screen or clipped.

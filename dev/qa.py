@@ -90,7 +90,7 @@ with sync_playwright() as p:
                   bounds['scroll'] <= width and all(x['left'] >= -1 and x['right'] <= width + 1 for x in bounds['links']), bounds)
 
         public_page.emulate_media(reduced_motion='reduce')
-        expect(public_page.locator('[data-motion-toggle]')).to_be_disabled()
+        expect(public_page.locator('[data-sticker=fx]')).to_be_disabled()
         check('System reduced motion disables decorative animation', public_page.evaluate("getComputedStyle(document.querySelector('.marquee span')).animationName") == 'none')
         public_page.emulate_media(reduced_motion='no-preference')
         public_page.evaluate('window.originalAudio = document.getElementById("devdjam-audio")')
