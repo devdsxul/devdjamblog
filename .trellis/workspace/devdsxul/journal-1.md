@@ -1103,3 +1103,39 @@ Fixed 7 mobile layout defects and XSS vulnerability, added author display and i1
 ### Next Steps
 
 - 真机触控、真实音轨跨页连续播放、后台操作及完整备份恢复演练未验证，不能将本次上线检查等同这些验收
+
+
+## Session 25: 前台视觉与 i18n 发布 3.3.9
+<!-- trellis-session: v=2 fp=fece51635e54777b -->
+
+**Date**: 2026-11-06
+**Task**: 前台视觉与 i18n 发布 3.3.9
+**Branch**: `main`
+
+### Summary
+
+完成前台纸面视觉、双语、亮色控制台、访客去重和 320px 修复；按用户授权推送 main 并增量部署 13 个主题文件。
+
+### Main Changes
+
+- 亮色展开打碟机、去掉顶部动效按钮、访客标题去重；新增独立 232 键 i18n，保留播放和阅读状态。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3f06aa9` | feat(ui): unify reading surfaces and complete frontend localization |
+| `598bafc` | docs: record frontend localization release verification |
+
+### Testing
+
+- [OK] 发布版 18 文件语法、232 键/247 处翻译检查通过；线上 1440/390/320 的双语、展开、边界与桌面三主题/PJAX/小说设置通过，公开四资源与提交一致。
+- [OK] 11 个旧文件备份与 9 个 PHP 服务器语法检查通过；发布后 91 行日志无 PHP 错误，数据库 healthy，容器未重启。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 真机触摸、真实歌曲试听与完整回滚演练未覆盖。
