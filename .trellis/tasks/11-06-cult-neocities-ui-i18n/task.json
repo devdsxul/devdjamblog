@@ -15,12 +15,12 @@
   "branch": "main",
   "base_branch": "main",
   "worktree_path": null,
-  "commit": null,
+  "commit": "3f06aa94be3f6c6d8a1e962f8f99064b1d144947",
   "pr_url": null,
   "subtasks": [],
   "children": [],
   "parent": null,
   "relatedFiles": [],
-  "notes": "2026-11-06：本地实现与验收完成后，用户追加授权‘提交推送，部署’。亮色展开打碟机、移除顶部动效按钮、访客去重、320px 按钮遮挡与撑宽修复均完成。生产只读预检通过，拟发布 13 个主题文件，资源版本 3.3.9；不改数据库/配置/媒体。验证见 research/implementation-validation.md，生产结果另记 docs/DEPLOYMENT.md。",
+  "notes": "2026-11-06：用户授权提交推送与部署已执行。应用 3f06aa9 已推送 main 并部署 13 个主题文件，资源版本 3.3.9；正式首页及四个公开资源身份通过，线上 1440/390/320 双语与操作检查通过，PHP 日志无错误、数据库 healthy、容器未重启。没有改数据库/配置/媒体；真机触摸与真实试听未覆盖。验证见 research/implementation-validation.md，生产记录见 docs/DEPLOYMENT.md。",
   "meta": {}
 }
