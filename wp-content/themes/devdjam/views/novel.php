@@ -1,13 +1,27 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
-$chapters = function_exists('devdjam_get_chapters') ? devdjam_get_chapters() : array();
+$current_book = '我们是一个学习小组';
+$current_id = 0;
+if (is_singular('dj_chapter')) {
+    $current_id = get_the_ID();
+    $meta_book = (string) get_post_meta($current_id, '_dj_book_name', true);
+    if ($meta_book !== '') {
+        $current_book = $meta_book;
+    }
+} elseif (isset($_GET['book']) && is_string($_GET['book'])) {
+    $req_book = sanitize_text_field(wp_unslash($_GET['book']));
+    if ($req_book !== '') {
+        $current_book = $req_book;
+    }
+}
+
+$chapters = function_exists('devdjam_get_chapters') ? devdjam_get_chapters($current_book) : array();
 $chapter_count = count($chapters);
 
 // 确定当前章节：若是单个章节，获取其对象；若是归档或未指定，默认加载第一章
 $current_chapter = null;
-if (is_singular('dj_chapter')) {
-    $current_id = get_the_ID();
+if ($current_id) {
     foreach ($chapters as $ch) {
         if ($ch['id'] === $current_id) {
             $current_chapter = $ch;
@@ -18,6 +32,11 @@ if (is_singular('dj_chapter')) {
 if (!$current_chapter && !empty($chapters)) {
     $current_chapter = $chapters[0];
 }
+if ($current_chapter && !empty($current_chapter['book_name'])) {
+    $current_book = $current_chapter['book_name'];
+}
+$is_fired_book = ($current_book === '重生之我获得了被辞退就能加点的系统');
+$book_title_display = '《' . $current_book . '》';
 
 $current_num = $current_chapter ? $current_chapter['number'] : 1;
 $current_title = $current_chapter ? $current_chapter['title'] : '';
@@ -51,7 +70,7 @@ $read_time = $current_wc > 0 ? ceil($current_wc / 600) : 10;
             <div class="title-bar-text">
                 <?php dj_gif('icon-book', 'title-icon', false); ?>
                 <span class="novel-title-text">
-                    <span class="series-name"><?php echo dj_text("we're a study group"); ?> · 《我们是一个学习小组》</span>
+                    <span class="series-name"><?php echo $is_fired_book ? dj_text("fired to level up") : dj_text("we're a study group"); ?> · <?php echo esc_html($book_title_display); ?></span>
                     <span class="title-sep">-</span>
                     <span class="chapter-name"><?php echo esc_html($current_title); ?></span>
                 </span>
@@ -74,7 +93,7 @@ $read_time = $current_wc > 0 ? ceil($current_wc / 600) : 10;
                     
                     <div class="novel-bar-left">
                         <span class="novel-badge"><?php echo dj_text("fullscreen reader"); ?></span>
-                        <span class="novel-book-title-tag">《我们是一个学习小组》</span>
+                        <span class="novel-book-title-tag"><?php echo esc_html($book_title_display); ?></span>
                         <span class="novel-current-tag"><?php echo dj_text('chapter {number}', array('number' => $current_num)); ?></span>
                     </div>
 
@@ -184,7 +203,7 @@ $read_time = $current_wc > 0 ? ceil($current_wc / 600) : 10;
                     <div class="toc-header">
                         <div class="toc-title">
                             <b><?php echo dj_text("contents"); ?></b>
-                            <span class="toc-sub">《我们是一个学习小组》</span>
+                            <span class="toc-sub"><?php echo esc_html($book_title_display); ?></span>
                         </div>
                         <button type="button" class="toc-close-btn" id="novel-close-toc" <?php echo dj_attr('aria-label', "close contents"); ?>>×</button>
                     </div>

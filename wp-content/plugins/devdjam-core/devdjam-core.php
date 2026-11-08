@@ -2,7 +2,7 @@
 /**
  * Plugin Name: DEVDJAM Core
  * Description: Music notes, beats, audio metadata and the DEVDJAM listening queue.
- * Version: 1.2.1
+ * Version: 1.2.2
  * Requires at least: 6.6
  * Requires PHP: 8.1
  * Author: DEVDJAM
@@ -480,10 +480,29 @@ function devdjam_calculate_word_count($text) {
     return $zh_count + $en_words;
 }
 
+function devdjam_get_books() {
+    return array(
+        '我们是一个学习小组' => array(
+            'title' => '我们是一个学习小组',
+            'slug_prefix' => 'chapter-',
+            'en_label' => "we're a study group",
+        ),
+        '重生之我获得了被辞退就能加点的系统' => array(
+            'title' => '重生之我获得了被辞退就能加点的系统',
+            'slug_prefix' => 'fired-chapter-',
+            'en_label' => 'fired to level up',
+        ),
+    );
+}
+
 function devdjam_save_chapter($number, $title, $content, $word_count = 0, $book_name = '我们是一个学习小组') {
     $number = max(1, absint($number));
     $title = sanitize_text_field(trim($title));
     $book_name = sanitize_text_field($book_name ?: '我们是一个学习小组');
+    $books = devdjam_get_books();
+    $slug_prefix = isset($books[$book_name]['slug_prefix'])
+        ? $books[$book_name]['slug_prefix']
+        : sanitize_title($book_name) . '-chapter-';
 
     // 确保正文入库前已格式化为标准 HTML 段落
     if (!preg_match('/<p\b/i', (string) $content)) {
@@ -499,26 +518,34 @@ function devdjam_save_chapter($number, $title, $content, $word_count = 0, $book_
         $display_title = $title;
     }
 
-    $existing = get_posts(array(
+    $candidates = get_posts(array(
         'post_type' => 'dj_chapter',
         'meta_key' => '_dj_chapter_number',
         'meta_value' => $number,
         'post_status' => array('publish', 'draft', 'pending', 'future', 'private'),
-        'numberposts' => 1,
+        'numberposts' => -1,
         'fields' => 'ids',
     ));
+    $existing_id = 0;
+    foreach ($candidates as $cid) {
+        $c_book = (string) get_post_meta($cid, '_dj_book_name', true) ?: '我们是一个学习小组';
+        if ($c_book === $book_name) {
+            $existing_id = (int) $cid;
+            break;
+        }
+    }
 
     $post_data = array(
         'post_type' => 'dj_chapter',
         'post_status' => 'publish',
         'post_title' => $display_title,
         'post_content' => $content,
-        'post_name' => 'chapter-' . $number,
+        'post_name' => $slug_prefix . $number,
         'menu_order' => $number,
     );
 
-    if (!empty($existing)) {
-        $post_data['ID'] = $existing[0];
+    if ($existing_id > 0) {
+        $post_data['ID'] = $existing_id;
         $post_id = wp_update_post($post_data);
     } else {
         $post_id = wp_insert_post($post_data);
@@ -534,6 +561,7 @@ function devdjam_save_chapter($number, $title, $content, $word_count = 0, $book_
 }
 
 function devdjam_get_chapters($book_name = '') {
+    $book_name = sanitize_text_field((string) $book_name);
     $posts = get_posts(array(
         'post_type' => 'dj_chapter',
         'post_status' => 'publish',
@@ -546,6 +574,9 @@ function devdjam_get_chapters($book_name = '') {
         $num = absint(get_post_meta($post->ID, '_dj_chapter_number', true)) ?: (int) $post->menu_order;
         $wc = absint(get_post_meta($post->ID, '_dj_word_count', true));
         $book = (string) get_post_meta($post->ID, '_dj_book_name', true) ?: '我们是一个学习小组';
+        if ($book_name !== '' && $book !== $book_name) {
+            continue;
+        }
         $full_title = html_entity_decode(wp_strip_all_tags(get_the_title($post)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $clean_title = trim(preg_replace('/^第\s*\d+\s*章\s*/u', '', $full_title));
         $chapters[] = array(
@@ -560,13 +591,16 @@ function devdjam_get_chapters($book_name = '') {
         );
     }
     usort($chapters, static function ($a, $b) {
-        return $a['number'] <=> $b['number'];
+        if ($a['number'] !== $b['number']) {
+            return $a['number'] <=> $b['number'];
+        }
+        return strcmp($a['book_name'], $b['book_name']);
     });
     return $chapters;
 }
 
-function devdjam_get_first_chapter_url() {
-    $chapters = devdjam_get_chapters();
+function devdjam_get_first_chapter_url($book_name = '') {
+    $chapters = devdjam_get_chapters($book_name);
     if (!empty($chapters)) {
         return $chapters[0]['url'];
     }
@@ -579,12 +613,17 @@ function devdjam_admin_novel_upload() {
         wp_die('权限不足。');
     }
 
+    $books = devdjam_get_books();
     $messages = array();
     $errors = array();
+    $active_book = isset($_POST['book_name']) ? sanitize_text_field(wp_unslash($_POST['book_name'])) : '我们是一个学习小组';
+    if (!isset($books[$active_book])) {
+        $active_book = '我们是一个学习小组';
+    }
 
     // 处理文件批量上传
     if (isset($_POST['dj_upload_novel_files']) && check_admin_referer('devdjam_novel_upload_action')) {
-        $book_name = sanitize_text_field($_POST['book_name'] ?? '我们是一个学习小组');
+        $book_name = sanitize_text_field(wp_unslash($_POST['book_name'] ?? '我们是一个学习小组'));
         if (!empty($_FILES['chapter_files']['name'][0])) {
             $files = $_FILES['chapter_files'];
             $file_count = count($files['name']);
@@ -614,14 +653,14 @@ function devdjam_admin_novel_upload() {
                     $title = pathinfo($filename, PATHINFO_FILENAME);
                 }
                 if (!$number) {
-                    $number = count(devdjam_get_chapters()) + 1;
+                    $number = count(devdjam_get_chapters($book_name)) + 1;
                 }
 
                 $html = devdjam_format_markdown_to_html($content);
                 $wc = devdjam_calculate_word_count($content);
                 $post_id = devdjam_save_chapter($number, $title, $html, $wc, $book_name);
                 if ($post_id) {
-                    $messages[] = sprintf('已成功导入第 %d 章：%s（共 %s 字）', $number, esc_html($title), number_format($wc));
+                    $messages[] = sprintf('《%s》已成功导入第 %d 章：%s（共 %s 字）', esc_html($book_name), $number, esc_html($title), number_format($wc));
                 } else {
                     $errors[] = sprintf('导入文件 %s 失败', esc_html($filename));
                 }
@@ -634,15 +673,15 @@ function devdjam_admin_novel_upload() {
     // 处理手动直接添加/粘贴章节
     if (isset($_POST['dj_manual_add_chapter']) && check_admin_referer('devdjam_manual_chapter_action')) {
         $number = absint($_POST['manual_number'] ?? 1);
-        $title = sanitize_text_field($_POST['manual_title'] ?? '');
+        $title = sanitize_text_field(wp_unslash($_POST['manual_title'] ?? ''));
         $content = wp_unslash($_POST['manual_content'] ?? '');
-        $book_name = sanitize_text_field($_POST['book_name'] ?? '我们是一个学习小组');
+        $book_name = sanitize_text_field(wp_unslash($_POST['book_name'] ?? '我们是一个学习小组'));
         if ($number && $title && $content) {
             $html = devdjam_format_markdown_to_html($content);
             $wc = devdjam_calculate_word_count($content);
             $post_id = devdjam_save_chapter($number, $title, $html, $wc, $book_name);
             if ($post_id) {
-                $messages[] = sprintf('已成功保存第 %d 章：%s（共 %s 字）', $number, esc_html($title), number_format($wc));
+                $messages[] = sprintf('《%s》已成功保存第 %d 章：%s（共 %s 字）', esc_html($book_name), $number, esc_html($title), number_format($wc));
             } else {
                 $errors[] = '保存章节失败。';
             }
@@ -651,12 +690,26 @@ function devdjam_admin_novel_upload() {
         }
     }
 
-    $chapters = devdjam_get_chapters();
+    $book_groups = array();
+    $next_numbers = array();
+    foreach ($books as $b_name => $b_meta) {
+        $b_chaps = devdjam_get_chapters($b_name);
+        $b_words = 0;
+        foreach ($b_chaps as $ch) {
+            $b_words += (int) $ch['word_count'];
+        }
+        $book_groups[$b_name] = array(
+            'chapters' => $b_chaps,
+            'count' => count($b_chaps),
+            'words' => $b_words,
+        );
+        $next_numbers[$b_name] = count($b_chaps) + 1;
+    }
     ?>
     <div class="wrap dj-admin-home">
         <p class="dj-admin-eyebrow">NOVEL MANAGEMENT & UPLOAD / 小说工作台</p>
         <h1>小说上传与章节管理</h1>
-        <p>在此管理连载小说《我们是一个学习小组》，支持多章 Markdown 批量上传、正文排版解析与字数统计。</p>
+        <p>在此管理站点连载小说《我们是一个学习小组》与《重生之我获得了被辞退就能加点的系统》，支持多章 Markdown 批量上传、正文排版解析与分书目章节管理。</p>
 
         <?php if (!empty($messages)) : ?>
             <div class="notice notice-success is-dismissible">
@@ -672,12 +725,18 @@ function devdjam_admin_novel_upload() {
         <div class="dj-novel-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 20px;">
             <div class="dj-novel-card" style="background: #fff; border: 1px solid #dcd1e5; border-top: 4px solid #8353a8; padding: 20px;">
                 <h2 style="margin-top:0;">📁 批量上传章节文件 (.md / .txt)</h2>
-                <p>可一次性选择多个章节 Markdown 文件（例如 <code>0001_标题.md</code>），系统自动解析章节编号、标题和正文段落。</p>
+                <p>可一次性选择多个章节 Markdown 文件（例如 <code>0001_标题.md</code>），系统自动解析章节编号、标题和正文段落并归入所选小说。</p>
                 <form method="post" enctype="multipart/form-data">
                     <?php wp_nonce_field('devdjam_novel_upload_action'); ?>
                     <p>
-                        <label for="book_name"><strong>所属书名：</strong></label><br>
-                        <input type="text" id="book_name" name="book_name" value="我们是一个学习小组" class="regular-text" style="width: 100%;">
+                        <label for="book_name"><strong>选择所属小说：</strong></label><br>
+                        <select id="book_name" name="book_name" style="width: 100%; max-width: 100%; margin-top: 4px;">
+                            <?php foreach ($books as $b_name => $b_meta) : ?>
+                                <option value="<?php echo esc_attr($b_name); ?>" <?php selected($active_book, $b_name); ?>>
+                                    《<?php echo esc_html($b_name); ?>》（已发 <?php echo esc_html((string) $book_groups[$b_name]['count']); ?> 章）
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </p>
                     <p>
                         <label for="chapter_files"><strong>选择章节文件（支持多选）：</strong></label><br>
@@ -693,15 +752,24 @@ function devdjam_admin_novel_upload() {
                 <h2 style="margin-top:0;">✍️ 手动添加 / 快速粘贴章节</h2>
                 <form method="post">
                     <?php wp_nonce_field('devdjam_manual_chapter_action'); ?>
-                    <input type="hidden" name="book_name" value="我们是一个学习小组">
+                    <p style="margin-top: 0;">
+                        <label for="manual_book_name"><strong>选择所属小说：</strong></label><br>
+                        <select id="manual_book_name" name="book_name" style="width: 100%; max-width: 100%; margin-top: 4px;">
+                            <?php foreach ($books as $b_name => $b_meta) : ?>
+                                <option value="<?php echo esc_attr($b_name); ?>" data-next="<?php echo esc_attr((string) $next_numbers[$b_name]); ?>" <?php selected($active_book, $b_name); ?>>
+                                    《<?php echo esc_html($b_name); ?>》（下一章：第 <?php echo esc_html((string) $next_numbers[$b_name]); ?> 章）
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </p>
                     <div style="display: flex; gap: 12px; margin-bottom: 10px;">
                         <div style="flex: 0 0 100px;">
                             <label for="manual_number"><strong>章节序号：</strong></label><br>
-                            <input type="number" id="manual_number" name="manual_number" value="<?php echo esc_attr((string) (count($chapters) + 1)); ?>" style="width: 100%;">
+                            <input type="number" id="manual_number" name="manual_number" value="<?php echo esc_attr((string) ($next_numbers[$active_book] ?? 1)); ?>" style="width: 100%;">
                         </div>
                         <div style="flex: 1;">
                             <label for="manual_title"><strong>章节标题：</strong></label><br>
-                            <input type="text" id="manual_title" name="manual_title" placeholder="例如：五百九十九元的门票..." style="width: 100%;">
+                            <input type="text" id="manual_title" name="manual_title" placeholder="例如：紧急避险不赔裙子..." style="width: 100%;">
                         </div>
                     </div>
                     <p>
@@ -712,42 +780,66 @@ function devdjam_admin_novel_upload() {
                         <button type="submit" name="dj_manual_add_chapter" class="button button-primary">保存章节</button>
                     </p>
                 </form>
+                <script>
+                (function () {
+                    var sel = document.getElementById('manual_book_name');
+                    var num = document.getElementById('manual_number');
+                    if (sel && num) {
+                        sel.addEventListener('change', function () {
+                            var opt = sel.options[sel.selectedIndex];
+                            if (opt && opt.dataset.next) {
+                                num.value = opt.dataset.next;
+                            }
+                        });
+                    }
+                })();
+                </script>
             </div>
         </div>
 
-        <h2 style="margin-top: 36px;">已发布章节（共 <?php echo esc_html((string) count($chapters)); ?> 章）</h2>
-        <?php if (!empty($chapters)) : ?>
-            <table class="wp-list-table widefat fixed striped" style="margin-top: 12px;">
-                <thead>
-                    <tr>
-                        <th style="width: 80px;">序号</th>
-                        <th>章节标题</th>
-                        <th style="width: 120px;">预估字数</th>
-                        <th style="width: 120px;">发布时间</th>
-                        <th style="width: 180px;">操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($chapters as $ch) : ?>
+        <?php foreach ($books as $b_name => $b_meta) :
+            $group = $book_groups[$b_name];
+            $b_chapters = $group['chapters'];
+        ?>
+            <h2 style="margin-top: 36px;">
+                📖 《<?php echo esc_html($b_name); ?>》
+                <span style="font-size: 13px; font-weight: normal; color: #64606a; margin-left: 8px;">
+                    共 <?php echo esc_html((string) $group['count']); ?> 章 · 累计 <?php echo esc_html(number_format($group['words'])); ?> 字
+                </span>
+            </h2>
+            <?php if (!empty($b_chapters)) : ?>
+                <table class="wp-list-table widefat fixed striped" style="margin-top: 12px;">
+                    <thead>
                         <tr>
-                            <td><strong>第 <?php echo esc_html((string) $ch['number']); ?> 章</strong></td>
-                            <td>
-                                <strong><a href="<?php echo esc_url(get_edit_post_link($ch['id'])); ?>"><?php echo esc_html($ch['title']); ?></a></strong>
-                            </td>
-                            <td><?php echo esc_html(number_format($ch['word_count'])); ?> 字</td>
-                            <td><?php echo esc_html($ch['date']); ?></td>
-                            <td>
-                                <a class="button button-small" href="<?php echo esc_url($ch['url']); ?>" target="_blank" rel="noopener">前台阅读 ↗</a>
-                                <a class="button button-small" href="<?php echo esc_url(get_edit_post_link($ch['id'])); ?>">编辑</a>
-                                <a class="button button-small button-link-delete" href="<?php echo esc_url(get_delete_post_link($ch['id'])); ?>" onclick="return confirm('确定要删除本章吗？');" style="color: #b32d2e;">删除</a>
-                            </td>
+                            <th style="width: 80px;">序号</th>
+                            <th>章节标题</th>
+                            <th style="width: 120px;">预估字数</th>
+                            <th style="width: 120px;">发布时间</th>
+                            <th style="width: 180px;">操作</th>
                         </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php else : ?>
-            <p style="color: #64606a;">暂无已发布章节，请使用上方上传或导入功能。</p>
-        <?php endif; ?>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($b_chapters as $ch) : ?>
+                            <tr>
+                                <td><strong>第 <?php echo esc_html((string) $ch['number']); ?> 章</strong></td>
+                                <td>
+                                    <strong><a href="<?php echo esc_url(get_edit_post_link($ch['id'])); ?>"><?php echo esc_html($ch['title']); ?></a></strong>
+                                </td>
+                                <td><?php echo esc_html(number_format($ch['word_count'])); ?> 字</td>
+                                <td><?php echo esc_html($ch['date']); ?></td>
+                                <td>
+                                    <a class="button button-small" href="<?php echo esc_url($ch['url']); ?>" target="_blank" rel="noopener">前台阅读 ↗</a>
+                                    <a class="button button-small" href="<?php echo esc_url(get_edit_post_link($ch['id'])); ?>">编辑</a>
+                                    <a class="button button-small button-link-delete" href="<?php echo esc_url(get_delete_post_link($ch['id'])); ?>" onclick="return confirm('确定要删除本章吗？');" style="color: #b32d2e;">删除</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php else : ?>
+                <p style="color: #64606a;">《<?php echo esc_html($b_name); ?>》暂无已发布章节，可在上方选择该书目上传或添加。</p>
+            <?php endif; ?>
+        <?php endforeach; ?>
     </div>
     <?php
 }
@@ -757,8 +849,9 @@ add_action('rest_api_init', static function () {
     register_rest_route('devdjam/v1', '/chapters', array(
         'methods' => 'GET',
         'permission_callback' => '__return_true',
-        'callback' => static function () {
-            $response = new WP_REST_Response(devdjam_get_chapters());
+        'callback' => static function ($request) {
+            $book = sanitize_text_field((string) $request->get_param('book'));
+            $response = new WP_REST_Response(devdjam_get_chapters($book));
             $response->header('Cache-Control', 'no-store');
             return $response;
         },
@@ -780,7 +873,7 @@ add_action('rest_api_init', static function () {
             }
             $html = devdjam_format_markdown_to_html($content);
             $post_id = devdjam_save_chapter($number, $title, $html, $word_count, $book_name);
-            return new WP_REST_Response(array('success' => true, 'post_id' => $post_id, 'number' => $number, 'title' => $title));
+            return new WP_REST_Response(array('success' => true, 'post_id' => $post_id, 'number' => $number, 'title' => $title, 'book_name' => $book_name));
         },
     ));
 });
@@ -791,6 +884,7 @@ add_filter('manage_dj_chapter_posts_columns', static function ($columns) {
     foreach ($columns as $k => $v) {
         $new[$k] = $v;
         if ($k === 'title') {
+            $new['chapter_book'] = '所属小说';
             $new['chapter_number'] = '章节序号';
             $new['chapter_words'] = '字数';
             $new['chapter_preview'] = '前台阅读';
@@ -800,7 +894,10 @@ add_filter('manage_dj_chapter_posts_columns', static function ($columns) {
 });
 
 add_action('manage_dj_chapter_posts_custom_column', static function ($column, $id) {
-    if ($column === 'chapter_number') {
+    if ($column === 'chapter_book') {
+        $book = (string) get_post_meta($id, '_dj_book_name', true) ?: '我们是一个学习小组';
+        echo '《' . esc_html($book) . '》';
+    } elseif ($column === 'chapter_number') {
         echo '第 ' . esc_html((string) get_post_meta($id, '_dj_chapter_number', true)) . ' 章';
     } elseif ($column === 'chapter_words') {
         echo esc_html(number_format((int) get_post_meta($id, '_dj_word_count', true))) . ' 字';

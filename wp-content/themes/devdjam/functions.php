@@ -11,7 +11,7 @@ add_action('after_setup_theme', static function () {
     add_theme_support('automatic-feed-links');
 });
 
-const DEVDJAM_ASSET_VER = '3.3.9';
+const DEVDJAM_ASSET_VER = '3.4.0';
 
 // 音轨分析（拍速 / 调性）：前台打碟机与 devdjam-core 后台的自动识别共用，所以在 init 注册、前后台都可用
 add_action('init', static function () {
@@ -204,7 +204,8 @@ add_action('template_redirect', static function () {
         exit;
     }
     if (is_post_type_archive('dj_chapter')) {
-        $first_url = function_exists('devdjam_get_first_chapter_url') ? devdjam_get_first_chapter_url() : '';
+        $book = isset($_GET['book']) && is_string($_GET['book']) ? sanitize_text_field(wp_unslash($_GET['book'])) : '';
+        $first_url = function_exists('devdjam_get_first_chapter_url') ? devdjam_get_first_chapter_url($book) : '';
         if ($first_url && $first_url !== home_url('/novel/')) {
             wp_safe_redirect($first_url, 302);
             exit;

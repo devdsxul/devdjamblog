@@ -2502,26 +2502,29 @@ html[data-effects="on"] .collage-motion { display: block; }
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 6px;
-    overflow: hidden;
+    margin: 4px;
+    padding: 2px;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 .study-group-box {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 6px;
+    min-height: 0;
 }
 .study-group-link {
-    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    height: 100%;
     text-decoration: none;
     color: var(--ink);
     border: 1px solid var(--line);
     background: var(--paper);
-    padding: 10px 10px 8px;
+    padding: 7px 8px 6px;
     position: relative;
     transition: all 0.15s ease;
     box-shadow: var(--hard-sm);
@@ -2535,15 +2538,15 @@ html[data-effects="on"] .collage-motion { display: block; }
 .study-group-badge-line {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-bottom: 8px;
+    gap: 5px;
+    margin-bottom: 4px;
 }
 .study-tag {
     font-size: 9px;
     font-family: var(--mono);
     font-weight: 700;
     letter-spacing: 1px;
-    padding: 2px 5px;
+    padding: 1px 5px;
     background: var(--ink);
     color: var(--on-solid);
     border-radius: 0;
@@ -2564,10 +2567,10 @@ html[data-effects="on"] .collage-motion { display: block; }
     margin-left: auto;
 }
 .study-group-typography {
-    margin: 4px 0 8px;
+    margin: 2px 0 4px;
 }
 .study-group-big {
-    font-size: 19px;
+    font-size: 15px;
     font-weight: 900;
     line-height: 1.15;
     text-transform: uppercase;
@@ -2578,12 +2581,12 @@ html[data-effects="on"] .collage-motion { display: block; }
     color: var(--accent-text);
 }
 .study-group-small {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1.2px;
+    letter-spacing: 1px;
     color: var(--accent-text);
-    margin-top: 5px;
+    margin-top: 2px;
     display: flex;
     align-items: center;
     gap: 4px;
@@ -2598,20 +2601,22 @@ html[data-effects="on"] .collage-motion { display: block; }
     height: 1px;
     background: dashed var(--line);
     border-bottom: 1px dashed var(--line);
-    margin: 6px 0;
+    margin: 4px 0;
 }
 .study-group-book-info {
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 .study-book-title {
-    font-size: 12px;
+    font-size: 11.5px;
+    line-height: 1.25;
     font-weight: 700;
     color: var(--ink);
+    word-break: break-word;
 }
 .study-chapter-snippet {
     font-size: 11px;
     color: var(--muted);
-    margin-top: 3px;
+    margin-top: 2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2628,16 +2633,16 @@ html[data-effects="on"] .collage-motion { display: block; }
     justify-content: space-between;
     gap: 6px;
     margin-top: auto;
-    padding-top: 6px;
+    padding-top: 3px;
 }
 .study-group-enter-btn {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
+    gap: 4px;
+    padding: 2px 8px;
     background: var(--line);
     color: var(--on-solid);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     font-family: var(--mono);
     border: 1px solid var(--ink);

@@ -172,6 +172,7 @@
     "novel": "小说",
     "study group": "学习小组",
     "we're a study group": "我们是一个学习小组",
+    "fired to level up": "被辞退就能加点",
     "read our novel": "阅读小说",
     "latest": "最新",
     "open >>": "打开 >>",
